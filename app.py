@@ -9,7 +9,26 @@ st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wid
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
+.titulo-premium { 
+    background: linear-gradient(90deg, #0047AB, #1976D2); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    text-shadow: 0 4px 12px rgba(0,71,171,0.3); 
+    font-size: 2.5rem !important; 
+    font-weight: 800 !important;
+    color: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    text-align: center !important;
+    margin: 0 auto !important;
+}
+.titulo-premium::before, .titulo-premium::after {
+    content: "🕊️" !important;
+    font-size: 2.5rem !important;
+    filter: brightness(0) saturate(100%) invert(100%) !important;
+}
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
@@ -64,7 +83,7 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium" style="display: flex; align-items: center; justify-content: center; gap: 15px;">🕊️ Guia Espírita 🕊️</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium">Guia Espírita</h1>', unsafe_allow_html=True)
     col1, col2 = st.columns([1, 2])
     with col1:
         email = st.text_input("📧 E-mail")
@@ -81,7 +100,7 @@ if not st.session_state.logado:
         else:
             st.error("❌ E-mail ou senha incorretos!")
 else:
-    st.markdown('<h1 class="titulo-premium" style="display: flex; align-items: center; justify-content: center; gap: 15px;">🕊️ Guia Espírita 🕊️</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium">Guia Espírita</h1>', unsafe_allow_html=True)
     
     # ✅ CAMPO LIMPO COM LUPA DISCRETA
     busca = st.text_input(
