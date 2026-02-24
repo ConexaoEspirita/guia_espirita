@@ -10,12 +10,12 @@ st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wid
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
+.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparente;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
-.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.1) !important; padding: 6px 12px !important; border-radius: 8px !important; border-left: 3px solid #10B981 !important;}
+.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;}
 div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
@@ -32,8 +32,12 @@ supabase = create_client(url, key)
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
+    # REMOVE TODOS OS ACENTOS e caracteres especiais
     texto = str(texto).lower().strip()
-    return re.sub(r'[^a-zA-Z0-9áàâãéêíóôõúç\\s]', '', texto)
+    texto = unicodedata.normalize('NFD', texto)
+    texto = re.sub(r'[\u0300-\u036f]', '', texto)  # Remove acentos
+    texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)    # Remove tudo menos letras, números e espaços
+    return texto
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
