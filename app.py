@@ -15,12 +15,13 @@ st.markdown("""
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
+.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.1) !important; padding: 6px 12px !important; border-radius: 8px !important; border-left: 3px solid #10B981 !important;}
 div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
-.conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
 div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
+div[data-testid="stInfoBlock"] div {display: none !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -57,7 +58,6 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # BUSCA SIMPLIFICADA
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
                          label_visibility="collapsed")
     
@@ -129,8 +129,8 @@ else:
             <div class="card-centro">
                 <div class="nome-grande">{v_nome_real}</div>
                 <div class="nome-fantasia">{v_fantasia}</div>
-                <div class="info-texto">
-                    <strong>📅 {v_palestras}</strong>
+                <div class="palestras-verde">
+                    📅 {v_palestras}
                 </div>
                 <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                 <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
@@ -148,11 +148,6 @@ else:
                 if len(numero) >= 10:
                     st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
             st.divider()
-    else:
-        if termo:
-            st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira', etc.")
-        else:
-            st.info("👆 Digite QUALQUER PALAVRA e clique PESQUISAR")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
