@@ -4,14 +4,8 @@ from supabase import create_client
 import urllib.parse
 import unicodedata
 
-# ==============================
-# CONFIGURAÇÃO DA PÁGINA
-# ==============================
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
-# ==============================
-# ESTILO VISUAL
-# ==============================
 st.markdown("""
 <style>
 .stApp { background-color: #EBF4FA; }
@@ -30,16 +24,10 @@ div.stLinkButton > a { width: 100% !important; font-weight: bold !important; hei
 </style>
 """, unsafe_allow_html=True)
 
-# ==============================
-# CONEXÃO SUPABASE
-# ==============================
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# ==============================
-# FUNÇÕES AUXILIARES
-# ==============================
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
@@ -47,9 +35,6 @@ def limpar_busca(texto):
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
-# ==============================
-# CONTROLE DE LOGIN
-# ==============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -64,17 +49,12 @@ if not st.session_state.logado:
             st.rerun()
         else:
             st.error("Dados incorretos!")
-
-# ==============================
-# ÁREA PRINCIPAL - 100% ESTÁVEL
-# ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
         try:
-            # Carrega e prepara dados
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
             if 'Unnamed: 0' in df.columns:
                 df = df.drop('Unnamed: 0', axis=1)
@@ -90,19 +70,16 @@ else:
                 'CELULAR': 'Celular'
             })
 
-            # ✅ BUSCA SIMPLES E ROBUSTA - SEM ERROS
             termo = limpar_busca(busca)
             resultados = []
             
             for idx, row in df.iterrows():
-                # Converte linha toda para string e busca
                 linha_texto = " ".join([limpar_busca(val) for val in row])
                 if termo in linha_texto:
                     resultados.append(row)
 
             resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
 
-            # Mostra resultados
             for _, row in resultados_df.iterrows():
                 v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
                 v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
@@ -125,3 +102,19 @@ else:
 
                 col1, col2 = st.columns(2)
                 with col1:
+                    if 'Não informado' not in v_endereco:
+                        query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                        st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
+                with col2:
+                    numero = ''.join(filter(str.isdigit, v_celular))
+                    if len(numero) >= 10:
+                        st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
+                st.divider()
+
+            if resultados_df.empty:
+                st.warning("Nenhum resultado encontrado.")
+                
+        except Exception as erro:
+            st.error(f"Erro: {str(erro)}")
+    else:
+        st.info("👆 Digite nome, cidade ou responsável para buscar!")
