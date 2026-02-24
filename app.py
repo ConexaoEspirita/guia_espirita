@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo Profissional
+# 1. Estilo Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -11,18 +11,13 @@ st.markdown("""
     .stApp { background-color: #F8F9FA; }
     .card-centro {
         background-color: white; padding: 20px; border-radius: 15px;
-        border-left: 8px solid #0047AB; margin-bottom: 15px;
+        border-left: 8px solid #0047AB; margin-bottom: 12px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .nome-real { color: #0047AB !size: 26px; font-weight: bold; line-height: 1.1; }
+    .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
-    
-    /* Botões Lado a Lado */
-    div.stLinkButton > a {
-        width: 100% !important; font-weight: bold !important; height: 45px !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-    }
+    div.stLinkButton > a { width: 100% !important; font-weight: bold !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,7 +28,7 @@ supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- LOGIN ---
+# --- TELA DE ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -46,7 +41,7 @@ if not st.session_state.logado:
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade ou Responsável...")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
         try:
@@ -55,39 +50,39 @@ else:
 
             if not res.empty:
                 for _, row in res.iterrows():
-                    # Puxando dados exatamente como estão no seu Excel
-                    # Se não aparecer, verifique se no Excel o nome da coluna é esse mesmo
-                    fanta = row.get('Nome Fantasia', '')
-                    nome = row.get('Nome', 'Centro')
-                    cid = row.get('Cidade', '')
-                    end = row.get('Endereco', row.get('Endereço', ''))
-                    resp = row.get('Responsavel', row.get('Responsável', ''))
-                    cel = row.get('Celular', '')
+                    # PEGA PELA POSIÇÃO DA COLUNA (A=0, B=1, C=2, D=3, E=4, F=5, G=6)
+                    v_fantasia = row.iloc[0] # Coluna A
+                    v_nome     = row.iloc[1] # Coluna B
+                    v_cidade   = row.iloc[2] # Coluna C
+                    v_endereco = row.iloc[3] # Coluna D
+                    v_palestra = row.iloc[4] # Coluna E
+                    v_resp     = row.iloc[5] # Coluna F
+                    v_celular  = row.iloc[6] # Coluna G
 
                     # Card Visual Estilo Placar
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-real">{nome}</div>
-                            <div class="nome-fantasia">{fanta}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
-                            <div class="info-texto">📍 {end}</div>
-                            <div class="info-texto">🏙️ {cid}</div>
+                            <div class="nome-real">{v_nome}</div>
+                            <div class="nome-fantasia">{v_fantasia}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                            <div class="info-texto">📍 {v_endereco}</div>
+                            <div class="info-texto">🏙️ {v_cidade}</div>
+                            <div class="info-texto">🗓️ {v_palestra}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
-                        if end:
-                            # CORREÇÃO DO MAPS: Link oficial Google Search
-                            q_maps = urllib.parse.quote(f"{end}, {cid}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_maps}")
+                        if v_endereco:
+                            # MAPS: Link oficial Google corrigido
+                            q = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
-                        if cel:
-                            # CORREÇÃO DO WHATSAPP: Link com barra e 55
-                            so_nums = ''.join(filter(str.isdigit, cel))
-                            if len(so_nums) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{so_nums}")
+                        if v_celular:
+                            # WHATSAPP: Limpa traços e espaços automaticamente
+                            num = ''.join(filter(str.isdigit, v_celular))
+                            if len(num) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
                     st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro ao carregar dados: {e}")
-    else: st.info("Digite para pesquisar! 🙏")
+        except Exception as e: st.error(f"Erro ao carregar dados.")
