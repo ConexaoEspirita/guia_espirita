@@ -4,6 +4,7 @@ from supabase import create_client
 import urllib.parse
 import unicodedata
 import re
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
@@ -21,6 +22,7 @@ div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 .conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
+#busca-input input {font-size: 18px !important;padding: 16px !important;}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -56,9 +58,29 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # BUSCA SIMPLIFICADA QUE SEMPRE ACHA
+    # CAMPO DE BUSCA COM FOCO AUTOMÁTICO E LIMPAÇÃO
+    busca_key = "busca_input"
+    st.markdown('<div id="busca-container">', unsafe_allow_html=True)
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
-                         label_visibility="collapsed")
+                         key=busca_key,
+                         label_visibility="collapsed",
+                         placeholder="Toque aqui para pesquisar...")
+    
+    # JS PARA FOCO AUTOMÁTICO + LIMPAR + TECLADO
+    components.html("""
+    <script>
+    // Foca no input quando clica na área
+    setTimeout(() => {
+        const input = window.parent.document.querySelector('input[aria-label*="Digite nome"]');
+        if (input) {
+            input.value = '';
+            input.focus();
+            input.click();
+        }
+    }, 100);
+    </script>
+    """, height=0)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -69,6 +91,7 @@ else:
     with col2:
         if st.button("🗑️ LIMPAR", use_container_width=True):
             st.session_state.tem_busca = ""
+            st.session_state[busca_key] = ""
             st.rerun()
     
     termo = st.session_state.get("tem_busca", "").strip()
@@ -80,7 +103,6 @@ else:
                 if 'Unnamed: 0' in df.columns:
                     df = df.drop('Unnamed: 0', axis=1)
                 
-                # Padroniza nomes das colunas
                 df.columns = df.columns.str.strip()
                 df = df.rename(columns={
                     'NOME FANTASIA': 'Nome Fantasia',
@@ -92,12 +114,10 @@ else:
                     'CELULAR': 'Celular'
                 })
                 
-                # BUSCA SIMPLES EM TODOS OS CAMPOS
                 resultados = []
                 termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
-                    # Converte linha inteira para texto limpo
                     texto_row = " ".join([
                         limpar_busca(row.get('Nome Fantasia', '')),
                         limpar_busca(row.get('Nome Real / Razão Social', '')),
@@ -107,7 +127,6 @@ else:
                         limpar_busca(row.get('Palestra Pública', ''))
                     ])
                     
-                    # Se o termo estiver QUALQUER lugar da linha
                     if termo_limpo in texto_row:
                         resultados.append(row)
                 
@@ -134,7 +153,7 @@ else:
 
                         col1, col2 = st.columns(2)
                         with col1:
-                            if 'N/I' not in v_endereco and v_endereco != 'N/I':
+                            if 'N/I' not in v_endereco:
                                 query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                                 st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
                         with col2:
@@ -143,14 +162,14 @@ else:
                                 st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                         st.divider()
                 else:
-                    st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira', etc.")
+                    st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira'")
                     
         except FileNotFoundError:
-            st.error("❌ ArquIVO guia.xlsx NÃO ENCONTRADO!")
+            st.error("❌ Arquivo guia.xlsx não encontrado!")
         except Exception as e:
-            st.error(f"❌ ERRO: {str(e)}")
+            st.error(f"❌ Erro: {str(e)}")
     else:
-        st.info("👆 Digite QUALQUER PALAVRA e clique PESQUISAR")
+        st.info("👆 Toque na barra acima para pesquisar!")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
