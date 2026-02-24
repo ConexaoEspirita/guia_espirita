@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Estilo Profissional
+# 1. Configuração e Estilo Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -32,7 +32,7 @@ supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- TELA DE ACESSO ---
+# --- LOGIN ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -45,32 +45,28 @@ if not st.session_state.logado:
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 Pesquisar:", placeholder="Digite aqui...")
+    
+    # BUSCA AMPLIADA
+    busca = st.text_input("🔍 Digite o que procura (Nome, Cidade, Rua ou Dirigente):", placeholder="Ex: Geronimo")
 
     if busca:
         try:
+            # LÊ A PLANILHA USANDO A POSIÇÃO DAS COLUNAS (PARA NÃO ERRAR NOME)
             df = pd.read_excel("guia.xlsx").astype(str).replace('nan', '')
+            
+            # FILTRO QUE PROCURA EM TODAS AS COLUNAS AO MESMO TEMPO
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
-                cols = df.columns.tolist()
-                # Função inteligente para achar a coluna mesmo com números 1:, 2: na frente
-                def achar(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
-                
-                c_fant = achar(['fantasia'])
-                c_nome = achar(['nome'])
-                c_cid = achar(['cidade'])
-                c_end = achar(['endere', 'rua', 'local'])
-                c_resp = achar(['responsavel', 'dirigente', 'dono'])
-                c_cel = achar(['celular', 'whats', 'contato', 'fone'])
-
                 for _, row in res.iterrows():
-                    v_fantasia = row[c_fant] if c_fant else ""
-                    v_nome = row[c_nome] if c_nome else "Centro"
-                    v_cidade = row[c_cid] if c_cid else ""
-                    v_endereco = row[c_end] if c_end else ""
-                    v_responsavel = row[c_resp] if c_resp else "Não informado"
-                    v_celular = row[c_cel] if c_cel else ""
+                    # MAPEAMENTO POR POSIÇÃO (0=A, 1=B, 2=C, 3=D, 5=F, 6=G)
+                    # Não importa o que você escreveu no título, ele pega a gaveta certa
+                    v_fantasia = row.iloc[0] if len(row) > 0 else ""
+                    v_nome     = row.iloc[1] if len(row) > 1 else "Centro"
+                    v_cidade   = row.iloc[2] if len(row) > 2 else ""
+                    v_endereco = row.iloc[3] if len(row) > 3 else ""
+                    v_responsavel = row.iloc[5] if len(row) > 5 else "Não informado"
+                    v_celular  = row.iloc[6] if len(row) > 6 else ""
 
                     # Card Visual Estilo Placar
                     st.markdown(f"""
@@ -86,15 +82,19 @@ else:
                     c1, c2 = st.columns(2)
                     with c1:
                         if v_endereco:
-                            # MAPS: Link oficial Google Search com codificação
-                            q_end = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_end}")
+                            # MAPS CORRIGIDO: Link com barra e busca oficial
+                            q_maps = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_maps}")
                     with c2:
                         if v_celular:
-                            # WHATSAPP: Link com a barra / e 55 correta
+                            # WHATSAPP CORRIGIDO: Link com barra / e código 55
                             num = ''.join(filter(str.isdigit, v_celular))
                             if len(num) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
-            else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro: {e}")
-    else: st.info("Digite para pesquisar! 🙏")
+                    st.write("") 
+            else:
+                st.warning(f"Nenhum resultado para '{busca}'. Verifique a escrita.")
+        except Exception as e:
+            st.error(f"Erro ao ler a planilha: {e}")
+    else:
+        st.info("Digite um nome acima para pesquisar! 🙏")
