@@ -8,7 +8,6 @@ import unicodedata
 # CONFIGURAÇÃO DA PÁGINA
 # ==============================
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
-st.cache_data.clear()
 
 # ==============================
 # ESTILO VISUAL
@@ -65,80 +64,73 @@ if not st.session_state.logado:
             st.error("Dados incorretos!")
 
 # ==============================
-# ÁREA PRINCIPAL - 100% FUNCIONAL
+# ÁREA PRINCIPAL - VERSÃO FINAL LIMPA
 # ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
-        try:
-            # ✅ Lê APENAS a aba com dados
-            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            
-            # ✅ Remove coluna desnecessária e limpa nomes
-            if 'Unnamed: 0' in df.columns:
-                df = df.drop('Unnamed: 0', axis=1)
-            df.columns = [col.strip() for col in df.columns]
-            
-            # ✅ MAPEAMENTO EXATO baseado nas suas colunas
-            df = df.rename(columns={
-                'NOME FANTASIA': 'Nome Fantasia',
-                'NOME': 'Nome Real / Razão Social',
-                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
-                'ENDERECO': 'Endereço',
-                'PALESTRA PUBLICA': 'Palestra Pública',
-                'RESPONSAVEL': 'Responsável',
-                'CELULAR': 'Celular'
-            })
-            
-            st.success(f"✅ Carregado! {len(df)} centros espíritas encontrados")
-            
-            termo = limpar_busca(busca)
-            mascara = df.apply(lambda linha: linha.astype(str).apply(limpar_busca).str.contains(termo, na=False)).any(axis=1)
-            resultados = df[mascara].copy()
+        # Carrega e prepara os dados (sem mensagens)
+        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+        if 'Unnamed: 0' in df.columns:
+            df = df.drop('Unnamed: 0', axis=1)
+        df.columns = [col.strip() for col in df.columns]
+        
+        df = df.rename(columns={
+            'NOME FANTASIA': 'Nome Fantasia',
+            'NOME': 'Nome Real / Razão Social',
+            'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+            'ENDERECO': 'Endereço',
+            'PALESTRA PUBLICA': 'Palestra Pública',
+            'RESPONSAVEL': 'Responsável',
+            'CELULAR': 'Celular'
+        })
 
-            if not resultados.empty:
-                st.success(f"✅ {len(resultados)} resultado(s) encontrado(s)!")
-                for _, row in resultados.iterrows():
-                    # ✅ Dados seguros
-                    v_fantasia = row.get('Nome Fantasia', 'Não informado')
-                    v_nome_real = row.get('Nome Real / Razão Social', 'Centro Espírita')
-                    v_nome_real = f"{v_nome_real} 🕊️"
-                    v_cidade = row.get('Cidade', 'Não informada')
-                    v_endereco = row.get('Endereço', 'Não informado')
-                    v_palestra = row.get('Palestra Pública', '')
-                    v_resp = row.get('Responsável', 'Não informado')
-                    v_celular = row.get('Celular', '')
+        # ✅ BUSCA MELHORADA - case insensitive e múltiplas palavras
+        termos = limpar_busca(busca).split()
+        def busca_flexivel(linha):
+            texto_linha = " ".join(linha.astype(str).apply(limpar_busca))
+            return all(termo in texto_linha for termo in termos)
 
-                    # ✅ CARD PERFEITO
-                    st.markdown(f"""
-                    <div class="card-centro">
-                        <div class="nome-grande">{v_nome_real}</div>
-                        <div class="nome-fantasia">{v_fantasia}</div>
-                        <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                        <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                        <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                        {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
-                    </div>
-                    """, unsafe_allow_html=True)
+        mascara = df.apply(busca_flexivel, axis=1)
+        resultados = df[mascara].copy()
 
-                    # ✅ BOTÕES
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if v_endereco != 'Não informado':
-                            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
-                    with col2:
-                        if v_celular.strip():
-                            numero = ''.join(filter(str.isdigit, v_celular))
-                            if len(numero) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
-                    st.divider()
-            else:
-                st.warning("Nenhum resultado encontrado.")
-                
-        except Exception as erro:
-            st.error(f"❌ ERRO: {erro}")
+        # ✅ MOSTRA TODOS OS RESULTADOS
+        for _, row in resultados.iterrows():
+            v_fantasia = row.get('Nome Fantasia', 'Não informado')
+            v_nome_real = row.get('Nome Real / Razão Social', 'Centro Espírita')
+            v_nome_real = f"{v_nome_real} 🕊️"
+            v_cidade = row.get('Cidade', 'Não informada')
+            v_endereco = row.get('Endereço', 'Não informado')
+            v_palestra = row.get('Palestra Pública', '')
+            v_resp = row.get('Responsável', 'Não informado')
+            v_celular = row.get('Celular', '')
+
+            st.markdown(f"""
+            <div class="card-centro">
+                <div class="nome-grande">{v_nome_real}</div>
+                <div class="nome-fantasia">{v_fantasia}</div>
+                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if v_endereco != 'Não informado':
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
+            with col2:
+                if v_celular.strip():
+                    numero = ''.join(filter(str.isdigit, v_celular))
+                    if len(numero) >= 10:
+                        st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
+            st.divider()
+            
+        if resultados.empty:
+            st.warning("Nenhum resultado encontrado.")
     else:
         st.info("👆 Digite nome, cidade ou responsável para buscar!")
