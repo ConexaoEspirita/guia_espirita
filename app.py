@@ -137,13 +137,13 @@ else:
                 for _, row in resultados.iterrows():
 
                     # Pega pelo NOME DA COLUNA limpo
-                    v_fantasia = row["NOME FANTASIA"] if "NOME FANTASIA" in row else ""
-                    v_nome_real = row["NOME"] if "NOME" in row else ""
-                    v_cidade = row["CIDADE DO CENTRO ESPIRITA"] if "CIDADE DO CENTRO ESPIRITA" in row else ""
-                    v_endereco = row["ENDERECO"] if "ENDERECO" in row else ""
-                    v_palestra = row["PALESTRA PUBLICA"] if "PALESTRA PUBLICA" in row else ""
-                    v_resp = row["RESPONSAVEL"] if "RESPONSAVEL" in row else ""
-                    v_celular = row["CELULAR"] if "CELULAR" in row else ""
+                    v_fantasia = row.get("NOME FANTASIA", "")
+                    v_nome_real = row.get("NOME", "")
+                    v_cidade = row.get("CIDADE DO CENTRO ESPIRITA", "")
+                    v_endereco = row.get("ENDERECO", "")
+                    v_palestra = row.get("PALESTRA PUBLICA", "")
+                    v_resp = row.get("RESPONSAVEL", "")
+                    v_celular = row.get("CELULAR", "")
 
                     # Card visual
                     st.markdown(f"""
