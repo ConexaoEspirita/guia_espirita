@@ -15,8 +15,8 @@ st.markdown("""
         border-left: 8px solid #0047AB; margin-bottom: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
-    .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
+    .nome-completo { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.2; }
+    .nome-apelido { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 12px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
     .tag-palestra { background-color: #E3F2FD; color: #0D47A1; padding: 5px 10px; border-radius: 8px; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 8px; }
     
@@ -32,13 +32,12 @@ url = "https://fjqowpuzenqraugcmmtp.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqcW93cHV6ZW5xcmF1Z2NtbXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4Njk2NzQsImV4cCI6MjA4NzQ0NTY3NH0.otWbLrbW4zYOb8-PCZwHYP9vQIbcWCRP_drXHGwIjzw"
 supabase = create_client(url, key)
 
-# Função para busca inteligente (ignora acentos)
 def limpar(txt):
     return ''.join(c for c in unicodedata.normalize('NFD', str(txt)) if unicodedata.category(c) != 'Mn').lower()
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- ACESSO ---
+# --- LOGIN ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -50,59 +49,50 @@ if not st.session_state.logado:
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 O que você procura?", placeholder="Ex: Geronimo, Rio Preto...")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Ex: Ceder, Francisco de Assis...")
 
     if busca:
         try:
             df = pd.read_excel("guia.xlsx").astype(str).replace('nan', '')
-            
-            # Filtro que ignora acentos
             termo = limpar(busca)
             mascara = df.apply(lambda r: r.apply(limpar).str.contains(termo)).any(axis=1)
             res = df[mascara]
 
             if not res.empty:
-                cols = df.columns.tolist()
-                # Localizador de colunas por nome (não por número)
-                def f_col(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
-
-                c_nome = f_col(['nome'])
-                c_fant = f_col(['fantasia'])
-                c_resp = f_col(['responsavel', 'dirigente', 'dono'])
-                c_end  = f_col(['endere', 'rua', 'local'])
-                c_cid  = f_col(['cidade', 'municip'])
-                c_pal  = f_col(['palestra', 'dia'])
-                c_cel  = f_col(['celular', 'whats', 'contato', 'fone'])
-
                 for _, row in res.iterrows():
-                    n = row[c_nome] if c_nome else "Centro"
-                    fant = row[c_fant] if c_fant else ""
-                    resp = row[c_resp] if c_resp else "Não informado"
-                    end  = row[c_end] if c_end else ""
-                    cid  = row[c_cid] if c_cid else ""
-                    pal  = row[c_pal] if c_pal else ""
-                    cel  = row[c_cel] if c_cel else ""
+                    # MAPEAMENTO DIRETO POR POSIÇÃO PARA NÃO TER ERRO:
+                    # 0 = Nome Fantasia (Ex: CEDER)
+                    # 1 = Nome Real (Ex: Centro Espírita Francisco de Assis)
+                    # 2 = Cidade | 3 = Endereco | 4 = Palestra | 5 = Responsavel | 6 = Celular
+                    
+                    v_fantasia = row.iloc[0] if len(row) > 0 else ""
+                    v_nome_real = row.iloc[1] if len(row) > 1 else "Centro"
+                    v_cidade   = row.iloc[2] if len(row) > 2 else ""
+                    v_endereco = row.iloc[3] if len(row) > 3 else ""
+                    v_palestra = row.iloc[4] if len(row) > 4 else ""
+                    v_resp     = row.iloc[5] if len(row) > 5 else "Não informado"
+                    v_celular  = row.iloc[6] if len(row) > 6 else ""
 
-                    # Card Visual
+                    # Card Visual Corrigido: Nome Real em destaque, Fantasia embaixo
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-real">{n}</div>
-                            <div class="nome-fantasia">{fant}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
-                            <div class="info-texto">📍 {end}</div>
-                            <div class="info-texto">🏙️ {cid}</div>
-                            {f'<div class="tag-palestra">🗓️ Palestra: {pal}</div>' if pal else ''}
+                            <div class="nome-completo">{v_nome_real}</div>
+                            <div class="nome-apelido">{v_fantasia}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                            <div class="info-texto">📍 {v_endereco}</div>
+                            <div class="info-texto">🏙️ {v_cidade}</div>
+                            {f'<div class="tag-palestra">🗓️ Palestra: {v_palestra}</div>' if v_palestra else ''}
                         </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
-                        if end:
-                            q = urllib.parse.quote(f"{end}, {cid}")
+                        if v_endereco:
+                            q = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                             st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
-                        if cel:
-                            num = ''.join(filter(str.isdigit, cel))
+                        if v_celular:
+                            num = ''.join(filter(str.isdigit, v_celular))
                             if len(num) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
                     st.write("") 
