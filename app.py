@@ -31,7 +31,7 @@ def limpar_busca(texto):
     if pd.isna(texto):
         return ""
     texto = str(texto).lower().strip()
-    return re.sub(r'[^a-zA-Z0-9áàâãéêíóôõúç\s]', '', texto)
+    return re.sub(r'[^a-zA-Z0-9áàâãéêíóôõúç\\s]', '', texto)
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -72,6 +72,7 @@ else:
             st.rerun()
     
     termo = st.session_state.get("tem_busca", "").strip()
+    resultados = []
     
     if termo:
         try:
@@ -93,7 +94,6 @@ else:
                 })
                 
                 # BUSCA SIMPLES EM TODOS OS CAMPOS
-                resultados = []
                 termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
@@ -109,48 +109,94 @@ else:
                     
                     # Se o termo estiver QUALQUER lugar da linha
                     if termo_limpo in texto_row:
-                        resultados.append(row)
-                
-                if resultados:
-                    st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
-                    
-                    for idx, row in pd.DataFrame(resultados).iterrows():
-                        v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
-                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
-                        v_cidade = str(row.get('Cidade', 'N/I'))
-                        v_endereco = str(row.get('Endereço', 'N/I'))
-                        v_resp = str(row.get('Responsável', 'N/I'))
-                        v_celular = str(row.get('Celular', ''))
+                        resultados.append(row.to_dict())
 
-                        st.markdown(f"""
-                        <div class="card-centro">
-                            <div class="nome-grande">{v_nome_real}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if 'N/I' not in v_endereco and v_endereco != 'N/I':
-                                query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                                st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
-                        with col2:
-                            numero = ''.join(filter(str.isdigit, v_celular))
-                            if len(numero) >= 10:
-                                st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
-                        st.divider()
-                else:
-                    st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira', etc.")
-                    
         except FileNotFoundError:
-            st.error("❌ ArquIVO guia.xlsx NÃO ENCONTRADO!")
+            st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
         except Exception as e:
             st.error(f"❌ ERRO: {str(e)}")
+    
+    if resultados:
+        st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
+        
+        for idx, row in pd.DataFrame(resultados).iterrows():
+            v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
+            v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+            v_cidade = str(row.get('Cidade', 'N/I'))
+            v_endereco = str(row.get('Endereço', 'N/I'))
+            v_resp = str(row.get('Responsável', 'N/I'))
+            v_celular = str(row.get('Celular', ''))
+            v_palestras = str(row.get('Palestra Pública', ''))
+
+            # INÍCIO DO CARD
+            st.markdown(f"""
+            <div class="card-centro">
+                <div class="nome-grande">{v_nome_real}</div>
+                <div class="nome-fantasia">{v_fantasia}</div>
+            """, unsafe_allow_html=True)
+
+            # SEÇÃO PALESTRAS COM HORÁRIO E DIA
+            st.markdown("""
+            <div style="margin: 16px 0; padding: 16px; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border-radius: 16px; border-left: 5px solid #10B981; margin-bottom: 16px;">
+                <div style="color: #047857; font-weight: 700; font-size: 16px; margin-bottom: 12px;">📅 Palestras</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            """, unsafe_allow_html=True)
+
+            # Processa e exibe palestras
+            if v_palestras and v_palestras != 'N/I' and v_palestras.strip():
+                palestras = [p.strip() for p in v_palestras.split(',') if p.strip()]
+                for palestra in palestras:
+                    parts = palestra.split()
+                    dia = parts[0] if parts else ''
+                    horario = ' '.join(parts[1:]) if len(parts) > 1 else ''
+                    
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #10B981, #059669);
+                        color: white;
+                        padding: 8px 14px;
+                        border-radius: 20px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        margin: 2px;
+                        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.4);
+                        line-height: 1.3;
+                    ">
+                        {dia} • {horario}
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown('<div style="color: #6B7280; font-style: italic; font-size: 14px; padding: 8px 12px;">📌 Nenhuma palestra cadastrada</div>', unsafe_allow_html=True)
+
+            st.markdown("""
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # INFORMAÇÕES DO CENTRO
+            st.markdown(f"""
+            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # BOTÕES
+            col1, col2 = st.columns(2)
+            with col1:
+                if 'N/I' not in v_endereco and v_endereco != 'N/I':
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+            with col2:
+                numero = ''.join(filter(str.isdigit, v_celular))
+                if len(numero) >= 10:
+                    st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+            st.divider()
     else:
-        st.info("👆 Digite QUALQUER PALAVRA e clique PESQUISAR")
+        if termo:
+            st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira', etc.")
+        else:
+            st.info("👆 Digite QUALQUER PALAVRA e clique PESQUISAR")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
