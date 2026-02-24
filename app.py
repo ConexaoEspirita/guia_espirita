@@ -70,33 +70,4 @@ if not st.session_state.logado:
         else:
             st.error("❌ E-mail ou senha incorretos!")
 else:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-    
-    busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
-                         label_visibility="collapsed")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔎 PESQUISAR", use_container_width=True):
-            if busca.strip():
-                st.session_state.tem_busca = busca.strip()
-                st.rerun()
-    with col2:
-        if st.button("🗑️ LIMPAR", use_container_width=True):
-            st.session_state.tem_busca = ""
-            st.rerun()
-    
-    termo = st.session_state.get("tem_busca", "").strip()
-    resultados = []
-    
-    if termo:
-        try:
-            with st.spinner('🔍 Buscando centros espíritas...'):
-                df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-                if 'Unnamed: 0' in df.columns:
-                    df = df.drop('Unnamed: 0', axis=1)
-                
-                df.columns = df.columns.str.strip()
-                df = df.rename(columns={
-                    'NOME FANTASIA': 'Nome Fantasia',
-                    'NOME': 'Nome Real
+    st.markdown('<h1 class="titulo-premium">🕊️
