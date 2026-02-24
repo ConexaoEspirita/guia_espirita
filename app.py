@@ -124,14 +124,14 @@ else:
 
             for _, row in resultados.iterrows():
 
-                # USANDO POSIÇÃO FIXA DAS COLUNAS
-                v_fantasia = row.iloc[0]  # A
-                v_nome_real = row.iloc[1]  # B
-                v_cidade = row.iloc[2]  # C
-                v_endereco = row.iloc[3]  # D
-                v_palestra = row.iloc[4]  # E
-                v_resp = row.iloc[5]  # F
-                v_celular = row.iloc[6]  # G
+                # ✅ USANDO ORDEM CORRETA DAS COLUNAS
+                v_fantasia = row.iloc[0]  # A - NOME FANTASIA
+                v_nome_real = row.iloc[1]  # B - NOME
+                v_cidade = row.iloc[2]  # C - CIDADE DO CENTRO ESPIRITA
+                v_endereco = row.iloc[3]  # D - ENDERECO
+                v_palestra = row.iloc[4]  # E - PALESTRA PUBLICA
+                v_resp = row.iloc[5]  # F - RESPONSAVEL
+                v_celular = row.iloc[6]  # G - CELULAR
 
                 st.markdown(f"""
                 <div class="card-centro">
