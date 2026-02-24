@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 import urllib.parse
-import unicodedata
 import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
@@ -19,7 +18,6 @@ div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !im
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
-.conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -27,13 +25,20 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# BUSCA SIMPLES - SEM ACENTOS E FLEXIVEL
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
     texto = str(texto).lower().strip()
-    return re.sub(r'[^a-zA-Z0-9áàâãéêíóôõúç\s]', '', texto)
+    # Remove acentos e caracteres especiais
+    texto = re.sub(r'[àáâãäå]', 'a', texto)
+    texto = re.sub(r'[èéêë]', 'e', texto)
+    texto = re.sub(r'[ìíîï]', 'i', texto)
+    texto = re.sub(r'[òóôõö]', 'o', texto)
+    texto = re.sub(r'[ùúûü]', 'u', texto)
+    texto = re.sub(r'[ç]', 'c', texto)
+    return re.sub(r'[^a-z0-9\s]', '', texto)
 
-# Inicializa session_state
 if "logado" not in st.session_state:
     st.session_state.logado = False
 if "tem_busca" not in st.session_state:
@@ -59,36 +64,29 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # 🔍 BUSCA PERFEITA COM LIMPEZA TOTAL - TOCA E LIMPA!
-    st.markdown("### 🔍 **Pesquise centros espíritas**")
+    # BUSCA CLEAN E SIMPLES
+    busca = st.text_input("🔍 Nome, cidade ou responsável...", 
+                         placeholder="andre luiz, sao paulo, segunda-feira...",
+                         label_visibility="collapsed")
     
-    # Botão LIMPAR sempre disponível
-    col_limpar, col_busca = st.columns([1, 4])
-    with col_limpar:
-        if st.button("🧹 LIMPAR", use_container_width=True):
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        if st.button("🔎 PESQUISAR", use_container_width=True):
+            if busca.strip():
+                st.session_state.tem_busca = busca.strip()
+                st.rerun()
+            else:
+                st.warning("❌ Digite algo!")
+    with col2:
+        if st.button("🗑️ LIMPAR", use_container_width=True):
             st.session_state.tem_busca = ""
-            st.session_state.busca_input_perfeita = ""
             st.rerun()
-    
-    with col_busca:
-        busca = st.text_input("👆 Toque aqui - nome, cidade ou responsável...", 
-                             placeholder="Digite e aperte PESQUISAR",
-                             label_visibility="collapsed",
-                             key="busca_input_perfeita")
-    
-    # Botão PESQUISAR grande e tátil
-    if st.button("🔎 **PESQUISAR**", use_container_width=True):
-        if busca.strip():
-            st.session_state.tem_busca = busca.strip()
-            st.rerun()
-        else:
-            st.warning("❌ Digite algo para pesquisar!")
     
     termo = st.session_state.tem_busca.strip()
     
     if termo:
         try:
-            with st.spinner('🔍 Buscando centros espíritas...'):
+            with st.spinner('🔍 Buscando...'):
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
                 if 'Unnamed: 0' in df.columns:
                     df = df.drop('Unnamed: 0', axis=1)
@@ -108,24 +106,26 @@ else:
                 termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
-                    texto_row = " ".join([
+                    # Busca em todos os campos principais
+                    campos = [
                         limpar_busca(row.get('Nome Fantasia', '')),
                         limpar_busca(row.get('Nome Real / Razão Social', '')),
                         limpar_busca(row.get('Cidade', '')),
                         limpar_busca(row.get('Endereço', '')),
                         limpar_busca(row.get('Responsável', '')),
                         limpar_busca(row.get('Palestra Pública', ''))
-                    ])
+                    ]
                     
+                    texto_row = " ".join(campos)
                     if termo_limpo in texto_row:
                         resultados.append(row)
                 
                 if resultados:
-                    st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
+                    st.success(f"✨ {len(resultados)} resultado{'s' if len(resultados) != 1 else ''}")
                     
                     for idx, row in pd.DataFrame(resultados).iterrows():
                         v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
-                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro')) + " 🕊️"
                         v_cidade = str(row.get('Cidade', 'N/I'))
                         v_endereco = str(row.get('Endereço', 'N/I'))
                         v_resp = str(row.get('Responsável', 'N/I'))
@@ -152,14 +152,14 @@ else:
                                 st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                         st.divider()
                 else:
-                    st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira'")
+                    st.info("❌ Nada encontrado. Exemplo: andre luiz, sao paulo, joao")
                     
         except FileNotFoundError:
-            st.error("❌ Arquivo guia.xlsx não encontrado!")
+            st.error("❌ guia.xlsx não encontrado!")
         except Exception as e:
             st.error(f"❌ Erro: {str(e)}")
     else:
-        st.info("🧹 **Lado esquerdo:** LIMPA tudo | **Toque na barra** para digitar | **PESQUISAR** para buscar")
+        st.info("💡 Dica: 'andre luiz', 'sao paulo', 'joao', 'segunda'")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
@@ -167,5 +167,4 @@ else:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
             st.session_state.tem_busca = ""
-            st.session_state.busca_input_perfeita = ""
             st.rerun()
