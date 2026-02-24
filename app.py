@@ -14,12 +14,13 @@ st.markdown("""
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
+.palestra-info {color: #059669 !important;font-size: 14px !important;font-weight: 600 !important;display: flex;align-items: center;gap: 8px;}
 div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
-.search-input {width: 100%; padding: 16px 20px !important; border-radius: 12px !important; border: 2px solid #E5E7EB !important; font-size: 16px !important; transition: all 0.2s !important;}
-.search-input:focus {border-color: #3B82F6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;}
+.search-input {width: 100%; padding: 16px 20px 16px 50px !important; border-radius: 12px !important; border: 2px solid #E5E7EB !important; font-size: 16px !important; transition: all 0.2s !important; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%239C92AC' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 16px center !important;}
+.search-input:focus {border-color: #3B82F6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important; background-size: 18px !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -63,7 +64,7 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium" style="display: flex; align-items: center; justify-content: center; gap: 15px;">🕊️ Guia Espírita 🕊️</h1>', unsafe_allow_html=True)
     col1, col2 = st.columns([1, 2])
     with col1:
         email = st.text_input("📧 E-mail")
@@ -80,15 +81,14 @@ if not st.session_state.logado:
         else:
             st.error("❌ E-mail ou senha incorretos!")
 else:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium" style="display: flex; align-items: center; justify-content: center; gap: 15px;">🕊️ Guia Espírita 🕊️</h1>', unsafe_allow_html=True)
     
-    # ✅ FLUXO SIMPLIFICADO - SEM BOTAO "COMEÇAR PESQUISA"
+    # ✅ CAMPO LIMPO COM LUPA DISCRETA
     busca = st.text_input(
-        "🔍 Pesquise por nome, cidade ou responsável...", 
+        "",  # Label vazio
         placeholder="Ex: Joana, São Paulo, João, Luiz...",
         label_visibility="collapsed",
-        key="busca_principal",
-        help="🔍 Busca inteligente encontra Joana/Joanna, Luiz/Luís, João/John etc."
+        key="busca_principal"
     )
     
     col1, col2 = st.columns(2)
@@ -151,11 +151,13 @@ else:
                         v_endereco = str(row.get('Endereço', 'N/I'))
                         v_resp = str(row.get('Responsável', 'N/I'))
                         v_celular = str(row.get('Celular', ''))
+                        v_palestra = str(row.get('Palestra Pública', 'N/I'))
 
                         st.markdown(f"""
                         <div class="card-centro">
                             <div class="nome-grande">{v_nome_real}</div>
                             <div class="nome-fantasia">{v_fantasia}</div>
+                            <div class="palestra-info">🗣️ <b>Palestras:</b> {v_palestra}</div>
                             <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                             <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
                             <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
