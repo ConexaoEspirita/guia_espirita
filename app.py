@@ -16,10 +16,12 @@ st.markdown("""
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;line-height: 1.3;margin-bottom: 6px;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;margin-bottom: 10px;}
 .info-texto {color: #374151 !important;font-size: 13px !important;margin-bottom: 4px;display: flex;align-items: center;gap: 6px;}
-div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 48px !important;font-size: 16px !important;font-weight: 700 !important;}
+div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;transform: translateY(0);}
+div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
+div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;font-weight: 700 !important;}
 .conta-pequena {font-size: 12px !important;color: #6B7280 !important;margin-bottom: 12px !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
-@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.card-centro {padding: 24px !important;}.stButton > button, .stLinkButton > a {height: 52px !important;font-size: 18px !important;}}
+@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.card-centro {padding: 24px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}.stLinkButton > a {height: 50px !important;font-size: 16px !important;}}
 @media (max-width: 480px) {.nome-grande {font-size: 26px !important;}.info-texto {font-size: 15px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -37,6 +39,7 @@ def limpar_busca(texto):
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
+    st.session_state.ultima_busca = ""
 
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
@@ -58,20 +61,29 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # SIMPLIFICADO - BUSCA DIRETA SEM CONFLITO
+    # Campo de busca SIMPLES
     busca = st.text_input("🔍 Procure centros espíritas", 
-                         placeholder="Digite nome, cidade ou responsável...", 
+                         placeholder="Nome do centro, cidade ou responsável...", 
+                         value=st.session_state.ultima_busca,
                          label_visibility="collapsed")
     
-    if st.button("🔎 PESQUISAR", use_container_width=True):
+    # Botão PESQUISAR com feedback visual (AFUNDA NO CELULAR)
+    if st.button("🔎 PESQUISAR", use_container_width=True, help="Clique para buscar!"):
         if busca.strip():
-            st.session_state.busca = busca.strip()
+            st.session_state.ultima_busca = busca.strip()
+            st.session_state.busca_resultados = True
             st.rerun()
+        else:
+            st.warning("❌ Digite algo para pesquisar!")
     
-    # Usa busca do session_state OU input atual
-    termo_busca = st.session_state.get("busca", busca).strip()
+    # Limpar busca
+    if st.button("🗑️ LIMPAR", use_container_width=True):
+        st.session_state.ultima_busca = ""
+        st.session_state.busca_resultados = False
+        st.rerun()
     
-    if termo_busca:
+    # EXECUTA BUSCA
+    if st.session_state.get("busca_resultados", False) and st.session_state.ultima_busca.strip():
         try:
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
             if 'Unnamed: 0' in df.columns:
@@ -88,10 +100,9 @@ else:
                 'CELULAR': 'Celular'
             })
             
-            termo = limpar_busca(termo_busca)
+            termo = limpar_busca(st.session_state.ultima_busca)
             resultados = []
             
-            # Busca SIMPLES e EFICIENTE
             for idx, row in df.iterrows():
                 campos = [
                     limpar_busca(row.get('Nome Fantasia','')),
@@ -99,22 +110,17 @@ else:
                     limpar_busca(row.get('Cidade','')),
                     limpar_busca(row.get('Responsável',''))
                 ]
-                linha_completa = " ".join(campos)
-                
-                if termo in linha_completa and len(termo) >= 2:
+                if any(termo in campo for campo in campos if campo and len(termo) >= 2):
                     resultados.append(row)
 
-            resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
-
-            if not resultados_df.empty:
-                st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
-
-                for idx, row in resultados_df.iterrows():
+            if resultados:
+                st.markdown(f'<div class="conta-pequena">✨ Encontrados {len(resultados)} centro{"s" if len(resultados) != 1 else ""}!</div>', unsafe_allow_html=True)
+                
+                for idx, row in pd.DataFrame(resultados).iterrows():
                     v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
                     v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
                     v_cidade = str(row.get('Cidade', 'Não informada'))
                     v_endereco = str(row.get('Endereço', 'Não informado'))
-                    v_palestra = str(row.get('Palestra Pública', ''))
                     v_resp = str(row.get('Responsável', 'Não informado'))
                     v_celular = str(row.get('Celular', ''))
 
@@ -125,7 +131,6 @@ else:
                         <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                         <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
                         <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                        {'<div class="info-texto">🗓️ <b>Palestra:</b> ' + v_palestra + '</div>' if v_palestra.strip() else ''}
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -133,26 +138,25 @@ else:
                     with col1:
                         if 'Não informado' not in v_endereco:
                             query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ Ver no MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+                            st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
                     with col2:
                         numero = ''.join(filter(str.isdigit, v_celular))
                         if len(numero) >= 10:
                             st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                     st.divider()
             else:
-                st.warning("❌ Nenhum centro encontrado.")
+                st.warning("❌ Nenhum centro encontrado. Tente outro termo!")
+                
         except FileNotFoundError:
             st.error("❌ Arquivo guia.xlsx não encontrado!")
         except Exception as erro:
             st.error(f"❌ Erro: {str(erro)}")
-    else:
-        st.info("✨ Digite nome do centro, cidade ou responsável e clique PESQUISAR!")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
-            if "busca" in st.session_state:
-                del st.session_state.busca
+            st.session_state.ultima_busca = ""
+            st.session_state.busca_resultados = False
             st.rerun()
