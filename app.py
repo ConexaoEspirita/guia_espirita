@@ -121,7 +121,7 @@ else:
 
         try:
             # Lê a planilha
-            df = pd.read_excel("guia.xlsx").fillna("").astype(str)
+            df = pd.read_excel("guia.xlsx", header=0).fillna("").astype(str)
 
             # Limpa nomes das colunas (remove acento e espaços)
             df.columns = [limpar_texto(c) for c in df.columns]
