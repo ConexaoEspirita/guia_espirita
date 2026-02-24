@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo Profissional
+# 1. Configuração e Estilo
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -41,7 +41,7 @@ if not st.session_state.logado:
         res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
         if len(res.data) > 0:
             st.session_state.logado = True; st.rerun()
-        else: st.error("Incorreto!")
+        else: st.error("Dados incorretos!")
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
@@ -53,25 +53,16 @@ else:
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
-                cols = df.columns.tolist()
-                def achar(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
-                
-                c_fant = achar(['fantasia'])
-                c_nome = achar(['nome'])
-                c_cid = achar(['cidade'])
-                c_end = achar(['endere', 'rua', 'local'])
-                c_resp = achar(['responsavel', 'dirigente', 'dono'])
-                c_cel = achar(['celular', 'whats', 'contato', 'fone'])
-
                 for _, row in res.iterrows():
-                    v_fantasia = row[c_fant] if c_fant else ""
-                    v_nome = row[c_nome] if c_nome else "Centro"
-                    v_cidade = row[c_cid] if c_cid else ""
-                    v_endereco = row[c_end] if c_end else ""
-                    v_responsavel = row[c_resp] if c_resp else "Não informado"
-                    v_celular = row[c_cel] if c_cel else ""
+                    # Puxando dados pelas colunas do seu Excel (Ajustado para os nomes reais)
+                    v_fantasia = row.get('Nome Fantasia', '')
+                    v_nome = row.get('Nome', 'Centro')
+                    v_cidade = row.get('Cidade', '')
+                    v_endereco = row.get('Endereco', row.get('Endereço', ''))
+                    v_responsavel = row.get('Responsavel', row.get('Responsável', ''))
+                    v_celular = row.get('Celular', '')
 
-                    # Card Visual Estilo Placar
+                    # Card Visual
                     st.markdown(f"""
                         <div class="card-centro">
                             <div class="nome-real">{v_nome}</div>
@@ -85,16 +76,16 @@ else:
                     c1, c2 = st.columns(2)
                     with c1:
                         if v_endereco:
-                            # MAPS CORRIGIDO: Formato oficial do Google Search
-                            q_end = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_end}")
-                    with col2:
+                            # MAPS: Link oficial Google
+                            q_maps = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_maps}")
+                    with c2:
                         if v_celular:
-                            # WHATSAPP CORRIGIDO: Agora com a barra / e o 55
-                            num = ''.join(filter(str.isdigit, v_celular))
-                            if len(num) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
+                            # WHATSAPP: Link com barra e 55
+                            so_nums = ''.join(filter(str.isdigit, v_celular))
+                            if len(so_nums) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{so_nums}")
                     st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro ao carregar dados.")
+        except Exception as e: st.error(f"Erro ao carregar dados: {e}")
     else: st.info("Digite para pesquisar! 🙏")
