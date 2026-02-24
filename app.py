@@ -13,56 +13,65 @@ st.set_page_config(
     layout="centered"
 )
 
-# Limpa cache para sempre atualizar os dados
 st.cache_data.clear()
 
 # ==============================
-# ESTILO VISUAL
+# ESTILO PREMIUM
 # ==============================
 st.markdown("""
-    <style>
-    .stApp { background-color: #F8F9FA; }
+<style>
 
-    .card-centro {
-        background-color: white;
-        padding: 20px;
-        border-radius: 15px;
-        border-left: 8px solid #0047AB;
-        margin-bottom: 15px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
+.stApp {
+    background: linear-gradient(to bottom, #F8F9FA, #E9F2FF);
+}
 
-    .nome-grande {
-        color: #0047AB;
-        font-size: 26px;
-        font-weight: bold;
-        line-height: 1.1;
-    }
+.card-centro {
+    background-color: white;
+    padding: 25px;
+    border-radius: 18px;
+    border-left: 10px solid #0047AB;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+    transition: 0.3s;
+}
 
-    .nome-fantasia {
-        color: #5CACE2 !important;
-        font-size: 17px !important;
-        font-weight: 500;
-        font-style: italic;
-        margin-bottom: 12px;
-        display: block;
-    }
+.card-centro:hover {
+    transform: scale(1.01);
+    box-shadow: 0 12px 22px rgba(0,0,0,0.12);
+}
 
-    .info-texto {
-        color: #444;
-        font-size: 14px;
-        margin-bottom: 4px;
-    }
+.nome-grande {
+    color: #003366;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
 
-    div.stLinkButton > a {
-        width: 100% !important;
-        font-weight: bold !important;
-        height: 45px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    </style>
+.nome-fantasia {
+    color: #5CACE2;
+    font-size: 18px;
+    font-style: italic;
+    margin-top: -5px;
+    margin-bottom: 15px;
+}
+
+.info-texto {
+    color: #444;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+div.stLinkButton > a {
+    width: 100% !important;
+    font-weight: bold !important;
+    height: 48px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
 # ==============================
@@ -70,27 +79,22 @@ st.markdown("""
 # ==============================
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
-
 supabase = create_client(url, key)
+
 # ==============================
-# FUNÇÕES AUXILIARES
+# FUNÇÕES
 # ==============================
 def limpar_busca(texto):
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
-
 # ==============================
-# CONTROLE DE LOGIN
+# LOGIN
 # ==============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
-
-# ==============================
-# TELA DE LOGIN
-# ==============================
 if not st.session_state.logado:
 
     st.title("🕊️ Guia Espírita 🕊️")
@@ -121,70 +125,70 @@ else:
 
     st.title("🕊️ Guia Espírita")
 
-    busca = st.text_input(
-        "🔍 O que você procura?",
-        placeholder="Digite aqui..."
-    )
+    busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
-        try:
-            # Lê planilha
-            df = pd.read_excel("guia.xlsx").astype(str).replace("nan", "")
 
-            termo = limpar_busca(busca)
+        df = pd.read_excel("guia.xlsx").astype(str).replace("nan", "")
+        termo = limpar_busca(busca)
 
-            mascara = df.apply(
-                lambda linha: linha.apply(limpar_busca).str.contains(termo)
-            ).any(axis=1)
+        mascara = df.apply(
+            lambda linha: linha.apply(limpar_busca).str.contains(termo)
+        ).any(axis=1)
 
-            resultados = df[mascara]
+        resultados = df[mascara]
 
-            if not resultados.empty:
+        if not resultados.empty:
 
-                for _, row in resultados.iterrows():
+            for _, row in resultados.iterrows():
 
-                    v_fantasia = row.iloc[0]
-                    v_nome_real = row.iloc[1]
-                    v_cidade = row.iloc[2]
-                    v_endereco = row.iloc[3]
-                    v_palestra = row.iloc[4]
-                    v_resp = row.iloc[5]
-                    v_celular = row.iloc[6]
+                v_fantasia = row.iloc[0]
+                v_nome_real = row.iloc[1]
+                v_cidade = row.iloc[2]
+                v_endereco = row.iloc[3]
+                v_palestra = row.iloc[4]
+                v_resp = row.iloc[5]
+                v_celular = row.iloc[6]
 
-                    # CARD VISUAL
-                    st.markdown(f"""
-                        <div class="card-centro">
-                            <div class="nome-grande">{v_nome_real}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                            <div class="info-texto">📍 {v_endereco}</div>
-                            <div class="info-texto">🏙️ {v_cidade}</div>
-                            {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra else ''}
-                        </div>
-                    """, unsafe_allow_html=True)
+                # CARD
+                st.markdown(f"""
+                <div class="card-centro">
 
-                    col1, col2 = st.columns(2)
+                    <div style="text-align:center;">
+                        <div class="nome-grande">{v_nome_real}</div>
+                        <div class="nome-fantasia">{v_fantasia}</div>
+                    </div>
 
-                    # GOOGLE MAPS (corrigido)
-                    with col1:
-                        if v_endereco:
-                            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-                            st.link_button("🗺️ MAPS", link_maps)
+                    <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                    <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                    <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                    {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra else ''}
 
-                    # WHATSAPP (corrigido)
-                    with col2:
-                        if v_celular:
-                            numero = ''.join(filter(str.isdigit, v_celular))
-                            if len(numero) >= 10:
-                                link_whats = f"https://wa.me/55{numero}"
-                                st.link_button("💬 WHATSAPP", link_whats)
+                </div>
+                """, unsafe_allow_html=True)
 
-                    st.write("")
+                col1, col2 = st.columns(2)
 
-            else:
-                st.warning("Nenhum resultado encontrado.")
+                # MAPS
+                with col1:
+                    if v_endereco:
+                        query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                        link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
+                        st.link_button("🗺️ GOOGLE MAPS", link_maps)
 
-        except Exception as erro:
-            st.error(f"Erro: {erro}")
+                # WHATSAPP
+                with col2:
+                    if v_celular and v_celular.strip() != "":
+                        numero = ''.join(filter(str.isdigit, v_celular))
 
+                        if len(numero) >= 10:
+                            if not numero.startswith("55"):
+                                numero = "55" + numero
+
+                            link_whats = f"https://wa.me/{numero}"
+                            st.link_button("💬 WHATSAPP", link_whats)
+
+                st.write("")
+
+        else:
+            st.warning("Nenhum resultado encontrado.")
