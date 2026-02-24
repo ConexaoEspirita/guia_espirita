@@ -11,13 +11,17 @@ st.markdown("""
     .stApp { background-color: #F8F9FA; }
     .card-centro {
         background-color: white; padding: 20px; border-radius: 15px;
-        border-left: 8px solid #0047AB; margin-bottom: 12px;
+        border-left: 8px solid #0047AB; margin-bottom: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
-    div.stLinkButton > a { width: 100% !important; font-weight: bold !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+    
+    div.stLinkButton > a {
+        width: 100% !important; font-weight: bold !important; height: 45px !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -41,7 +45,7 @@ if not st.session_state.logado:
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
+    busca = st.text_input("🔍 Pesquisar:", placeholder="Digite aqui...")
 
     if busca:
         try:
@@ -49,40 +53,48 @@ else:
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
+                cols = df.columns.tolist()
+                # Função inteligente para achar a coluna mesmo com números 1:, 2: na frente
+                def achar(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
+                
+                c_fant = achar(['fantasia'])
+                c_nome = achar(['nome'])
+                c_cid = achar(['cidade'])
+                c_end = achar(['endere', 'rua', 'local'])
+                c_resp = achar(['responsavel', 'dirigente', 'dono'])
+                c_cel = achar(['celular', 'whats', 'contato', 'fone'])
+
                 for _, row in res.iterrows():
-                    # PEGA PELA POSIÇÃO DA COLUNA (A=0, B=1, C=2, D=3, E=4, F=5, G=6)
-                    v_fantasia = row.iloc[0] # Coluna A
-                    v_nome     = row.iloc[1] # Coluna B
-                    v_cidade   = row.iloc[2] # Coluna C
-                    v_endereco = row.iloc[3] # Coluna D
-                    v_palestra = row.iloc[4] # Coluna E
-                    v_resp     = row.iloc[5] # Coluna F
-                    v_celular  = row.iloc[6] # Coluna G
+                    v_fantasia = row[c_fant] if c_fant else ""
+                    v_nome = row[c_nome] if c_nome else "Centro"
+                    v_cidade = row[c_cid] if c_cid else ""
+                    v_endereco = row[c_end] if c_end else ""
+                    v_responsavel = row[c_resp] if c_resp else "Não informado"
+                    v_celular = row[c_cel] if c_cel else ""
 
                     # Card Visual Estilo Placar
                     st.markdown(f"""
                         <div class="card-centro">
                             <div class="nome-real">{v_nome}</div>
                             <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {v_responsavel}</div>
                             <div class="info-texto">📍 {v_endereco}</div>
                             <div class="info-texto">🏙️ {v_cidade}</div>
-                            <div class="info-texto">🗓️ {v_palestra}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
                         if v_endereco:
-                            # MAPS: Link oficial Google corrigido
-                            q = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
+                            # MAPS: Link oficial Google Search com codificação
+                            q_end = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_end}")
                     with c2:
                         if v_celular:
-                            # WHATSAPP: Limpa traços e espaços automaticamente
+                            # WHATSAPP: Link com a barra / e 55 correta
                             num = ''.join(filter(str.isdigit, v_celular))
                             if len(num) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
-                    st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro ao carregar dados.")
+        except Exception as e: st.error(f"Erro: {e}")
+    else: st.info("Digite para pesquisar! 🙏")
