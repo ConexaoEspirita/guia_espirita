@@ -5,13 +5,13 @@ import urllib.parse
 import unicodedata
 
 # ==============================
-# CONFIGURAÇÃO
+# CONFIGURAÇÃO DA PÁGINA
 # ==============================
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 st.cache_data.clear()
 
 # ==============================
-# ESTILO PREMIUM
+# ESTILO VISUAL PROFISSIONAL
 # ==============================
 st.markdown("""
 <style>
@@ -64,19 +64,28 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # ==============================
-# FUNÇÃO BUSCA
+# FUNÇÕES AUXILIARES
 # ==============================
+def limpar_texto(texto):
+    """Remove acentos e espaços extras"""
+    texto = unicodedata.normalize('NFD', str(texto))
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    return texto.strip().upper()
+
 def limpar_busca(texto):
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
 # ==============================
-# LOGIN
+# CONTROLE DE LOGIN
 # ==============================
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
+# ==============================
+# TELA DE LOGIN
+# ==============================
 if not st.session_state.logado:
 
     st.title("🕊️ Guia Espírita 🕊️")
@@ -106,61 +115,69 @@ else:
 
     st.title("🕊️ Guia Espírita")
 
-    busca = st.text_input("🔍 O que você procura?")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
 
-        df = pd.read_excel("guia.xlsx").fillna("").astype(str)
+        try:
+            # Lê a planilha
+            df = pd.read_excel("guia.xlsx").fillna("").astype(str)
 
-        termo = limpar_busca(busca)
+            # Limpa nomes das colunas (remove acento e espaços)
+            df.columns = [limpar_texto(c) for c in df.columns]
 
-        mascara = df.apply(
-            lambda linha: linha.apply(limpar_busca).str.contains(termo)
-        ).any(axis=1)
+            termo = limpar_busca(busca)
 
-        resultados = df[mascara]
+            # Mascara de busca em qualquer coluna
+            mascara = df.apply(lambda linha: linha.apply(limpar_busca).str.contains(termo)).any(axis=1)
+            resultados = df[mascara]
 
-        if not resultados.empty:
+            if not resultados.empty:
 
-            for _, row in resultados.iterrows():
+                for _, row in resultados.iterrows():
 
-                # ✅ USANDO ORDEM CORRETA DAS COLUNAS
-                v_fantasia = row.iloc[0]  # A - NOME FANTASIA
-                v_nome_real = row.iloc[1]  # B - NOME
-                v_cidade = row.iloc[2]  # C - CIDADE DO CENTRO ESPIRITA
-                v_endereco = row.iloc[3]  # D - ENDERECO
-                v_palestra = row.iloc[4]  # E - PALESTRA PUBLICA
-                v_resp = row.iloc[5]  # F - RESPONSAVEL
-                v_celular = row.iloc[6]  # G - CELULAR
+                    # Pega pelo NOME DA COLUNA limpo
+                    v_fantasia = row["NOME FANTASIA"] if "NOME FANTASIA" in row else ""
+                    v_nome_real = row["NOME"] if "NOME" in row else ""
+                    v_cidade = row["CIDADE DO CENTRO ESPIRITA"] if "CIDADE DO CENTRO ESPIRITA" in row else ""
+                    v_endereco = row["ENDERECO"] if "ENDERECO" in row else ""
+                    v_palestra = row["PALESTRA PUBLICA"] if "PALESTRA PUBLICA" in row else ""
+                    v_resp = row["RESPONSAVEL"] if "RESPONSAVEL" in row else ""
+                    v_celular = row["CELULAR"] if "CELULAR" in row else ""
 
-                st.markdown(f"""
-                <div class="card-centro">
-                    <div class="nome-grande">{v_nome_real}</div>
-                    <div class="nome-fantasia">{v_fantasia}</div>
+                    # Card visual
+                    st.markdown(f"""
+                        <div class="card-centro">
+                            <div class="nome-grande">{v_nome_real}</div>
+                            <div class="nome-fantasia">{v_fantasia}</div>
 
-                    <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                    <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                    <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                    {f'<div class="info-texto">🗓️ <b>Palestra Pública:</b> {v_palestra}</div>' if v_palestra else ''}
-                </div>
-                """, unsafe_allow_html=True)
+                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                            {f'<div class="info-texto">🗓️ <b>Palestra Pública:</b> {v_palestra}</div>' if v_palestra else ''}
+                        </div>
+                    """, unsafe_allow_html=True)
 
-                col1, col2 = st.columns(2)
+                    # Botões
+                    col1, col2 = st.columns(2)
 
-                with col1:
-                    if v_endereco:
-                        query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                        link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-                        st.link_button("🗺️ GOOGLE MAPS", link_maps)
+                    with col1:
+                        if v_endereco:
+                            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
+                            st.link_button("🗺️ GOOGLE MAPS", link_maps)
 
-                with col2:
-                    if v_celular.strip() != "":
-                        numero = ''.join(filter(str.isdigit, v_celular))
-                        if len(numero) >= 10:
-                            if not numero.startswith("55"):
-                                numero = "55" + numero
-                            link_whats = f"https://wa.me/{numero}"
-                            st.link_button("💬 WHATSAPP", link_whats)
+                    with col2:
+                        if v_celular.strip() != "":
+                            numero = ''.join(filter(str.isdigit, v_celular))
+                            if len(numero) >= 10:
+                                if not numero.startswith("55"):
+                                    numero = "55" + numero
+                                link_whats = f"https://wa.me/{numero}"
+                                st.link_button("💬 WHATSAPP", link_whats)
 
-        else:
-            st.warning("Nenhum resultado encontrado.")
+            else:
+                st.warning("Nenhum resultado encontrado.")
+
+        except Exception as e:
+            st.error(f"Erro: {e}")
