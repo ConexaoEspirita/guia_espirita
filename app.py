@@ -18,6 +18,8 @@ div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !im
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
+.search-input {width: 100%; padding: 16px 20px !important; border-radius: 12px !important; border: 2px solid #E5E7EB !important; font-size: 16px !important; transition: all 0.2s !important;}
+.search-input:focus {border-color: #3B82F6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -25,7 +27,7 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# BUSCA FLEXÍVEL SEM ACENTOS
+# BUSCA FLEXÍVEL MELHORADA - VARIACOES DE NOMES
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
@@ -37,6 +39,25 @@ def limpar_busca(texto):
     texto = re.sub(r'[ùúûü]', 'u', texto)
     texto = re.sub(r'[ç]', 'c', texto)
     return re.sub(r'[^a-z0-9\s]', '', texto)
+
+# VARIACOES COMUNS DE NOMES
+def expandir_variacoes(termo):
+    variacoes = {
+        'joana': ['joana', 'joanna', 'johanna', 'joanne', 'juana'],
+        'maria': ['maria', 'marie', 'mariana', 'mary', 'maira'],
+        'ana': ['ana', 'anna', 'anne', 'ania'],
+        'luiz': ['luiz', 'luis', 'luís', 'lewis'],
+        'carlos': ['carlos', 'charles'],
+        'fernando': ['fernando', 'nando'],
+        'joao': ['joao', 'joão', 'john', 'jonas'],
+        'pedro': ['pedro', 'peter'],
+        'francisco': ['francisco', 'francis', 'chico']
+    }
+    
+    termo_limpo = limpar_busca(termo)
+    if termo_limpo in variacoes:
+        return variacoes[termo_limpo]
+    return [termo_limpo]
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -61,38 +82,31 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # FLUXO PERFEITO: LIMPAR → BUSCA → PESQUISAR
-    if "modo_limpo" not in st.session_state:
-        st.session_state.modo_limpo = True
+    # ✅ FLUXO SIMPLIFICADO - SEM BOTAO "COMEÇAR PESQUISA"
+    busca = st.text_input(
+        "🔍 Pesquise por nome, cidade ou responsável...", 
+        placeholder="Ex: Joana, São Paulo, João, Luiz...",
+        label_visibility="collapsed",
+        key="busca_principal",
+        help="🔍 Busca inteligente encontra Joana/Joanna, Luiz/Luís, João/John etc."
+    )
     
-    if st.session_state.modo_limpo:
-        # PASSO 1: Botão LIMPAR/Começar
-        if st.button("🧹 **COMEÇAR PESQUISA**", use_container_width=True):
-            st.session_state.modo_limpo = False
-            st.rerun()
-    else:
-        # PASSO 2: Campo de busca LIMPO
-        busca = st.text_input("🔍 Nome, cidade ou responsável...", 
-                             placeholder="andre luiz, sao paulo, joao...",
-                             label_visibility="collapsed")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔎 **PESQUISAR**", use_container_width=True):
-                if busca.strip():
-                    st.session_state.tem_busca = busca.strip()
-                    st.rerun()
-        with col2:
-            if st.button("🧹 **LIMPAR**", use_container_width=True):
-                st.session_state.modo_limpo = True
-                st.session_state.tem_busca = ""
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔎 **PESQUISAR**", use_container_width=True):
+            if busca.strip():
+                st.session_state.tem_busca = busca.strip()
                 st.rerun()
+    with col2:
+        if st.button("🧹 **LIMPAR**", use_container_width=True):
+            st.session_state.tem_busca = ""
+            st.rerun()
     
-    # EXECUTA BUSCA
+    # EXECUTA BUSCA MELHORADA
     termo = st.session_state.get("tem_busca", "").strip()
     if termo:
         try:
-            with st.spinner('🔍 Buscando...'):
+            with st.spinner('🔍 Buscando com variações de nomes...'):
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
                 if 'Unnamed: 0' in df.columns:
                     df = df.drop('Unnamed: 0', axis=1)
@@ -108,8 +122,9 @@ else:
                     'CELULAR': 'Celular'
                 })
                 
+                # 🔍 BUSCA FLEXÍVEL EM MÚLTIPLAS COLUNAS
+                todas_variacoes = expandir_variacoes(termo)
                 resultados = []
-                termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
                     texto_row = " ".join([
@@ -121,13 +136,15 @@ else:
                         limpar_busca(row.get('Palestra Pública', ''))
                     ])
                     
-                    if termo_limpo in texto_row:
+                    # ✅ VERIFICA QUALQUER VARIAÇÃO DO TERMO
+                    if any(variacao in texto_row for variacao in todas_variacoes):
                         resultados.append(row)
                 
                 if resultados:
-                    st.success(f"✨ {len(resultados)} resultado{'s' if len(resultados) != 1 else ''}")
+                    df_resultados = pd.DataFrame(resultados)
+                    st.success(f"✨ {len(resultados)} resultado{'s' if len(resultados) != 1 else ''} para '{termo}'")
                     
-                    for idx, row in pd.DataFrame(resultados).iterrows():
+                    for idx, row in df_resultados.iterrows():
                         v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
                         v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro')) + " 🕊️"
                         v_cidade = str(row.get('Cidade', 'N/I'))
@@ -147,7 +164,7 @@ else:
 
                         col1, col2 = st.columns(2)
                         with col1:
-                            if 'N/I' not in v_endereco:
+                            if 'N/I' not in v_endereco and v_endereco.strip():
                                 query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                                 st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
                         with col2:
@@ -156,7 +173,7 @@ else:
                                 st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                         st.divider()
                 else:
-                    st.info("❌ Nada encontrado")
+                    st.info(f"❌ Nada encontrado para '{termo}'. Tente: Joana (acha Joanna), São Paulo, João, Luiz...")
                     
         except FileNotFoundError:
             st.error("❌ guia.xlsx não encontrado!")
@@ -169,5 +186,4 @@ else:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
             st.session_state.tem_busca = ""
-            st.session_state.modo_limpo = True
             st.rerun()
