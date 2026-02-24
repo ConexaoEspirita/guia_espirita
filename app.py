@@ -96,7 +96,7 @@ if not st.session_state.logado:
             st.error("Dados incorretos!")
 
 # ==============================
-# ÁREA PRINCIPAL
+# ÁREA PRINCIPAL - COM PLANILHAS ORDENADAS
 # ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
@@ -104,35 +104,43 @@ else:
 
     if busca:
         try:
-            # Lê planilha e limpa colunas
-            df = pd.read_excel("guia.xlsx", dtype=str).fillna("")
-            df.columns = [col.strip() for col in df.columns]  # remove espaços extras
-            df = df.rename(columns={
-                "Nome Fantasia": "Nome Fantasia",
-                "Nome Real / Razão Social": "Nome Real / Razão Social",
-                "Cidade": "Cidade",
-                "Endereço": "Endereço",
-                "Palestra Pública": "Palestra Pública",
-                "Responsável": "Responsável",
-                "Celular": "Celular"
-            })
+            # Lê TODAS as planilhas ORDENADAS alfabeticamente
+            todas_abas = pd.read_excel("guia.xlsx", sheet_name=None)
+            abas_ordenadas = sorted(todas_abas.keys())  # ✅ ORDEM ALFABÉTICA
+            st.info(f"📊 Lidas {len(abas_ordenadas)} abas: {', '.join(abas_ordenadas[:5])}{'...' if len(abas_ordenadas)>5 else ''}")
+            
+            dfs_combinados = []
+            for aba in abas_ordenadas:
+                df_aba = todas_abas[aba].fillna("")
+                df_aba.columns = [col.strip() for col in df_aba.columns]
+                df_aba = df_aba.rename(columns={
+                    "Nome Fantasia": "Nome Fantasia",
+                    "Nome Real / Razão Social": "Nome Real / Razão Social",
+                    "Cidade": "Cidade",
+                    "Endereço": "Endereço",
+                    "Palestra Pública": "Palestra Pública",
+                    "Responsável": "Responsável",
+                    "Celular": "Celular"
+                })
+                dfs_combinados.append(df_aba)
+
+            df = pd.concat(dfs_combinados, ignore_index=True)
 
             termo = limpar_busca(busca)
             mascara = df.apply(lambda linha: linha.apply(limpar_busca).str.contains(termo)).any(axis=1)
             resultados = df[mascara]
 
             if not resultados.empty:
+                st.success(f"✅ {len(resultados)} resultado(s) encontrado(s)!")
                 for _, row in resultados.iterrows():
-                    # Usando nomes de coluna limpos
                     v_fantasia = row["Nome Fantasia"]
-                    v_nome_real = row["Nome Real / Razão Social"] + " 🕊️"  # adiciona pombinha
+                    v_nome_real = row["Nome Real / Razão Social"] + " 🕊️"
                     v_cidade = row["Cidade"]
                     v_endereco = row["Endereço"]
                     v_palestra = row["Palestra Pública"]
                     v_resp = row["Responsável"]
                     v_celular = row["Celular"]
 
-                    # CARD VISUAL
                     st.markdown(f"""
                     <div class="card-centro">
                         <div class="nome-grande">{v_nome_real}</div>
@@ -144,7 +152,6 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # BOTÕES MAPS E WHATSAPP
                     col1, col2 = st.columns(2)
                     with col1:
                         if v_endereco:
@@ -160,3 +167,5 @@ else:
                 st.warning("Nenhum resultado encontrado.")
         except Exception as erro:
             st.error(f"Erro: {erro}")
+    else:
+        st.info("👆 Digite algo para buscar nos centros espíritas!")
