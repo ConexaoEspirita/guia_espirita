@@ -99,7 +99,7 @@ if not st.session_state.logado:
 # ÁREA PRINCIPAL
 # ==============================
 else:
-    st.title("🕊️ Guia Espírita")
+    st.title("🕊️ Guia Espírita 🕊️")
     busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
@@ -107,6 +107,15 @@ else:
             # Lê planilha e limpa colunas
             df = pd.read_excel("guia.xlsx", dtype=str).fillna("")
             df.columns = [col.strip() for col in df.columns]  # remove espaços extras
+            df = df.rename(columns={
+                "Nome Fantasia": "Nome Fantasia",
+                "Nome Real / Razão Social": "Nome Real / Razão Social",
+                "Cidade": "Cidade",
+                "Endereço": "Endereço",
+                "Palestra Pública": "Palestra Pública",
+                "Responsável": "Responsável",
+                "Celular": "Celular"
+            })
 
             termo = limpar_busca(busca)
             mascara = df.apply(lambda linha: linha.apply(limpar_busca).str.contains(termo)).any(axis=1)
@@ -114,9 +123,9 @@ else:
 
             if not resultados.empty:
                 for _, row in resultados.iterrows():
-                    # Lendo pelos nomes das colunas
+                    # Usando nomes de coluna limpos
                     v_fantasia = row["Nome Fantasia"]
-                    v_nome_real = row["Nome Real / Razão Social"]
+                    v_nome_real = row["Nome Real / Razão Social"] + " 🕊️"  # adiciona pombinha
                     v_cidade = row["Cidade"]
                     v_endereco = row["Endereço"]
                     v_palestra = row["Palestra Pública"]
