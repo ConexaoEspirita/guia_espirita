@@ -3,9 +3,8 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo "Placar Profissional"
+# 1. Estilo Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
-
 st.markdown("""
     <style>
     .stApp { background-color: #F8F9FA; }
@@ -17,14 +16,7 @@ st.markdown("""
     .nome-principal { color: #0047AB; font-size: 26px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2; font-size: 17px; font-weight: 500; margin-bottom: 12px; font-style: italic; }
     .info-texto { color: #555; font-size: 15px; margin-bottom: 4px; }
-    .tag-palestra { 
-        background-color: #D4EDDA; color: #155724; padding: 5px 10px; 
-        border-radius: 8px; font-size: 14px; font-weight: bold; display: inline-block; margin-top: 10px;
-    }
-    div.stLinkButton > a { 
-        width: 100% !important; font-size: 15px !important; font-weight: bold !important; 
-        height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important;
-    }
+    .tag-palestra { background-color: #D4EDDA; color: #155724; padding: 5px 10px; border-radius: 8px; font-size: 14px; font-weight: bold; display: inline-block; margin-top: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -34,35 +26,21 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZq
 supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
-if 'usuario_email' not in st.session_state: st.session_state.usuario_email = ""
 
-# ⚠️ COLOQUE SEU E-MAIL DE ADMIN AQUI ⚠️
-EMAIL_MESTRE = "seu-email@gmail.com" 
-
-# --- TELA DE ACESSO ---
+# --- ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
-    aba1, aba2 = st.tabs(["🔐 Entrar", "📝 Criar Conta"])
-    with aba1:
-        e = st.text_input("E-mail", key="l_e").strip().lower()
-        s = st.text_input("Senha", type="password", key="l_s")
-        if st.button("ACESSAR GUIA"):
-            res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
-            if len(res.data) > 0:
-                supabase.table("acessos").insert({"email": e, "status": "ENTRADA"}).execute()
-                st.session_state.logado = True; st.session_state.usuario_email = e; st.rerun()
-            else: st.error("Incorreto!")
+    e = st.text_input("E-mail").strip().lower()
+    s = st.text_input("Senha", type="password")
+    if st.button("ENTRAR NO GUIA"):
+        res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
+        if len(res.data) > 0:
+            st.session_state.logado = True; st.rerun()
+        else: st.error("Incorreto!")
 else:
-    # BANNER DE BOAS-VINDAS 🕊️
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita 🕊️")
-    
-    if st.sidebar.button("🚪 Sair do Guia"): 
-        supabase.table("acessos").insert({"email": st.session_state.usuario_email, "status": "SAIDA"}).execute()
-        st.session_state.logado = False; st.rerun()
-
-    # BUSCA INTELIGENTE
-    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade ou Responsável...")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade...")
 
     if busca:
         try:
@@ -70,42 +48,51 @@ else:
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
-                for _, row in res.iterrows():
-                    fantasia = row.get('Nome Fantasia', '')
-                    nome = row.get('Nome', 'Centro Espírita')
-                    cidade = row.get('Cidade', '')
-                    endereco = row.get('Endereco', '')
-                    palestra = row.get('Palestra', '')
-                    responsavel = row.get('Responsavel', 'Não informado')
-                    contato = row.get('Celular', '')
+                # --- IDENTIFICADOR INTELIGENTE DE COLUNAS ---
+                cols = df.columns.tolist()
+                def achar_col(termos):
+                    return next((c for c in cols if any(t in c.lower() for t in termos)), None)
 
-                    # Card Visual Estilo Placar 🕊️
+                c_nome = achar_col(['nome'])
+                c_fant = achar_col(['fantasia'])
+                c_resp = achar_col(['responsavel', 'dirigente', 'dono'])
+                c_end = achar_col(['endere', 'rua', 'local'])
+                c_cid = achar_col(['cidade', 'municip'])
+                c_pal = achar_col(['palestra', 'publica', 'dia'])
+                c_cel = achar_col(['celular', 'whats', 'contato', 'fone'])
+
+                for _, row in res.iterrows():
+                    n = row[c_nome] if c_nome else "Centro Espírita"
+                    f = row[c_fant] if c_fant else ""
+                    r = row[c_resp] if c_resp else "Não informado"
+                    e = row[c_end] if c_end else ""
+                    ci = row[c_cid] if c_cid else ""
+                    p = row[c_pal] if c_pal else ""
+                    ce = row[c_cel] if c_cel else ""
+
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-principal">{nome}</div>
-                            <div class="nome-fantasia">{fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {responsavel}</div>
-                            <div class="info-texto">📍 {endereco}</div>
-                            <div class="info-texto">🏙️ {cidade}</div>
-                            {f'<div class="tag-palestra">🗓️ Palestra: {palestra}</div>' if palestra else ''}
+                            <div class="nome-principal">{n}</div>
+                            <div class="nome-fantasia">{f}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {r}</div>
+                            <div class="info-texto">📍 {e}</div>
+                            <div class="info-texto">🏙️ {ci}</div>
+                            {f'<div class="tag-palestra">🗓️ Palestra: {p}</div>' if p else ''}
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    c1, col2 = st.columns(2)
+                    c1, c2 = st.columns(2)
                     with c1:
-                        if endereco:
-                            u_maps = f"https://www.google.com{urllib.parse.quote(endereco + ' ' + cidade)}"
-                            st.link_button("🗺️ MAPS", u_maps)
-                    with col2:
-                        if contato:
-                            num = ''.join(filter(str.isdigit, contato))
-                            if len(num) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
-                            else:
-                                st.link_button("📞 LIGAR", f"tel:{num}")
+                        if e:
+                            u = f"https://www.google.com{urllib.parse.quote(e + ' ' + ci)}"
+                            st.link_button("🗺️ MAPS", u)
+                    with c2:
+                        if ce:
+                            num = ''.join(filter(str.isdigit, ce))
+                            st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
             else:
-                st.warning("Nenhum resultado encontrado.")
-        except:
-            st.error("Erro ao ler a planilha. Verifique os nomes das colunas!")
+                st.warning("Nenhum resultado.")
+        except Exception as err:
+            st.error(f"Erro ao ler planilha: {err}")
     else:
-        st.info("Digite acima para pesquisar! 🙏")
+        st.info("Digite para pesquisar! 🙏")
