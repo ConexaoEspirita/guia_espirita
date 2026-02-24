@@ -5,8 +5,10 @@ import urllib.parse
 import unicodedata
 import re
 
+# Configuração da página
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
+# CSS customizado
 st.markdown("""
 <style>
 .stApp { 
@@ -96,82 +98,76 @@ div.stButton > button {
     color: #6B7280 !important; 
     margin-bottom: 12px !important;
     background: rgba(255,255,255,0.7);
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 20px;
     display: inline-block;
-}
-@media (max-width: 600px) {
-    .nome-grande { font-size: 20px !important; }
-    .nome-fantasia { font-size: 14px !important; }
-    .info-texto { font-size: 12px !important; }
-    div.stLinkButton > a { height: 42px !important; font-size: 14px !important; }
 }
 </style>
 """, unsafe_allow_html=True)
 
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase = create_client(url, key)
-
+# Funções auxiliares
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
-    texto = unicodedata.normalize('NFD', str(texto))
-    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
-    texto = re.sub(r'[^\w\s]', ' ', texto.lower())
-    return texto.strip()
+    texto = str(texto).lower()
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+    texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
+    return ' '.join(texto.split())
 
-if "logado" not in st.session_state:
+# Configuração Supabase (substitua pelas suas credenciais)
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", "SUA_URL")
+SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "SUA_CHAVE")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Inicialização do session state
+if 'df_centros' not in st.session_state:
+    st.session_state.df_centros = None
+if 'logado' not in st.session_state:
     st.session_state.logado = False
 
+# Título principal
+st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+st.markdown("---")
+
+# Verificar se está logado
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    st.info("👋 Bem-vindo! Faça login para acessar o guia completo.")
+    
     col1, col2 = st.columns([1, 2])
     with col1:
-        email = st.text_input("📧 E-mail")
-    with col2:
-        senha = st.text_input("🔒 Senha", type="password")
-    if st.button("🚀 ACESSAR GUIA", use_container_width=True):
-        resposta = supabase.table("acessos").select("*").eq("email", email).eq("senha", senha).execute()
-        if resposta.data:
+        if st.button("🔑 Login", use_container_width=True):
+            # Simular login (substitua pela autenticação real)
             st.session_state.logado = True
             st.rerun()
-        else:
-            st.error("❌ E-mail ou senha incorretos!")
+    st.markdown("---")
 else:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    # Carregar dados do Supabase
+    if st.session_state.df_centros is None:
+        try:
+            response = supabase.table('centros_espirita').select("*").execute()
+            data = response.data
+            st.session_state.df_centros = pd.DataFrame(data)
+            st.success(f"✅ Carregados {len(st.session_state.df_centros)} centros espíritas")
+        except Exception as e:
+            st.error(f"❌ Erro ao carregar dados: {str(e)}")
+            st.stop()
+
+    df = st.session_state.df_centros
+
+    # Barra de busca
+    col_busca, col_filtros = st.columns([3, 1])
     
-    # Busca premium
-    col_busca, col_botao = st.columns([4, 1])
     with col_busca:
-        busca_input = st.text_input("🔍 Procure centros espíritas", 
-                                  placeholder="Digite nome, cidade ou dia...", 
-                                  label_visibility="collapsed")
-    with col_botao:
-        if st.button("🔎", use_container_width=True):
-            if busca_input.strip():
-                st.session_state.busca = busca_input.strip()
-                st.rerun()
+        busca = st.text_input("🔍 Buscar centro, cidade ou responsável...", placeholder="Ex: Centro Luz, São Paulo, João")
     
-    busca = st.session_state.get("busca", "").strip()
-    
+    with col_filtros:
+        if st.button("🔄 Recarregar", use_container_width=True):
+            st.session_state.df_centros = None
+            st.rerun()
+
+    # Processar busca
     if busca:
         try:
-            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            if 'Unnamed: 0' in df.columns:
-                df = df.drop('Unnamed: 0', axis=1)
-            df.columns = [col.strip() for col in df.columns]
-            
-            df = df.rename(columns={
-                'NOME FANTASIA': 'Nome Fantasia',
-                'NOME': 'Nome Real / Razão Social',
-                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
-                'ENDERECO': 'Endereço',
-                'PALESTRA PUBLICA': 'Palestra Pública',
-                'RESPONSAVEL': 'Responsável',
-                'CELULAR': 'Celular'
-            })
-
             termo = limpar_busca(busca)
             resultados = []
             
@@ -235,3 +231,11 @@ else:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+
+# Footer
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #6B7280; font-size: 12px; padding: 20px;'>
+    🕊️ Guia Espírita - Conectando corações em busca da luz ✨
+</div>
+""", unsafe_allow_html=True)
