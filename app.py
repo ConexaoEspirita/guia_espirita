@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo Profissional
+# 1. Configuração e Estilo
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -14,11 +14,10 @@ st.markdown("""
         border-left: 8px solid #0047AB; margin-bottom: 5px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .nome-principal { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
+    .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2; font-size: 16px; font-weight: 500; margin-bottom: 12px; font-style: italic; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
     
-    /* Botões Lado a Lado */
     div.stLinkButton > a {
         width: 100% !important;
         font-size: 14px !important;
@@ -38,7 +37,7 @@ supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- LOGIN ---
+# --- ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -59,29 +58,20 @@ else:
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
-                cols = df.columns.tolist()
-                def f_col(termos):
-                    return next((c for c in cols if any(t in c.lower() for t in termos)), None)
-
-                c_nome = f_col(['nome'])
-                c_fant = f_col(['fantasia'])
-                c_resp = f_col(['responsavel', 'dirigente', 'dono'])
-                c_end = f_col(['endere', 'rua', 'local'])
-                c_cid = f_col(['cidade', 'municip'])
-                c_cel = f_col(['celular', 'whats', 'contato', 'fone'])
-
                 for _, row in res.iterrows():
-                    n = row[c_nome] if c_nome else "Centro"
-                    fant = row[c_fant] if c_fant else ""
-                    resp = row[c_resp] if c_resp else "Não informado"
-                    end = row[c_end] if c_end else ""
-                    cid = row[c_cid] if c_cid else ""
-                    cel = row[c_cel] if c_cel else ""
+                    # MAPEAMENTO MANUAL DAS COLUNAS DO SEU EXCEL
+                    n_fantasia = row.get('Nome Fantasia', '')
+                    n_real = row.get('Nome', 'Centro Espírita')
+                    cid = row.get('Cidade', '')
+                    end = row.get('Endereco', row.get('Endereço', ''))
+                    resp = row.get('Responsavel', row.get('Responsável', ''))
+                    cel = row.get('Celular', '')
 
+                    # Card Visual Estilo Placar
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-principal">{n}</div>
-                            <div class="nome-fantasia">{fant}</div>
+                            <div class="nome-real">{n_real}</div>
+                            <div class="nome-fantasia">{n_fantasia}</div>
                             <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
                             <div class="info-texto">📍 {end}</div>
                             <div class="info-texto">🏙️ {cid}</div>
@@ -91,17 +81,15 @@ else:
                     c1, c2 = st.columns(2)
                     with c1:
                         if end:
-                            # CORREÇÃO DO LINK DO GOOGLE MAPS
-                            endereco_formatado = urllib.parse.quote(f"{end} {cid}")
-                            link_maps = f"https://www.google.com{endereco_formatado}"
-                            st.link_button("🗺️ MAPS", link_maps)
+                            # LINK MAPS CORRIGIDO PARA NÃO DAR ERRO DE DNS
+                            q = urllib.parse.quote(f"{end}, {cid}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
                         if cel:
-                            # CORREÇÃO DO LINK DO WHATSAPP
-                            num_limpo = ''.join(filter(str.isdigit, cel))
-                            if len(num_limpo) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{num_limpo}")
-                    st.write("") 
+                            # LINK WHATSAPP LIMPO
+                            z = ''.join(filter(str.isdigit, cel))
+                            if len(z) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{z}")
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro: {e}")
+        except Exception as e: st.error(f"Erro ao carregar dados.")
     else: st.info("Digite acima para pesquisar! 🙏")
