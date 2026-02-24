@@ -37,6 +37,17 @@ def limpar_busca(texto):
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
+# ✅ DIAS DA SEMANA (números e nomes)
+dias_semana = {
+    '0': 'domingo', 'domingo': 'domingo',
+    '1': 'segunda', 'segunda': 'segunda', '2': 'segunda',
+    '3': 'terça', 'terca': 'terça', 'terça': 'terça', 
+    '4': 'quarta', 'quarta': 'quarta',
+    '5': 'quinta', 'quinta': 'quinta',
+    '6': 'sexta', 'sexta': 'sexta',
+    '7': 'sabado', 'sábado': 'sábado', 'sabado': 'sábado'
+}
+
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -54,11 +65,11 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     
-    # ✅ COLUNAS: BOTÃO + PESQUISA
+    # COLUNAS: BOTÃO + PESQUISA
     col_busca, col_botao = st.columns([3, 1])
     
     with col_busca:
-        st.text_input("🔍 O que você procura?", placeholder="Digite aqui...", key="busca_input")
+        st.text_input("🔍 O que você procura?", placeholder="Ex: Kardec Icém, 6 (sexta), terça...", key="busca_input")
     
     with col_botao:
         if st.button("🔎 BUSCAR", key="btn_buscar", help="Clique para buscar"):
@@ -83,21 +94,36 @@ else:
                 'CELULAR': 'Celular'
             })
 
-            # ✅ LÓGICA INTELIGENTE: nome + cidade OU só nome
+            # ✅ BUSCA INTELIGENTE COM DIAS
             termos = limpar_busca(busca).split()
-            if len(termos) >= 2:
-                # Se tem 2+ palavras: busca EXATA (nome + cidade)
+            eh_dia_semana = False
+            
+            # Verifica se é busca por dia da semana
+            for termo in termos:
+                if termo in dias_semana.values() or termo in dias_semana.keys():
+                    eh_dia_semana = True
+                    dia_procurado = dias_semana.get(termo, termo)
+                    break
+            
+            if eh_dia_semana:
+                # BUSCA POR DIA DA SEMANA na palestra
+                resultados = []
+                for idx, row in df.iterrows():
+                    palestra = limpar_busca(row.get('Palestra Pública', ''))
+                    if dia_procurado in palestra:
+                        resultados.append(row)
+            elif len(termos) >= 2:
+                # NOME + CIDADE
                 termo_nome = limpar_busca(termos[0])
                 termo_cidade = limpar_busca(" ".join(termos[1:]))
                 resultados = []
-                
                 for idx, row in df.iterrows():
                     linha_nome = limpar_busca(" ".join([row.get('Nome Fantasia', ''), row.get('Nome Real / Razão Social', '')]))
                     linha_cidade = limpar_busca(row.get('Cidade', ''))
                     if termo_nome in linha_nome and termo_cidade in linha_cidade:
                         resultados.append(row)
             else:
-                # Só 1 palavra: busca GERAL em tudo
+                # BUSCA GERAL
                 termo = limpar_busca(busca)
                 resultados = []
                 for idx, row in df.iterrows():
@@ -147,4 +173,4 @@ else:
         except Exception as erro:
             st.error(f"Erro: {str(erro)}")
     else:
-        st.info("👆 Digite nome do centro e cidade (ex: 'Kardec Icém') OU só nome do centro!")
+        st.info("👆 Digite: 'Kardec Icém', '6' (sexta), 'terça', 'quinta'...")
