@@ -14,19 +14,16 @@ st.markdown("""
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;position: relative;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
-.info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;padding-left: 28px;}
-.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px 8px 36px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important; margin-left: 4px;}
-.numero-card {position: absolute !important; bottom: 12px !important; right: 16px !important; top: auto !important; background: rgba(0,71,171,0.8) !important; color: white !important; width: 28px !important; height: 28px !important; border-radius: 50% !important; font-size: 12px !important; font-weight: 700 !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;}
-.voltar-topo {text-align: center; margin: 40px 0; padding: 20px;}
-.voltar-btn {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border: none !important;border-radius: 12px !important;padding: 14px 28px !important;font-size: 16px !important;font-weight: 700 !important;cursor: pointer !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;display: inline-block !important;}
-.voltar-btn:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
+.info-texto {color: #374151 !important;font-size: 13px !important;display: flex !important;align-items: center !important;gap: 6px !important;padding: 4px 0 !important;margin: 4px 0 !important;}
+.palestras-verde {color: #10B981 !important;font-weight: 700 !important;font-size: 14px !important;background: rgba(16,185,129,0.15) !important;padding: 8px 12px !important;border-radius: 12px !important;border-left: 4px solid #10B981 !important;box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;display: flex !important;align-items: center !important;margin: 8px 0 !important;}
+.numero-card {position: absolute !important;bottom: 12px !important;right: 16px !important;top: auto !important;background: rgba(0,71,171,0.8) !important;color: white !important;width: 28px !important;height: 28px !important;border-radius: 50% !important;font-size: 12px !important;font-weight: 700 !important;display: flex !important;align-items: center !important;justify-content: center !important;box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;}
 div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
 div[data-testid="stInfoBlock"] div {display: none !important;}
-@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;padding-left: 32px;}.palestras-verde {padding-left: 42px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}.numero-card {width: 32px !important; height: 32px !important; font-size: 14px !important;}}
+@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}.numero-card {width: 32px !important;height: 32px !important;font-size: 14px !important;}}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -146,11 +143,21 @@ else:
                 <div class="nome-grande">{v_nome_real}</div>
                 <div class="nome-fantasia">{v_fantasia}</div>
                 <div class="palestras-verde">
-                    🗣️ PALESTRAS {v_palestras}
+                    <span style="margin-right: 8px; font-size: 16px;">🗣️</span>
+                    <span>PALESTRAS {v_palestras}</span>
                 </div>
-                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                <div class="info-texto">
+                    <span style="font-size: 14px;">👤</span>
+                    <span><b>Responsável:</b> {v_resp}</span>
+                </div>
+                <div class="info-texto">
+                    <span style="font-size: 14px;">📍</span>
+                    <span><b>Endereço:</b> {v_endereco}</span>
+                </div>
+                <div class="info-texto">
+                    <span style="font-size: 14px;">🏙️</span>
+                    <span><b>Cidade:</b> {v_cidade}</span>
+                </div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -165,11 +172,9 @@ else:
                     st.link_button("💬 WhatsApp", f"https://wa.me/55{numero_tel}", use_container_width=True)
             st.divider()
         
-        # Botão VOLTAR TOPO FUNCIONANDO (só com +10 centros)
         if len(resultados) > 10:
-            st.markdown('<div class="voltar-topo">', unsafe_allow_html=True)
-            st.button("⬆️ VOLTAR AO TOPO", key="voltar_topo", help="Volta para o topo da página", on_click=lambda: st.experimental_rerun())
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("---")
+            st.caption(f"📊 Total: {len(resultados)} centros encontrados")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
