@@ -68,11 +68,10 @@ st.markdown("""
 # ==============================
 # CONEXÃO SUPABASE
 # ==============================
-url = "SUA_URL_AQUI"
-key = "SUA_CHAVE_AQUI"
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(url, key)
-
 # ==============================
 # FUNÇÕES AUXILIARES
 # ==============================
@@ -188,3 +187,4 @@ else:
 
         except Exception as erro:
             st.error(f"Erro: {erro}")
+
