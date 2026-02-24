@@ -12,10 +12,10 @@ st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wid
 st.markdown("""
 <style>
 .stApp { background: #EBF4FA; }
-.titulo-premium { color: #0047AB; font-size: 2.5rem; font-weight: 800; text-align: center; }
-.card-centro { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 15px; border-left: 5px solid #0047AB; }
-.nome-grande { color: #1E3A8A; font-size: 20px; font-weight: 800; }
-.conta-pequena { color: #6B7280; font-size: 14px; margin-bottom: 10px; font-weight: bold; }
+.titulo-premium { color: #0047AB; font-size: 2.2rem; font-weight: 800; text-align: center; margin-bottom: 15px; }
+.card-centro { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 12px; border-left: 5px solid #0047AB; }
+.nome-grande { color: #1E3A8A; font-size: 19px; font-weight: 800; line-height: 1.2; }
+.conta-pequena { color: #4B5563; font-size: 13px; margin-bottom: 10px; font-weight: 700; background: #FFF; padding: 5px 12px; border-radius: 50px; display: inline-block; border: 1px solid #D1D5DB; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -24,83 +24,98 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-def limpar_busca(texto):
-    if pd.isna(texto): return ""
-    texto = unicodedata.normalize('NFD', str(texto))
-    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
-    texto = re.sub(r'[^\w\s]', ' ', texto.lower())
-    return texto.strip()
+def limpar_texto(t):
+    if pd.isna(t): return ""
+    t = unicodedata.normalize('NFD', str(t))
+    t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
+    return re.sub(r'[^\w\s]', ' ', t.lower()).strip()
 
-# Inicialização de estados para evitar erros vermelhos
+# Inicialização de Estados (Evita o erro vermelho)
 if "logado" not in st.session_state: st.session_state.logado = False
-if "reset_key" not in st.session_state: st.session_state.reset_key = 0
+if "form_key" not in st.session_state: st.session_state.form_key = 0
 
 # 4. Tela de Login
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-    e = st.text_input("📧 E-mail").strip().lower()
-    s = st.text_input("🔒 Senha", type="password").strip()
-    if st.button("🚀 ACESSAR GUIA", use_container_width=True):
-        res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
-        if res.data:
-            st.session_state.logado = True
-            st.rerun()
-        else: st.error("❌ Dados incorretos")
+    with st.container():
+        e = st.text_input("📧 E-mail").strip().lower()
+        s = st.text_input("🔒 Senha", type="password").strip()
+        if st.button("🚀 ACESSAR GUIA", use_container_width=True):
+            res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
+            if res.data:
+                st.session_state.logado = True
+                st.rerun()
+            else: st.error("❌ E-mail ou senha incorretos.")
 
 # 5. Tela Principal
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # A "key" muda quando clicamos em voltar, forçando a barra a limpar e focar
-    busca = st.text_input("🔍 Buscar por nome, rua ou bairro", 
-                         key=f"busca_{st.session_state.reset_key}", 
-                         placeholder="Clique aqui para digitar...")
+    # BARRA DE PESQUISA COM KEY DINÂMICA (Para limpar no Voltar)
+    busca = st.text_input("🔍 Pesquisar por Nome, Rua ou Bairro", 
+                         key=f"input_{st.session_state.form_key}", 
+                         placeholder="Digite aqui...")
     
     if busca:
         try:
+            # Carregar Planilha
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            df.columns = [col.strip() for col in df.columns]
-            df = df.rename(columns={'NOME FANTASIA':'F','NOME':'N','CIDADE DO CENTRO ESPIRITA':'C','ENDERECO':'E','CELULAR':'Cel','RESPONSAVEL':'R'})
+            df.columns = [c.strip() for c in df.columns]
+            
+            # Mapeamento Seguro
+            df = df.rename(columns={
+                'NOME FANTASIA': 'Fantasia', 'NOME': 'Nome',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade', 'ENDERECO': 'Endereco',
+                'RESPONSAVEL': 'Responsavel', 'CELULAR': 'Celular'
+            })
 
-            t = limpar_busca(busca)
-            res = [r for _, r in df.iterrows() if t in " ".join([limpar_busca(r.get('N','')), limpar_busca(r.get('F','')), limpar_busca(r.get('E','')), limpar_busca(r.get('C',''))])]
+            termo = limpar_texto(busca)
+            # Lógica de Filtro
+            res = []
+            for _, row in df.iterrows():
+                alvo = " ".join([limpar_texto(row.get('Nome','')), limpar_texto(row.get('Fantasia','')), 
+                                 limpar_texto(row.get('Endereco','')), limpar_texto(row.get('Cidade',''))])
+                if termo in alvo: res.append(row)
 
             if res:
-                st.markdown(f'<div class="conta-pequena">✨ achou {len(res)} resultado(s)</div>', unsafe_allow_html=True)
+                # CONTADOR DE RESULTADOS
+                st.markdown(f'<div class="conta-pequena">✨ Encontrados {len(res)} resultados</div>', unsafe_allow_html=True)
                 
-                # BOTÃO VOLTAR QUE LIMPA A BARRA SEM ERRO
-                if st.button("⬅️ VOLTAR / LIMPAR BUSCA"):
-                    st.session_state.reset_key += 1 # Isso limpa a barra e foca o cursor nela
+                if st.button("⬅️ VOLTAR / LIMPAR"):
+                    st.session_state.form_key += 1 # ISSO LIMPA A BARRA E SOBE O TECLADO
                     st.rerun()
 
                 for r in res:
                     st.markdown(f"""
                     <div class="card-centro">
-                        <div class="nome-grande">{r['N']}</div>
-                        <div style="color:#3B82F6;">{r['F']}</div>
-                        <div style="margin-top:8px;">📍 <b>Endereço:</b> {r['E']} - {r['C']}</div>
-                        <div>👤 <b>Responsável:</b> {r['R']}</div>
+                        <div class="nome-grande">{r['Nome']}</div>
+                        <div style="color:#2563EB; font-size:14px; font-style:italic;">{r['Fantasia']}</div>
+                        <div style="margin-top:8px; font-size:14px;">📍 <b>Endereço:</b> {r['Endereco']} - {r['Cidade']}</div>
+                        <div style="font-size:14px;">👤 <b>Responsável:</b> {r['Responsavel']}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
-                        q = urllib.parse.quote(f"{r['E']}, {r['C']}")
-                        st.link_button("🗺️ MAPS", f"https://www.google.com{q}", use_container_width=True)
+                        # GOOGLE MAPS
+                        end = urllib.parse.quote(f"{r['Endereco']}, {r['Cidade']}")
+                        st.link_button("🗺️ MAPS", f"https://www.google.com{end}", use_container_width=True)
                     with c2:
-                        n = ''.join(filter(str.isdigit, str(r['Cel'])))
-                        if len(n) >= 10:
-                            st.link_button("💬 WHATSAPP", f"https://wa.me{n}", use_container_width=True)
+                        # WHATSAPP
+                        tel = ''.join(filter(str.isdigit, str(r['Celular'])))
+                        if len(tel) >= 10:
+                            st.link_button("💬 WHATSAPP", f"https://wa.me{tel}", use_container_width=True)
                     st.divider()
             else:
-                st.warning("❌ Nada encontrado.")
-                if st.button("⬅️ Tentar novamente"):
-                    st.session_state.reset_key += 1
+                st.warning("❌ Nenhum resultado para esta pesquisa.")
+                if st.button("⬅️ Tentar Outra"):
+                    st.session_state.form_key += 1
                     st.rerun()
-        except Exception as err:
-            st.error(f"Erro no arquivo: {err}")
+
+        except Exception as e:
+            st.error(f"Erro ao ler guia.xlsx: {e}")
     else:
-        st.info("💡 Digite o nome, rua ou bairro acima.")
+        st.info("💡 Digite o nome do centro ou a rua para pesquisar.")
 
     if st.sidebar.button("🚪 Sair"):
         st.session_state.clear()
