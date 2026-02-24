@@ -11,13 +11,17 @@ st.markdown("""
     .stApp { background-color: #F8F9FA; }
     .card-centro {
         background-color: white; padding: 20px; border-radius: 15px;
-        border-left: 8px solid #0047AB; margin-bottom: 12px;
+        border-left: 8px solid #0047AB; margin-bottom: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
-    div.stLinkButton > a { width: 100% !important; font-weight: bold !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+    
+    div.stLinkButton > a {
+        width: 100% !important; font-weight: bold !important; height: 45px !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -37,11 +41,11 @@ if not st.session_state.logado:
         res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
         if len(res.data) > 0:
             st.session_state.logado = True; st.rerun()
-        else: st.error("Dados incorretos!")
+        else: st.error("Incorreto!")
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 O que você procura?", placeholder="Digite para buscar...")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade ou Responsável...")
 
     if busca:
         try:
@@ -50,7 +54,6 @@ else:
 
             if not res.empty:
                 cols = df.columns.tolist()
-                # Localizador inteligente de colunas
                 def achar(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
                 
                 c_fant = achar(['fantasia'])
@@ -68,7 +71,7 @@ else:
                     v_responsavel = row[c_resp] if c_resp else "Não informado"
                     v_celular = row[c_cel] if c_cel else ""
 
-                    # Card Visual
+                    # Card Visual Estilo Placar
                     st.markdown(f"""
                         <div class="card-centro">
                             <div class="nome-real">{v_nome}</div>
@@ -82,13 +85,16 @@ else:
                     c1, c2 = st.columns(2)
                     with c1:
                         if v_endereco:
-                            # Link do Google Maps formatado corretamente
+                            # MAPS CORRIGIDO: Formato oficial do Google Search
                             q_end = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                             st.link_button("🗺️ MAPS", f"https://www.google.com{q_end}")
-                    with c2:
+                    with col2:
                         if v_celular:
+                            # WHATSAPP CORRIGIDO: Agora com a barra / e o 55
                             num = ''.join(filter(str.isdigit, v_celular))
-                            st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
+                            if len(num) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
+                    st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro: {e}")
-    else: st.info("Digite acima para pesquisar! 🙏")
+        except Exception as e: st.error(f"Erro ao carregar dados.")
+    else: st.info("Digite para pesquisar! 🙏")
