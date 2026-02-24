@@ -5,118 +5,233 @@ import urllib.parse
 import unicodedata
 import re
 
-# 1. Configuração da Página
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# 2. Estilização CSS
 st.markdown("""
 <style>
-.stApp { background: #EBF4FA; }
-.titulo-premium { color: #0047AB; font-size: 2.2rem; font-weight: 800; text-align: center; margin-bottom: 15px; }
-.card-centro { background: white; padding: 18px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 12px; border-left: 5px solid #0047AB; }
-.nome-grande { color: #1E3A8A; font-size: 19px; font-weight: 800; line-height: 1.2; }
-.conta-pequena { color: #4B5563; font-size: 13px; margin-bottom: 10px; font-weight: 700; background: #FFF; padding: 5px 12px; border-radius: 50px; display: inline-block; border: 1px solid #D1D5DB; }
+.stApp { 
+    background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);
+}
+.titulo-premium {
+    background: linear-gradient(90deg, #0047AB, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0,71,171,0.3);
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+}
+.card-centro {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,71,171,0.1);
+    box-shadow: 0 8px 32px rgba(0,71,171,0.15), 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+.card-centro:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,71,171,0.25);
+}
+.card-centro::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #0047AB, #5CACE2, #0047AB);
+}
+.nome-grande { 
+    color: #1E3A8A !important;
+    font-size: 22px !important; 
+    font-weight: 800 !important; 
+    line-height: 1.3;
+    margin-bottom: 6px;
+}
+.nome-fantasia { 
+    color: #3B82F6 !important;
+    font-size: 15px !important; 
+    font-weight: 600 !important; 
+    font-style: italic; 
+    margin-bottom: 10px;
+}
+.info-texto { 
+    color: #374151 !important;
+    font-size: 13px !important; 
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+div.stLinkButton > a { 
+    background: linear-gradient(135deg, #10B981, #059669) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(16,185,129,0.4) !important;
+    transition: all 0.2s ease !important;
+}
+div.stLinkButton > a:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 24px rgba(16,185,129,0.5) !important;
+}
+div.stButton > button {
+    background: linear-gradient(135deg, #0047AB, #1E40AF) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    height: 48px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(0,71,171,0.4) !important;
+}
+.conta-pequena { 
+    font-size: 12px !important; 
+    color: #6B7280 !important; 
+    margin-bottom: 12px !important;
+    background: rgba(255,255,255,0.7);
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
+@media (max-width: 600px) {
+    .nome-grande { font-size: 20px !important; }
+    .nome-fantasia { font-size: 14px !important; }
+    .info-texto { font-size: 12px !important; }
+    div.stLinkButton > a { height: 42px !important; font-size: 14px !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Conexão Supabase
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-def limpar_texto(t):
-    if pd.isna(t): return ""
-    t = unicodedata.normalize('NFD', str(t))
-    t = ''.join(c for c in t if unicodedata.category(c) != 'Mn')
-    return re.sub(r'[^\w\s]', ' ', t.lower()).strip()
+def limpar_busca(texto):
+    if pd.isna(texto):
+        return ""
+    texto = unicodedata.normalize('NFD', str(texto))
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    texto = re.sub(r'[^\w\s]', ' ', texto.lower())
+    return texto.strip()
 
-# Inicialização de Estados (Evita o erro vermelho)
-if "logado" not in st.session_state: st.session_state.logado = False
-if "form_key" not in st.session_state: st.session_state.form_key = 0
+if "logado" not in st.session_state:
+    st.session_state.logado = False
 
-# 4. Tela de Login
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-    with st.container():
-        e = st.text_input("📧 E-mail").strip().lower()
-        s = st.text_input("🔒 Senha", type="password").strip()
-        if st.button("🚀 ACESSAR GUIA", use_container_width=True):
-            res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
-            if res.data:
-                st.session_state.logado = True
-                st.rerun()
-            else: st.error("❌ E-mail ou senha incorretos.")
-
-# 5. Tela Principal
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        email = st.text_input("📧 E-mail")
+    with col2:
+        senha = st.text_input("🔒 Senha", type="password")
+    if st.button("🚀 ACESSAR GUIA", use_container_width=True):
+        resposta = supabase.table("acessos").select("*").eq("email", email).eq("senha", senha).execute()
+        if resposta.data:
+            st.session_state.logado = True
+            st.rerun()
+        else:
+            st.error("❌ E-mail ou senha incorretos!")
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-
-    # BARRA DE PESQUISA COM KEY DINÂMICA (Para limpar no Voltar)
-    busca = st.text_input("🔍 Pesquisar por Nome, Rua ou Bairro", 
-                         key=f"input_{st.session_state.form_key}", 
-                         placeholder="Digite aqui...")
+    
+    # Busca premium
+    col_busca, col_botao = st.columns([4, 1])
+    with col_busca:
+        busca_input = st.text_input("🔍 Procure centros espíritas", 
+                                  placeholder="Digite nome, cidade ou dia...", 
+                                  label_visibility="collapsed")
+    with col_botao:
+        if st.button("🔎", use_container_width=True):
+            if busca_input.strip():
+                st.session_state.busca = busca_input.strip()
+                st.rerun()
+    
+    busca = st.session_state.get("busca", "").strip()
     
     if busca:
         try:
-            # Carregar Planilha
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            df.columns = [c.strip() for c in df.columns]
+            if 'Unnamed: 0' in df.columns:
+                df = df.drop('Unnamed: 0', axis=1)
+            df.columns = [col.strip() for col in df.columns]
             
-            # Mapeamento Seguro
             df = df.rename(columns={
-                'NOME FANTASIA': 'Fantasia', 'NOME': 'Nome',
-                'CIDADE DO CENTRO ESPIRITA': 'Cidade', 'ENDERECO': 'Endereco',
-                'RESPONSAVEL': 'Responsavel', 'CELULAR': 'Celular'
+                'NOME FANTASIA': 'Nome Fantasia',
+                'NOME': 'Nome Real / Razão Social',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                'ENDERECO': 'Endereço',
+                'PALESTRA PUBLICA': 'Palestra Pública',
+                'RESPONSAVEL': 'Responsável',
+                'CELULAR': 'Celular'
             })
 
-            termo = limpar_texto(busca)
-            # Lógica de Filtro
-            res = []
-            for _, row in df.iterrows():
-                alvo = " ".join([limpar_texto(row.get('Nome','')), limpar_texto(row.get('Fantasia','')), 
-                                 limpar_texto(row.get('Endereco','')), limpar_texto(row.get('Cidade',''))])
-                if termo in alvo: res.append(row)
-
-            if res:
-                # CONTADOR DE RESULTADOS
-                st.markdown(f'<div class="conta-pequena">✨ Encontrados {len(res)} resultados</div>', unsafe_allow_html=True)
+            termo = limpar_busca(busca)
+            resultados = []
+            
+            for idx, row in df.iterrows():
+                campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
+                         row.get('Cidade',''), row.get('Endereço',''), 
+                         row.get('Responsável',''), row.get('Palestra Pública','')]
+                linha_completa = " ".join([limpar_busca(val) for val in campos])
                 
-                if st.button("⬅️ VOLTAR / LIMPAR"):
-                    st.session_state.form_key += 1 # ISSO LIMPA A BARRA E SOBE O TECLADO
-                    st.rerun()
+                if termo in linha_completa:
+                    resultados.append(row)
 
-                for r in res:
+            resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+
+            if not resultados_df.empty:
+                st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
+
+                for _, row in resultados_df.iterrows():
+                    v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
+                    v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+                    v_cidade = str(row.get('Cidade', 'Não informada'))
+                    v_endereco = str(row.get('Endereço', 'Não informado'))
+                    v_palestra = str(row.get('Palestra Pública', ''))
+                    v_resp = str(row.get('Responsável', 'Não informado'))
+                    v_celular = str(row.get('Celular', ''))
+
                     st.markdown(f"""
                     <div class="card-centro">
-                        <div class="nome-grande">{r['Nome']}</div>
-                        <div style="color:#2563EB; font-size:14px; font-style:italic;">{r['Fantasia']}</div>
-                        <div style="margin-top:8px; font-size:14px;">📍 <b>Endereço:</b> {r['Endereco']} - {r['Cidade']}</div>
-                        <div style="font-size:14px;">👤 <b>Responsável:</b> {r['Responsavel']}</div>
+                        <div class="nome-grande">{v_nome_real}</div>
+                        <div class="nome-fantasia">{v_fantasia}</div>
+                        <div class="info-texto"><span style='font-size:16px'>👤</span> <b>Responsável:</b> {v_resp}</div>
+                        <div class="info-texto"><span style='font-size:16px'>📍</span> <b>Endereço:</b> {v_endereco}</div>
+                        <div class="info-texto"><span style='font-size:16px'>🏙️</span> <b>Cidade:</b> {v_cidade}</div>
+                        {f'<div class="info-texto"><span style="font-size:16px">🗓️</span> <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
                     </div>
                     """, unsafe_allow_html=True)
-                    
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        # GOOGLE MAPS
-                        end = urllib.parse.quote(f"{r['Endereco']}, {r['Cidade']}")
-                        st.link_button("🗺️ MAPS", f"https://www.google.com{end}", use_container_width=True)
-                    with c2:
-                        # WHATSAPP
-                        tel = ''.join(filter(str.isdigit, str(r['Celular'])))
-                        if len(tel) >= 10:
-                            st.link_button("💬 WHATSAPP", f"https://wa.me{tel}", use_container_width=True)
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if 'Não informado' not in v_endereco:
+                            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ Ver no MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+                    with col2:
+                        numero = ''.join(filter(str.isdigit, v_celular))
+                        if len(numero) >= 10:
+                            st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                     st.divider()
             else:
-                st.warning("❌ Nenhum resultado para esta pesquisa.")
-                if st.button("⬅️ Tentar Outra"):
-                    st.session_state.form_key += 1
-                    st.rerun()
-
-        except Exception as e:
-            st.error(f"Erro ao ler guia.xlsx: {e}")
+                st.warning("❌ Nenhum resultado encontrado.")
+                
+        except Exception as erro:
+            st.error(f"❌ Erro: {str(erro)}")
     else:
-        st.info("💡 Digite o nome do centro ou a rua para pesquisar.")
-
-    if st.sidebar.button("🚪 Sair"):
-        st.session_state.clear()
-        st.rerun()
+        st.info("✨ Digite nome do centro, cidade ou dia da semana!")
+    
+    # Logout elegante no canto
+    st.markdown("---")
+    col_spacer, col_logout = st.columns([5, 1])
+    with col_logout:
+        if st.button("🚪 Sair", use_container_width=True):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
