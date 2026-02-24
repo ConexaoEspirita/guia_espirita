@@ -10,24 +10,18 @@ st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
 .titulo-premium { 
-    background: linear-gradient(90deg, #0047AB, #1976D2); 
-    -webkit-background-clip: text; 
-    -webkit-text-fill-color: transparent; 
-    text-shadow: 0 4px 12px rgba(0,71,171,0.3); 
+    color: white !important;
     font-size: 2.5rem !important; 
     font-weight: 800 !important;
-    color: white !important;
+    text-shadow: 0 4px 12px rgba(0,71,171,0.5) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 20px !important;
-    text-align: center !important;
-    margin: 0 auto !important;
-}
-.titulo-premium::before, .titulo-premium::after {
-    content: "🕊️" !important;
-    font-size: 2.5rem !important;
-    filter: brightness(0) saturate(100%) invert(100%) !important;
+    gap: 25px !important;
+    margin: 0 auto 30px !important;
+    background: linear-gradient(90deg, #0047AB, #1976D2) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
 }
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
@@ -38,8 +32,20 @@ div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !im
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
-.search-input {width: 100%; padding: 16px 20px 16px 50px !important; border-radius: 12px !important; border: 2px solid #E5E7EB !important; font-size: 16px !important; transition: all 0.2s !important; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%239C92AC' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 16px center !important;}
-.search-input:focus {border-color: #3B82F6 !important; box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important; background-size: 18px !important;}
+.search-container input { 
+    width: 100%; 
+    padding: 16px 20px 16px 50px !important; 
+    border-radius: 12px !important; 
+    border: 2px solid #E5E7EB !important; 
+    font-size: 16px !important; 
+    transition: all 0.2s !important; 
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='%239C92AC' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") no-repeat 16px center !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15) !important;
+}
+.search-container input:focus { 
+    border-color: #10B981 !important; 
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important, 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -60,7 +66,6 @@ def limpar_busca(texto):
     texto = re.sub(r'[ç]', 'c', texto)
     return re.sub(r'[^a-z0-9\s]', '', texto)
 
-# VARIACOES COMUNS DE NOMES
 def expandir_variacoes(termo):
     variacoes = {
         'joana': ['joana', 'joanna', 'johanna', 'joanne', 'juana'],
@@ -83,7 +88,14 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown('''
+        <div style="display: flex; align-items: center; justify-content: center; gap: 25px; margin-bottom: 30px;">
+            <span style="font-size: 2.5rem;">🕊️</span>
+            <h1 style="background: linear-gradient(90deg, #0047AB, #1976D2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; font-weight: 800; margin: 0; text-shadow: 0 4px 12px rgba(0,71,171,0.5);">Guia Espírita</h1>
+            <span style="font-size: 2.5rem;">🕊️</span>
+        </div>
+    ''', unsafe_allow_html=True)
+    
     col1, col2 = st.columns([1, 2])
     with col1:
         email = st.text_input("📧 E-mail")
@@ -100,15 +112,25 @@ if not st.session_state.logado:
         else:
             st.error("❌ E-mail ou senha incorretos!")
 else:
-    st.markdown('<h1 class="titulo-premium">Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown('''
+        <div style="display: flex; align-items: center; justify-content: center; gap: 25px; margin-bottom: 30px;">
+            <span style="font-size: 2.5rem;">🕊️</span>
+            <h1 style="background: linear-gradient(90deg, #0047AB, #1976D2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; font-weight: 800; margin: 0; text-shadow: 0 4px 12px rgba(0,71,171,0.5);">Guia Espírita</h1>
+            <span style="font-size: 2.5rem;">🕊️</span>
+        </div>
+    ''', unsafe_allow_html=True)
     
-    # ✅ CAMPO LIMPO COM LUPA DISCRETA
-    busca = st.text_input(
-        "",  # Label vazio
-        placeholder="Ex: Joana, São Paulo, João, Luiz...",
-        label_visibility="collapsed",
-        key="busca_principal"
-    )
+    # CAMPO COM LUPA DISCRETA E VERDE
+    col_search, _ = st.columns([1, 1])
+    with col_search:
+        st.markdown('<div class="search-container">', unsafe_allow_html=True)
+        busca = st.text_input(
+            "", 
+            placeholder="Ex: Joana, São Paulo, João, Luiz...",
+            label_visibility="collapsed",
+            key="busca_principal"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -121,11 +143,10 @@ else:
             st.session_state.tem_busca = ""
             st.rerun()
     
-    # EXECUTA BUSCA MELHORADA
     termo = st.session_state.get("tem_busca", "").strip()
     if termo:
         try:
-            with st.spinner('🔍 Buscando com variações de nomes...'):
+            with st.spinner('🔍 Buscando com variações...'):
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
                 if 'Unnamed: 0' in df.columns:
                     df = df.drop('Unnamed: 0', axis=1)
@@ -141,7 +162,6 @@ else:
                     'CELULAR': 'Celular'
                 })
                 
-                # 🔍 BUSCA FLEXÍVEL EM MÚLTIPLAS COLUNAS
                 todas_variacoes = expandir_variacoes(termo)
                 resultados = []
                 
@@ -155,15 +175,13 @@ else:
                         limpar_busca(row.get('Palestra Pública', ''))
                     ])
                     
-                    # ✅ VERIFICA QUALQUER VARIAÇÃO DO TERMO
                     if any(variacao in texto_row for variacao in todas_variacoes):
                         resultados.append(row)
                 
                 if resultados:
-                    df_resultados = pd.DataFrame(resultados)
                     st.success(f"✨ {len(resultados)} resultado{'s' if len(resultados) != 1 else ''} para '{termo}'")
                     
-                    for idx, row in df_resultados.iterrows():
+                    for idx, row in pd.DataFrame(resultados).iterrows():
                         v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
                         v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro')) + " 🕊️"
                         v_cidade = str(row.get('Cidade', 'N/I'))
@@ -194,7 +212,7 @@ else:
                                 st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                         st.divider()
                 else:
-                    st.info(f"❌ Nada encontrado para '{termo}'. Tente: Joana (acha Joanna), São Paulo, João, Luiz...")
+                    st.info(f"❌ Nada encontrado para '{termo}'. Tente: Joana (acha Joanna), São Paulo...")
                     
         except FileNotFoundError:
             st.error("❌ guia.xlsx não encontrado!")
