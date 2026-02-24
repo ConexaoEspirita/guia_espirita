@@ -3,26 +3,27 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo
+# 1. Configuração e Estilo Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
     <style>
     .stApp { background-color: #F8F9FA; }
     .card-centro {
-        background-color: white; padding: 18px; border-radius: 12px;
+        background-color: white; padding: 20px; border-radius: 15px;
         border-left: 8px solid #0047AB; margin-bottom: 5px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .nome-principal { color: #0047AB; font-size: 22px; font-weight: bold; line-height: 1.1; }
-    .nome-fantasia { color: #5CACE2; font-size: 15px; font-weight: 500; margin-bottom: 10px; font-style: italic; }
-    .info-texto { color: #444; font-size: 14px; margin-bottom: 3px; }
+    .nome-principal { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
+    .nome-fantasia { color: #5CACE2; font-size: 16px; font-weight: 500; margin-bottom: 12px; font-style: italic; }
+    .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
     
     /* Botões Lado a Lado */
     div.stLinkButton > a {
         width: 100% !important;
-        font-size: 13px !important;
-        height: 42px !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
+        height: 45px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -59,51 +60,48 @@ else:
 
             if not res.empty:
                 cols = df.columns.tolist()
-                
-                # FUNÇÃO PARA ENCONTRAR COLUNA POR PALAVRA-CHAVE
-                def get_c(terms):
-                    return next((c for c in cols if any(t in c.lower() for t in terms)), None)
+                def f_col(termos):
+                    return next((c for c in cols if any(t in c.lower() for t in termos)), None)
 
-                c_fant = get_c(['fantasia'])
-                c_nome = get_c(['nome'])
-                c_cid = get_c(['cidade'])
-                c_end = get_c(['endere', 'rua', 'local'])
-                c_resp = get_c(['responsavel', 'dirigente', 'dono'])
-                c_cel = get_c(['celular', 'whats', 'contato', 'fone'])
+                c_nome = f_col(['nome'])
+                c_fant = f_col(['fantasia'])
+                c_resp = f_col(['responsavel', 'dirigente', 'dono'])
+                c_end = f_col(['endere', 'rua', 'local'])
+                c_cid = f_col(['cidade', 'municip'])
+                c_cel = f_col(['celular', 'whats', 'contato', 'fone'])
 
                 for _, row in res.iterrows():
-                    val_nome = row[c_nome] if c_nome else "Centro"
-                    val_fant = row[c_fant] if c_fant else ""
-                    val_resp = row[c_resp] if c_resp else "Não informado"
-                    val_end = row[c_end] if c_end else ""
-                    val_cid = row[c_cid] if c_cid else ""
-                    val_cel = row[c_cel] if c_cel else ""
+                    n = row[c_nome] if c_nome else "Centro"
+                    fant = row[c_fant] if c_fant else ""
+                    resp = row[c_resp] if c_resp else "Não informado"
+                    end = row[c_end] if c_end else ""
+                    cid = row[c_cid] if c_cid else ""
+                    cel = row[c_cel] if c_cel else ""
 
-                    # EXIBIÇÃO DO CARD
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-principal">{val_nome}</div>
-                            <div class="nome-fantasia">{val_fant}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {val_resp}</div>
-                            <div class="info-texto">📍 {val_end}</div>
-                            <div class="info-texto">🏙️ {val_cid}</div>
+                            <div class="nome-principal">{n}</div>
+                            <div class="nome-fantasia">{fant}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
+                            <div class="info-texto">📍 {end}</div>
+                            <div class="info-texto">🏙️ {cid}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # BOTÕES LADO A LADO
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if val_end:
-                            # MAPS: Codifica endereço e cidade para o link funcionar
-                            end_full = f"{val_end} {val_cid}".strip()
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{urllib.parse.quote(end_full)}")
-                    with col2:
-                        if val_cel:
-                            # WHATSAPP: Limpa tudo e deixa só números
-                            zap = ''.join(filter(str.isdigit, val_cel))
-                            if len(zap) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{zap}")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if end:
+                            # CORREÇÃO DO LINK DO GOOGLE MAPS
+                            endereco_formatado = urllib.parse.quote(f"{end} {cid}")
+                            link_maps = f"https://www.google.com{endereco_formatado}"
+                            st.link_button("🗺️ MAPS", link_maps)
+                    with c2:
+                        if cel:
+                            # CORREÇÃO DO LINK DO WHATSAPP
+                            num_limpo = ''.join(filter(str.isdigit, cel))
+                            if len(num_limpo) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{num_limpo}")
                     st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as err: st.error(f"Erro: {err}")
-    else: st.info("Digite para pesquisar! 🙏")
+        except Exception as e: st.error(f"Erro: {e}")
+    else: st.info("Digite acima para pesquisar! 🙏")
