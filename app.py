@@ -3,6 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 import unicodedata
+import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
@@ -33,9 +34,12 @@ supabase = create_client(url, key)
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
+    # Remove acentos E caracteres especiais (tilde, etc)
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
-    return texto.lower()
+    # Remove pontos, hífens, etc
+    texto = re.sub(r'[^\w\s]', ' ', texto.lower())
+    return texto.strip()
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -58,7 +62,7 @@ else:
     
     with col_busca:
         st.text_input("🔍 Nome do centro, cidade ou dia da semana", 
-                     placeholder="Kardec, Icém, sexta-feira, Catanduva...", key="busca_input")
+                     placeholder="Kardec, Icém, quinta, quarta, Catanduva...", key="busca_input")
     
     with col_botao:
         if st.button("🔎 BUSCAR"):
@@ -87,13 +91,19 @@ else:
             resultados = []
             
             for idx, row in df.iterrows():
-                campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
-                         row.get('Cidade',''), row.get('Endereço',''), 
-                         row.get('Responsável',''), row.get('Palestra Pública','')]
-                linha_completa = " ".join([limpar_busca(val) for val in campos])
+                # Especial para PALESTRAS - limpa caracteres especiais
+                palestra = limpar_busca(row.get('Palestra Pública', ''))
+                outros_campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
+                               row.get('Cidade',''), row.get('Endereço',''), row.get('Responsável','')]
                 
-                if termo in linha_completa:
+                # Busca em palestra primeiro (mais específica)
+                if termo in palestra:
                     resultados.append(row)
+                else:
+                    # Depois busca nos outros campos
+                    outros_texto = " ".join([limpar_busca(val) for val in outros_campos])
+                    if termo in outros_texto:
+                        resultados.append(row)
 
             resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
 
@@ -137,4 +147,4 @@ else:
         except Exception as erro:
             st.error(f"Erro: {str(erro)}")
     else:
-        st.info("Digite nome do centro, cidade ou dia da semana!")
+        st.info("Digite nome do centro, cidade ou dia: 'quinta', 'quarta', 'Kardec', 'Icém'!")
