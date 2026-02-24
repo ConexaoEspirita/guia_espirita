@@ -19,9 +19,11 @@ div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !im
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
+.search-container {position: relative;}
+.search-input {width: 100% !important; font-size: 18px !important; padding: 18px 16px !important; border-radius: 12px !important; border: 3px solid #0047AB !important; background: rgba(255,255,255,0.95) !important; font-weight: 500 !important;}
+.search-input:focus {border-color: #1976D2 !important; box-shadow: 0 0 0 3px rgba(25,118,210,0.2) !important;}
 .conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
-@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
-.search-input input {font-size: 18px !important;padding: 16px 12px !important;border-radius: 12px !important;border: 2px solid #0047AB !important;}
+@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}.search-input {font-size: 20px !important;padding: 20px 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -60,11 +62,31 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # BUSCA SIMPLES E PERFEITA - SEM HTML QUEBRA-CABEÇA
+    # CONTAINER ESPECIAL PARA BUSCA COM FOCO E LIMPEZA AUTOMÁTICA
+    st.markdown('<div class="search-container">', unsafe_allow_html=True)
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
                          label_visibility="collapsed",
-                         placeholder="Toque aqui para pesquisar...",
-                         key="busca_input")
+                         placeholder="👆 TOQUE AQUI para limpar e digitar",
+                         key="busca_input_perfeita")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # CSS + JS para limpar ao tocar
+    st.markdown("""
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const input = document.querySelector('.search-input input');
+        if (input) {
+            input.addEventListener('focus', function() {
+                this.value = '';
+            });
+            input.addEventListener('click', function() {
+                this.value = '';
+                this.focus();
+            });
+        }
+    });
+    </script>
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -154,7 +176,7 @@ else:
         except Exception as e:
             st.error(f"❌ Erro: {str(e)}")
     else:
-        st.info("👆 Digite na barra acima e clique PESQUISAR!")
+        st.info("👆 TOQUE na barra acima - ela LIMPA sozinha + teclado sobe!")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
