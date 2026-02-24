@@ -18,6 +18,8 @@ st.markdown("""
     .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
+    .tag-palestra { background-color: #E3F2FD; color: #0D47A1; padding: 5px 10px; border-radius: 8px; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 8px; }
+    
     div.stLinkButton > a {
         width: 100% !important; font-weight: bold !important; height: 45px !important;
         display: flex !important; align-items: center !important; justify-content: center !important;
@@ -30,72 +32,80 @@ url = "https://fjqowpuzenqraugcmmtp.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqcW93cHV6ZW5xcmF1Z2NtbXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4Njk2NzQsImV4cCI6MjA4NzQ0NTY3NH0.otWbLrbW4zYOb8-PCZwHYP9vQIbcWCRP_drXHGwIjzw"
 supabase = create_client(url, key)
 
-# Função para remover acentos e deixar tudo minúsculo
-def remover_acentos(txt):
-    return ''.join(c for c in unicodedata.normalize('NFD', str(txt))
-                  if unicodedata.category(c) != 'Mn').lower()
+# Função para busca inteligente (ignora acentos)
+def limpar(txt):
+    return ''.join(c for c in unicodedata.normalize('NFD', str(txt)) if unicodedata.category(c) != 'Mn').lower()
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- TELA DE ACESSO ---
+# --- ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
     s = st.text_input("Senha", type="password")
     if st.button("ACESSAR GUIA"):
         res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
-        if len(res.data) > 0:
-            st.session_state.logado = True; st.rerun()
-        else: st.error("Dados incorretos!")
+        if len(res.data) > 0: st.session_state.logado = True; st.rerun()
+        else: st.error("Incorreto!")
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    
-    busca = st.text_input("🔍 Digite o que procura:", placeholder="Ex: Geronimo")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Ex: Geronimo, Rio Preto...")
 
     if busca:
         try:
             df = pd.read_excel("guia.xlsx").astype(str).replace('nan', '')
             
-            # FILTRO INTELIGENTE: Ignora acentos e maiúsculas
-            termo_busca = remover_acentos(busca)
-            mascara = df.apply(lambda r: r.apply(remover_acentos).str.contains(termo_busca)).any(axis=1)
+            # Filtro que ignora acentos
+            termo = limpar(busca)
+            mascara = df.apply(lambda r: r.apply(limpar).str.contains(termo)).any(axis=1)
             res = df[mascara]
 
             if not res.empty:
-                for _, row in res.iterrows():
-                    # MAPEAMENTO POR POSIÇÃO (A=0, B=1, C=2, D=3, E=4, F=5, G=6)
-                    v_fantasia = row.iloc[0] if len(row) > 0 else ""
-                    v_nome     = row.iloc[1] if len(row) > 1 else "Centro"
-                    v_cidade   = row.iloc[2] if len(row) > 2 else ""
-                    v_endereco = row.iloc[3] if len(row) > 3 else ""
-                    v_responsavel = row.iloc[5] if len(row) > 5 else "Não informado"
-                    v_celular  = row.iloc[6] if len(row) > 6 else ""
+                cols = df.columns.tolist()
+                # Localizador de colunas por nome (não por número)
+                def f_col(termos): return next((c for c in cols if any(t in c.lower() for t in termos)), None)
 
+                c_nome = f_col(['nome'])
+                c_fant = f_col(['fantasia'])
+                c_resp = f_col(['responsavel', 'dirigente', 'dono'])
+                c_end  = f_col(['endere', 'rua', 'local'])
+                c_cid  = f_col(['cidade', 'municip'])
+                c_pal  = f_col(['palestra', 'dia'])
+                c_cel  = f_col(['celular', 'whats', 'contato', 'fone'])
+
+                for _, row in res.iterrows():
+                    n = row[c_nome] if c_nome else "Centro"
+                    fant = row[c_fant] if c_fant else ""
+                    resp = row[c_resp] if c_resp else "Não informado"
+                    end  = row[c_end] if c_end else ""
+                    cid  = row[c_cid] if c_cid else ""
+                    pal  = row[c_pal] if c_pal else ""
+                    cel  = row[c_cel] if c_cel else ""
+
+                    # Card Visual
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-real">{v_nome}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_responsavel}</div>
-                            <div class="info-texto">📍 {v_endereco}</div>
-                            <div class="info-texto">🏙️ {v_cidade}</div>
+                            <div class="nome-real">{n}</div>
+                            <div class="nome-fantasia">{fant}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
+                            <div class="info-texto">📍 {end}</div>
+                            <div class="info-texto">🏙️ {cid}</div>
+                            {f'<div class="tag-palestra">🗓️ Palestra: {pal}</div>' if pal else ''}
                         </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
-                        if v_endereco:
-                            q_maps = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ MAPS", f"https://www.google.com{q_maps}")
+                        if end:
+                            q = urllib.parse.quote(f"{end}, {cid}")
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
-                        if v_celular:
-                            num = ''.join(filter(str.isdigit, v_celular))
+                        if cel:
+                            num = ''.join(filter(str.isdigit, cel))
                             if len(num) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
                     st.write("") 
-            else:
-                st.warning(f"Nenhum resultado para '{busca}'.")
-        except Exception as e:
-            st.error(f"Erro ao ler a planilha: {e}")
-    else:
-        st.info("Digite um nome acima para pesquisar! 🙏")
+            else: st.warning("Nenhum resultado.")
+        except Exception as e: st.error(f"Erro: {e}")
+    else: st.info("Digite acima para pesquisar! 🙏")
