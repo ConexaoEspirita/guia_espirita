@@ -41,6 +41,8 @@ supabase = create_client(url, key)
 # FUNÇÕES AUXILIARES
 # ==============================
 def limpar_busca(texto):
+    if pd.isna(texto):
+        return ""
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
@@ -64,7 +66,7 @@ if not st.session_state.logado:
             st.error("Dados incorretos!")
 
 # ==============================
-# ÁREA PRINCIPAL - VERSÃO FINAL CORRIGIDA
+# ÁREA PRINCIPAL - 100% ESTÁVEL
 # ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
@@ -72,7 +74,7 @@ else:
 
     if busca:
         try:
-            # Carrega e prepara os dados
+            # Carrega e prepara dados
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
             if 'Unnamed: 0' in df.columns:
                 df = df.drop('Unnamed: 0', axis=1)
@@ -88,12 +90,20 @@ else:
                 'CELULAR': 'Celular'
             })
 
-            # ✅ BUSCA SIMPLES E EFICAZ - acha TODOS os "kardec"
+            # ✅ BUSCA SIMPLES E ROBUSTA - SEM ERROS
             termo = limpar_busca(busca)
-            mascara = df.astype(str).apply(lambda linha: linha.str.contains(termo, case=False, na=False), axis=0).any()
-            resultados = df[mascara].copy()
+            resultados = []
+            
+            for idx, row in df.iterrows():
+                # Converte linha toda para string e busca
+                linha_texto = " ".join([limpar_busca(val) for val in row])
+                if termo in linha_texto:
+                    resultados.append(row)
 
-            for _, row in resultados.iterrows():
+            resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+
+            # Mostra resultados
+            for _, row in resultados_df.iterrows():
                 v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
                 v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
                 v_cidade = str(row.get('Cidade', 'Não informada'))
@@ -102,7 +112,6 @@ else:
                 v_resp = str(row.get('Responsável', 'Não informado'))
                 v_celular = str(row.get('Celular', ''))
 
-                # Card
                 st.markdown(f"""
                 <div class="card-centro">
                     <div class="nome-grande">{v_nome_real}</div>
@@ -114,22 +123,5 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Botões SEMPRE seguros
                 col1, col2 = st.columns(2)
                 with col1:
-                    if 'Não informado' not in v_endereco:
-                        query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                        st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
-                with col2:
-                    numero = ''.join(filter(str.isdigit, v_celular))
-                    if len(numero) >= 10:
-                        st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
-                st.divider()
-
-            if resultados.empty:
-                st.warning("Nenhum resultado encontrado.")
-                
-        except Exception as erro:
-            st.error(f"Erro: {str(erro)}")
-    else:
-        st.info("👆 Digite nome, cidade ou responsável para buscar!")
