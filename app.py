@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo
+# 1. Configuração e Estilo Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -14,10 +14,11 @@ st.markdown("""
         border-left: 8px solid #0047AB; margin-bottom: 15px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    .nome-real { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.1; }
+    .nome-real { color: #0047AB !size: 26px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 10px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
     
+    /* Botões Lado a Lado */
     div.stLinkButton > a {
         width: 100% !important; font-weight: bold !important; height: 45px !important;
         display: flex !important; align-items: center !important; justify-content: center !important;
@@ -32,7 +33,7 @@ supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- TELA DE ACESSO ---
+# --- LOGIN ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -54,33 +55,36 @@ else:
 
             if not res.empty:
                 for _, row in res.iterrows():
-                    # Puxando dados pelas colunas do seu Excel 
-                    v_fantasia = row.get('Nome Fantasia', '')
-                    v_nome = row.get('Nome', 'Centro')
-                    v_cidade = row.get('Cidade', '')
-                    v_endereco = row.get('Endereco', row.get('Endereço', ''))
-                    v_responsavel = row.get('Responsavel', row.get('Responsável', ''))
-                    v_celular = row.get('Celular', '')
+                    # Puxando dados exatamente como estão no seu Excel
+                    # Se não aparecer, verifique se no Excel o nome da coluna é esse mesmo
+                    fanta = row.get('Nome Fantasia', '')
+                    nome = row.get('Nome', 'Centro')
+                    cid = row.get('Cidade', '')
+                    end = row.get('Endereco', row.get('Endereço', ''))
+                    resp = row.get('Responsavel', row.get('Responsável', ''))
+                    cel = row.get('Celular', '')
 
-                    # Card Visual
+                    # Card Visual Estilo Placar
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-real">{v_nome}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_responsavel}</div>
-                            <div class="info-texto">📍 {v_endereco}</div>
-                            <div class="info-texto">🏙️ {v_cidade}</div>
+                            <div class="nome-real">{nome}</div>
+                            <div class="nome-fantasia">{fanta}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
+                            <div class="info-texto">📍 {end}</div>
+                            <div class="info-texto">🏙️ {cid}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
                     c1, c2 = st.columns(2)
                     with c1:
-                        if v_endereco:
-                            q_maps = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                        if end:
+                            # CORREÇÃO DO MAPS: Link oficial Google Search
+                            q_maps = urllib.parse.quote(f"{end}, {cid}")
                             st.link_button("🗺️ MAPS", f"https://www.google.com{q_maps}")
                     with c2:
-                        if v_celular:
-                            so_nums = ''.join(filter(str.isdigit, v_celular))
+                        if cel:
+                            # CORREÇÃO DO WHATSAPP: Link com barra e 55
+                            so_nums = ''.join(filter(str.isdigit, cel))
                             if len(so_nums) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{so_nums}")
                     st.write("") 
