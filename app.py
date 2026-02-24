@@ -44,14 +44,14 @@ st.markdown("""
     color: #003366;
     font-size: 28px;
     font-weight: 800;
-    letter-spacing: 0.5px;
+    text-align: center;
 }
 
 .nome-fantasia {
     color: #5CACE2;
     font-size: 18px;
     font-style: italic;
-    margin-top: -5px;
+    text-align: center;
     margin-bottom: 15px;
 }
 
@@ -82,7 +82,7 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # ==============================
-# FUNÇÕES
+# FUNÇÃO BUSCA
 # ==============================
 def limpar_busca(texto):
     texto = unicodedata.normalize('NFD', str(texto))
@@ -129,7 +129,8 @@ else:
 
     if busca:
 
-        df = pd.read_excel("guia.xlsx").astype(str).replace("nan", "")
+        df = pd.read_excel("guia.xlsx").fillna("").astype(str)
+
         termo = limpar_busca(busca)
 
         mascara = df.apply(
@@ -142,22 +143,20 @@ else:
 
             for _, row in resultados.iterrows():
 
-                v_fantasia = row.iloc[0]
-                v_nome_real = row.iloc[1]
-                v_cidade = row.iloc[2]
-                v_endereco = row.iloc[3]
-                v_palestra = row.iloc[4]
-                v_resp = row.iloc[5]
-                v_celular = row.iloc[6]
+                v_fantasia = row["Fantasia"]
+                v_nome_real = row["Nome Real"]
+                v_cidade = row["Cidade"]
+                v_endereco = row["Endereço"]
+                v_palestra = row["Palestra"]
+                v_resp = row["Responsável"]
+                v_celular = row["Celular"]
 
                 # CARD
                 st.markdown(f"""
                 <div class="card-centro">
 
-                    <div style="text-align:center;">
-                        <div class="nome-grande">{v_nome_real}</div>
-                        <div class="nome-fantasia">{v_fantasia}</div>
-                    </div>
+                    <div class="nome-grande">{v_nome_real}</div>
+                    <div class="nome-fantasia">{v_fantasia}</div>
 
                     <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                     <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
@@ -169,7 +168,7 @@ else:
 
                 col1, col2 = st.columns(2)
 
-                # MAPS
+                # GOOGLE MAPS
                 with col1:
                     if v_endereco:
                         query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
@@ -178,7 +177,7 @@ else:
 
                 # WHATSAPP
                 with col2:
-                    if v_celular and v_celular.strip() != "":
+                    if v_celular.strip() != "":
                         numero = ''.join(filter(str.isdigit, v_celular))
 
                         if len(numero) >= 10:
