@@ -21,6 +21,7 @@ st.markdown("""
 .nome-fantasia { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 12px; display: block; }
 .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
 div.stLinkButton > a { width: 100% !important; font-weight: bold !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+.conta-pequena { font-size: 12px !important; color: #888 !important; margin-bottom: 10px !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -79,6 +80,10 @@ else:
                     resultados.append(row)
 
             resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+
+            # ✅ CONTADOR DISCRETO
+            if not resultados_df.empty:
+                st.markdown(f'<div class="conta-pequena">achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
 
             for _, row in resultados_df.iterrows():
                 v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
