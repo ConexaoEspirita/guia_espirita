@@ -20,6 +20,7 @@ div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !importan
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 .conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
+div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
 </style>""", unsafe_allow_html=True)
 
@@ -56,7 +57,7 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # BUSCA SIMPLIFICADA QUE SEMPRE ACHA
+    # BUSCA SIMPLIFICADA
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
                          label_visibility="collapsed")
     
@@ -81,7 +82,6 @@ else:
                 if 'Unnamed: 0' in df.columns:
                     df = df.drop('Unnamed: 0', axis=1)
                 
-                # Padroniza nomes das colunas
                 df.columns = df.columns.str.strip()
                 df = df.rename(columns={
                     'NOME FANTASIA': 'Nome Fantasia',
@@ -93,11 +93,9 @@ else:
                     'CELULAR': 'Celular'
                 })
                 
-                # BUSCA SIMPLES EM TODOS OS CAMPOS
                 termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
-                    # Converte linha inteira para texto limpo
                     texto_row = " ".join([
                         limpar_busca(row.get('Nome Fantasia', '')),
                         limpar_busca(row.get('Nome Real / Razão Social', '')),
@@ -107,7 +105,6 @@ else:
                         limpar_busca(row.get('Palestra Pública', ''))
                     ])
                     
-                    # Se o termo estiver QUALQUER lugar da linha
                     if termo_limpo in texto_row:
                         resultados.append(row.to_dict())
 
@@ -128,60 +125,19 @@ else:
             v_celular = str(row.get('Celular', ''))
             v_palestras = str(row.get('Palestra Pública', ''))
 
-            # INÍCIO DO CARD
             st.markdown(f"""
             <div class="card-centro">
                 <div class="nome-grande">{v_nome_real}</div>
                 <div class="nome-fantasia">{v_fantasia}</div>
-            """, unsafe_allow_html=True)
-
-            # SEÇÃO PALESTRAS COM HORÁRIO E DIA
-            st.markdown("""
-            <div style="margin: 16px 0; padding: 16px; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border-radius: 16px; border-left: 5px solid #10B981; margin-bottom: 16px;">
-                <div style="color: #047857; font-weight: 700; font-size: 16px; margin-bottom: 12px;">📅 Palestras</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-            """, unsafe_allow_html=True)
-
-            # Processa e exibe palestras
-            if v_palestras and v_palestras != 'N/I' and v_palestras.strip():
-                palestras = [p.strip() for p in v_palestras.split(',') if p.strip()]
-                for palestra in palestras:
-                    parts = palestra.split()
-                    dia = parts[0] if parts else ''
-                    horario = ' '.join(parts[1:]) if len(parts) > 1 else ''
-                    
-                    st.markdown(f"""
-                    <div style="
-                        background: linear-gradient(135deg, #10B981, #059669);
-                        color: white;
-                        padding: 8px 14px;
-                        border-radius: 20px;
-                        font-size: 13px;
-                        font-weight: 600;
-                        margin: 2px;
-                        box-shadow: 0 3px 12px rgba(16, 185, 129, 0.4);
-                        line-height: 1.3;
-                    ">
-                        {dia} • {horario}
-                    </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.markdown('<div style="color: #6B7280; font-style: italic; font-size: 14px; padding: 8px 12px;">📌 Nenhuma palestra cadastrada</div>', unsafe_allow_html=True)
-
-            st.markdown("""
+                <div class="info-texto">
+                    <strong>📅 {v_palestras}</strong>
                 </div>
+                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
             </div>
             """, unsafe_allow_html=True)
 
-            # INFORMAÇÕES DO CENTRO
-            st.markdown(f"""
-            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # BOTÕES
             col1, col2 = st.columns(2)
             with col1:
                 if 'N/I' not in v_endereco and v_endereco != 'N/I':
