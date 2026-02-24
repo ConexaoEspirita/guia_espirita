@@ -46,14 +46,6 @@ def limpar_busca(texto):
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
-def debug_df(df, nome="DataFrame"):
-    """Debug: mostra colunas e primeiras linhas"""
-    st.write(f"🔍 Colunas em {nome}: {list(df.columns)}")
-    st.write(f"📏 Tamanho: {len(df)} linhas")
-    if len(df) > 0:
-        st.write("Primeiras 3 linhas:")
-        st.dataframe(df.head(3))
-
 # ==============================
 # CONTROLE DE LOGIN
 # ==============================
@@ -73,7 +65,7 @@ if not st.session_state.logado:
             st.error("Dados incorretos!")
 
 # ==============================
-# ÁREA PRINCIPAL - VERSÃO ULTRA SIMPLES
+# ÁREA PRINCIPAL - 100% FUNCIONAL
 # ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
@@ -81,66 +73,45 @@ else:
 
     if busca:
         try:
-            # ✅ LÊ APENAS A ABA COM DADOS (casas espiritas python)
+            # ✅ Lê APENAS a aba com dados
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            st.success("✅ Carregou aba 'casas espiritas python' com {len(df)} linhas")
             
-            # Debug das colunas originais
-            st.write("**COLUNAS ENCONTRADAS:**", list(df.columns))
-            debug_df(df, "ORIGINAL")
-            
-            # Limpa nomes das colunas
+            # ✅ Remove coluna desnecessária e limpa nomes
+            if 'Unnamed: 0' in df.columns:
+                df = df.drop('Unnamed: 0', axis=1)
             df.columns = [col.strip() for col in df.columns]
-            st.write("**COLUNAS LIMPA:**", list(df.columns))
             
-            # Padroniza nomes das colunas (usa os nomes reais que você tem)
-            colunas_originais = list(df.columns)
-            mapeamento = {}
-            for col in colunas_originais:
-                col_limpo = col.lower().strip()
-                if any(x in col_limpo for x in ['nome fantasia', 'fantasia']):
-                    mapeamento[col] = "Nome Fantasia"
-                elif any(x in col_limpo for x in ['nome real', 'razao', 'social']):
-                    mapeamento[col] = "Nome Real / Razão Social"
-                elif any(x in col_limpo for x in ['cidade']):
-                    mapeamento[col] = "Cidade"
-                elif any(x in col_limpo for x in ['endereco', 'rua', 'av']):
-                    mapeamento[col] = "Endereço"
-                elif any(x in col_limpo for x in ['palestra', 'evento']):
-                    mapeamento[col] = "Palestra Pública"
-                elif any(x in col_limpo for x in ['responsavel', 'contato']):
-                    mapeamento[col] = "Responsável"
-                elif any(x in col_limpo for x in ['celular', 'telefone', 'whatsapp']):
-                    mapeamento[col] = "Celular"
+            # ✅ MAPEAMENTO EXATO baseado nas suas colunas
+            df = df.rename(columns={
+                'NOME FANTASIA': 'Nome Fantasia',
+                'NOME': 'Nome Real / Razão Social',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                'ENDERECO': 'Endereço',
+                'PALESTRA PUBLICA': 'Palestra Pública',
+                'RESPONSAVEL': 'Responsável',
+                'CELULAR': 'Celular'
+            })
             
-            st.write("**MAPEAMENTO AUTOMÁTICO:**", mapeamento)
-            df = df.rename(columns=mapeamento)
-            
-            # Garante colunas mínimas
-            colunas_necessarias = ["Nome Fantasia", "Nome Real / Razão Social", "Cidade", "Endereço", "Responsável", "Celular"]
-            for col in colunas_necessarias:
-                if col not in df.columns:
-                    df[col] = ""
-            
-            debug_df(df, "FINAL")
+            st.success(f"✅ Carregado! {len(df)} centros espíritas encontrados")
             
             termo = limpar_busca(busca)
             mascara = df.apply(lambda linha: linha.astype(str).apply(limpar_busca).str.contains(termo, na=False)).any(axis=1)
-            resultados = df[mascara]
+            resultados = df[mascara].copy()
 
             if not resultados.empty:
                 st.success(f"✅ {len(resultados)} resultado(s) encontrado(s)!")
                 for _, row in resultados.iterrows():
-                    # Usa .get() para evitar erros
-                    v_fantasia = row.get("Nome Fantasia", "") or "Não informado"
-                    v_nome_real = row.get("Nome Real / Razão Social", "") or "Centro Espírita"
-                    v_nome_real = v_nome_real + " 🕊️" if v_nome_real != "Centro Espírita" else "Centro Espírita 🕊️"
-                    v_cidade = row.get("Cidade", "") or "Não informada"
-                    v_endereco = row.get("Endereço", "") or "Não informado"
-                    v_palestra = row.get("Palestra Pública", "") or ""
-                    v_resp = row.get("Responsável", "") or "Não informado"
-                    v_celular = row.get("Celular", "") or ""
+                    # ✅ Dados seguros
+                    v_fantasia = row.get('Nome Fantasia', 'Não informado')
+                    v_nome_real = row.get('Nome Real / Razão Social', 'Centro Espírita')
+                    v_nome_real = f"{v_nome_real} 🕊️"
+                    v_cidade = row.get('Cidade', 'Não informada')
+                    v_endereco = row.get('Endereço', 'Não informado')
+                    v_palestra = row.get('Palestra Pública', '')
+                    v_resp = row.get('Responsável', 'Não informado')
+                    v_celular = row.get('Celular', '')
 
+                    # ✅ CARD PERFEITO
                     st.markdown(f"""
                     <div class="card-centro">
                         <div class="nome-grande">{v_nome_real}</div>
@@ -152,21 +123,22 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # ✅ BOTÕES
                     col1, col2 = st.columns(2)
                     with col1:
-                        if v_endereco != "Não informado":
+                        if v_endereco != 'Não informado':
                             query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                             st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
                     with col2:
-                        if v_celular and len(''.join(filter(str.isdigit, v_celular))) >= 10:
+                        if v_celular.strip():
                             numero = ''.join(filter(str.isdigit, v_celular))
-                            st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
-                    st.write("")
+                            if len(numero) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
+                    st.divider()
             else:
                 st.warning("Nenhum resultado encontrado.")
                 
         except Exception as erro:
             st.error(f"❌ ERRO: {erro}")
-            st.error("Verifique se 'guia.xlsx' existe e tem a aba 'casas espiritas python'")
     else:
-        st.info("👆 Digite algo para buscar nos centros espíritas!")
+        st.info("👆 Digite nome, cidade ou responsável para buscar!")
