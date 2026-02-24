@@ -104,14 +104,17 @@ else:
 
     if busca:
         try:
-            df = pd.read_excel("guia.xlsx").astype(str).replace("nan", "")
+            # Lê planilha e limpa colunas
+            df = pd.read_excel("guia.xlsx", dtype=str).fillna("")
+            df.columns = [col.strip() for col in df.columns]  # remove espaços extras
+
             termo = limpar_busca(busca)
             mascara = df.apply(lambda linha: linha.apply(limpar_busca).str.contains(termo)).any(axis=1)
             resultados = df[mascara]
 
             if not resultados.empty:
                 for _, row in resultados.iterrows():
-                    # Usando NOME DAS COLUNAS, não índices
+                    # Lendo pelos nomes das colunas
                     v_fantasia = row["Nome Fantasia"]
                     v_nome_real = row["Nome Real / Razão Social"]
                     v_cidade = row["Cidade"]
@@ -139,7 +142,7 @@ else:
                             query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                             st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
                     with col2:
-                        if v_celular and v_celular.strip() != "":
+                        if v_celular.strip() != "":
                             numero = ''.join(filter(str.isdigit, v_celular))
                             if len(numero) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
