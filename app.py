@@ -37,7 +37,7 @@ def limpar(txt):
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- LOGIN ---
+# --- ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -60,20 +60,18 @@ else:
 
             if not res.empty:
                 for _, row in res.iterrows():
-                    # MAPEAMENTO DIRETO POR POSIÇÃO PARA NÃO TER ERRO:
-                    # 0 = Nome Fantasia (Ex: CEDER)
-                    # 1 = Nome Real (Ex: Centro Espírita Francisco de Assis)
-                    # 2 = Cidade | 3 = Endereco | 4 = Palestra | 5 = Responsavel | 6 = Celular
+                    # ⚠️ AJUSTE DE POSIÇÃO AQUI:
+                    # Se o nome sair trocado, mude o 0 para 1 e o 1 para 0 abaixo:
+                    v_nome_real = row.iloc[1] # Tente mudar para 0 se estiver errado
+                    v_fantasia  = row.iloc[0] # Tente mudar para 1 se estiver errado
                     
-                    v_fantasia = row.iloc[0] if len(row) > 0 else ""
-                    v_nome_real = row.iloc[1] if len(row) > 1 else "Centro"
-                    v_cidade   = row.iloc[2] if len(row) > 2 else ""
-                    v_endereco = row.iloc[3] if len(row) > 3 else ""
-                    v_palestra = row.iloc[4] if len(row) > 4 else ""
-                    v_resp     = row.iloc[5] if len(row) > 5 else "Não informado"
-                    v_celular  = row.iloc[6] if len(row) > 6 else ""
+                    v_cidade    = row.iloc[2]
+                    v_endereco  = row.iloc[3]
+                    v_palestra  = row.iloc[4]
+                    v_resp      = row.iloc[5]
+                    v_celular   = row.iloc[6]
 
-                    # Card Visual Corrigido: Nome Real em destaque, Fantasia embaixo
+                    # Card Visual
                     st.markdown(f"""
                         <div class="card-centro">
                             <div class="nome-completo">{v_nome_real}</div>
@@ -89,6 +87,7 @@ else:
                     with c1:
                         if v_endereco:
                             q = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            # Link simplificado para evitar erro de DNS
                             st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
                         if v_celular:
@@ -98,4 +97,4 @@ else:
                     st.write("") 
             else: st.warning("Nenhum resultado.")
         except Exception as e: st.error(f"Erro: {e}")
-    else: st.info("Digite acima para pesquisar! 🙏")
+    else: st.info("Digite para pesquisar! 🙏")
