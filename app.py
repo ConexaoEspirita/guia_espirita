@@ -9,19 +9,29 @@ st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wid
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium { 
-    color: white !important;
-    font-size: 2.5rem !important; 
-    font-weight: 800 !important;
-    text-shadow: 0 4px 12px rgba(0,71,171,0.5) !important;
+.titulo-container {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     gap: 25px !important;
-    margin: 0 auto 30px !important;
+    width: 100% !important;
+    margin: 0 auto 40px !important;
+    padding: 20px 0 !important;
+}
+.titulo-premium { 
     background: linear-gradient(90deg, #0047AB, #1976D2) !important;
     -webkit-background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
+    color: white !important;
+    font-size: 2.5rem !important; 
+    font-weight: 800 !important;
+    text-shadow: 0 4px 12px rgba(0,71,171,0.5) !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+}
+.pombinha {
+    font-size: 2.5rem !important;
+    margin: 0 !important;
 }
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
@@ -53,7 +63,6 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# BUSCA FLEXÍVEL MELHORADA - VARIACOES DE NOMES
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
@@ -78,7 +87,6 @@ def expandir_variacoes(termo):
         'pedro': ['pedro', 'peter'],
         'francisco': ['francisco', 'francis', 'chico']
     }
-    
     termo_limpo = limpar_busca(termo)
     if termo_limpo in variacoes:
         return variacoes[termo_limpo]
@@ -88,13 +96,13 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 
 if not st.session_state.logado:
-    st.markdown('''
-        <div style="display: flex; align-items: center; justify-content: center; gap: 25px; margin-bottom: 30px;">
-            <span style="font-size: 2.5rem;">🕊️</span>
-            <h1 style="background: linear-gradient(90deg, #0047AB, #1976D2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; font-weight: 800; margin: 0; text-shadow: 0 4px 12px rgba(0,71,171,0.5);">Guia Espírita</h1>
-            <span style="font-size: 2.5rem;">🕊️</span>
+    st.markdown("""
+        <div class="titulo-container">
+            <div class="pombinha">🕊️</div>
+            <h1 class="titulo-premium">Guia Espírita</h1>
+            <div class="pombinha">🕊️</div>
         </div>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -112,15 +120,15 @@ if not st.session_state.logado:
         else:
             st.error("❌ E-mail ou senha incorretos!")
 else:
-    st.markdown('''
-        <div style="display: flex; align-items: center; justify-content: center; gap: 25px; margin-bottom: 30px;">
-            <span style="font-size: 2.5rem;">🕊️</span>
-            <h1 style="background: linear-gradient(90deg, #0047AB, #1976D2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.5rem; font-weight: 800; margin: 0; text-shadow: 0 4px 12px rgba(0,71,171,0.5);">Guia Espírita</h1>
-            <span style="font-size: 2.5rem;">🕊️</span>
+    st.markdown("""
+        <div class="titulo-container">
+            <div class="pombinha">🕊️</div>
+            <h1 class="titulo-premium">Guia Espírita</h1>
+            <div class="pombinha">🕊️</div>
         </div>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
-    # CAMPO COM LUPA DISCRETA E VERDE
+    # CAMPO VERDE COM LUPA
     col_search, _ = st.columns([1, 1])
     with col_search:
         st.markdown('<div class="search-container">', unsafe_allow_html=True)
@@ -161,68 +169,3 @@ else:
                     'RESPONSAVEL': 'Responsável',
                     'CELULAR': 'Celular'
                 })
-                
-                todas_variacoes = expandir_variacoes(termo)
-                resultados = []
-                
-                for idx, row in df.iterrows():
-                    texto_row = " ".join([
-                        limpar_busca(row.get('Nome Fantasia', '')),
-                        limpar_busca(row.get('Nome Real / Razão Social', '')),
-                        limpar_busca(row.get('Cidade', '')),
-                        limpar_busca(row.get('Endereço', '')),
-                        limpar_busca(row.get('Responsável', '')),
-                        limpar_busca(row.get('Palestra Pública', ''))
-                    ])
-                    
-                    if any(variacao in texto_row for variacao in todas_variacoes):
-                        resultados.append(row)
-                
-                if resultados:
-                    st.success(f"✨ {len(resultados)} resultado{'s' if len(resultados) != 1 else ''} para '{termo}'")
-                    
-                    for idx, row in pd.DataFrame(resultados).iterrows():
-                        v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
-                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro')) + " 🕊️"
-                        v_cidade = str(row.get('Cidade', 'N/I'))
-                        v_endereco = str(row.get('Endereço', 'N/I'))
-                        v_resp = str(row.get('Responsável', 'N/I'))
-                        v_celular = str(row.get('Celular', ''))
-                        v_palestra = str(row.get('Palestra Pública', 'N/I'))
-
-                        st.markdown(f"""
-                        <div class="card-centro">
-                            <div class="nome-grande">{v_nome_real}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="palestra-info">🗣️ <b>Palestras:</b> {v_palestra}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if 'N/I' not in v_endereco and v_endereco.strip():
-                                query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                                st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
-                        with col2:
-                            numero = ''.join(filter(str.isdigit, v_celular))
-                            if len(numero) >= 10:
-                                st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
-                        st.divider()
-                else:
-                    st.info(f"❌ Nada encontrado para '{termo}'. Tente: Joana (acha Joanna), São Paulo...")
-                    
-        except FileNotFoundError:
-            st.error("❌ guia.xlsx não encontrado!")
-        except Exception as e:
-            st.error(f"❌ Erro: {str(e)}")
-    
-    st.markdown("---")
-    col_spacer, col_logout = st.columns([5, 1])
-    with col_logout:
-        if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.logado = False
-            st.session_state.tem_busca = ""
-            st.rerun()
