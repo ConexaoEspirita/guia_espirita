@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client
-import urllib.parse  # ESSENCIAL PARA O MAPS FUNCIONAR
+import urllib.parse
 
-# 1. Configuração e Estilo "Placar Profissional"
+# 1. Configuração e Estilo
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -34,43 +34,21 @@ key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZq
 supabase = create_client(url, key)
 
 if 'logado' not in st.session_state: st.session_state.logado = False
-if 'usuario_email' not in st.session_state: st.session_state.usuario_email = ""
 
-# ⚠️ COLOQUE SEU E-MAIL DE ADMIN AQUI ⚠️
-EMAIL_MESTRE = "seu-email@gmail.com" 
-
-# --- TELA DE ACESSO ---
+# --- ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
-    aba1, aba2 = st.tabs(["🔐 Entrar", "📝 Criar Conta"])
-    with aba1:
-        e = st.text_input("E-mail", key="l_e").strip().lower()
-        s = st.text_input("Senha", type="password", key="l_s")
-        if st.button("ACESSAR GUIA"):
-            res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
-            if len(res.data) > 0:
-                supabase.table("acessos").insert({"email": e, "status": "ENTRADA"}).execute()
-                st.session_state.logado = True; st.session_state.usuario_email = e; st.rerun()
-            else: st.error("Incorreto!")
-    with aba2:
-        ec = st.text_input("Novo E-mail").strip().lower()
-        sc = st.text_input("Nova Senha", type="password")
-        if st.button("CADASTRAR"):
-            supabase.table("acessos").insert({"email": ec, "senha": sc, "status": "CADASTRO"}).execute()
-            st.success("Criado! Vá em Entrar.")
-
-# --- TELA PRINCIPAL ---
+    e = st.text_input("E-mail").strip().lower()
+    s = st.text_input("Senha", type="password")
+    if st.button("ACESSAR GUIA"):
+        res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
+        if len(res.data) > 0:
+            st.session_state.logado = True; st.rerun()
+        else: st.error("Incorreto!")
 else:
-    # BANNER DE BOAS-VINDAS 🕊️
     st.image("https://images.unsplash.com", use_container_width=True)
-    st.title("🕊️ Guia Espírita 🕊️")
-    
-    if st.sidebar.button("🚪 Sair do Guia"): 
-        supabase.table("acessos").insert({"email": st.session_state.usuario_email, "status": "SAIDA"}).execute()
-        st.session_state.logado = False; st.rerun()
-
-    # BUSCA INTELIGENTE
-    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade ou Responsável...")
+    st.title("🕊️ Guia Espírita")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Nome, Cidade ou Responsável...")
 
     if busca:
         try:
@@ -78,47 +56,50 @@ else:
             res = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
             if not res.empty:
-                for _, row in res.iterrows():
-                    fantasia = row.get('Nome Fantasia', '')
-                    nome = row.get('Nome', 'Centro Espírita')
-                    cidade = row.get('Cidade', '')
-                    endereco = row.get('Endereco', '')
-                    palestra = row.get('Palestra', '')
-                    responsavel = row.get('Responsavel', 'Não informado')
-                    contato = row.get('Celular', '')
+                cols = df.columns.tolist()
+                # Função inteligente para achar a coluna mesmo com nome parecido
+                def f_col(termos):
+                    return next((c for c in cols if any(t in c.lower() for t in termos)), None)
 
-                    # Card Visual Estilo Placar 🕊️
+                # Mapeamento Flexível
+                c_nome = f_col(['nome'])
+                c_fant = f_col(['fantasia'])
+                c_resp = f_col(['responsavel', 'dirigente', 'dono'])
+                c_end = f_col(['endere', 'rua', 'local'])
+                c_cid = f_col(['cidade', 'municip'])
+                c_pal = f_col(['palestra', 'publica', 'dia'])
+                c_cel = f_col(['celular', 'whats', 'contato', 'fone'])
+
+                for _, row in res.iterrows():
+                    n = row[c_nome] if c_nome else "Centro Espírita"
+                    fant = row[c_fant] if c_fant else ""
+                    resp = row[c_resp] if c_resp else "Não informado"
+                    end = row[c_end] if c_end else ""
+                    cid = row[c_cid] if c_cid else ""
+                    pal = row[c_pal] if c_pal else ""
+                    cel = row[c_cel] if c_cel else ""
+
+                    # Card Visual
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-principal">{nome}</div>
-                            <div class="nome-fantasia">{fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {responsavel}</div>
-                            <div class="info-texto">📍 {endereco}</div>
-                            <div class="info-texto">🏙️ {cidade}</div>
-                            {f'<div class="tag-palestra">🗓️ Palestra: {palestra}</div>' if palestra else ''}
+                            <div class="nome-principal">{n}</div>
+                            <div class="nome-fantasia">{fant}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {resp}</div>
+                            <div class="info-texto">📍 {end}</div>
+                            <div class="info-texto">🏙️ {cid}</div>
+                            {f'<div class="tag-palestra">🗓️ Palestra: {pal}</div>' if pal else ''}
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # CORREÇÃO DOS BOTÕES DE AÇÃO
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if endereco:
-                            # MAPS: Codifica para aceitar acentos e espaços
-                            end_completo = f"{endereco} {cidade}".strip()
-                            u_maps = f"https://www.google.com{urllib.parse.quote(end_completo)}"
-                            st.link_button("🗺️ MAPS", u_maps)
-                    with col2:
-                        if contato:
-                            # WHATSAPP: Limpa ( ) - e espaços
-                            num_limpo = ''.join(filter(str.isdigit, contato))
-                            if len(num_limpo) >= 10:
-                                st.link_button("💬 WHATSAPP", f"https://wa.me{num_limpo}")
-                            else:
-                                st.link_button("📞 LIGAR", f"tel:{num_limpo}")
-                    st.write("") 
-            else:
-                st.warning("Nenhum resultado encontrado.")
-        except:
-            st.error("Erro ao ler a planilha. Verifique os nomes das colunas!")
-    else:
-        st.info("Digite acima para pesquisar! 🙏")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if end:
+                            link_m = f"https://www.google.com{urllib.parse.quote(f'{end} {cid}')}"
+                            st.link_button("🗺️ MAPS", link_m)
+                    with c2:
+                        if cel:
+                            num = ''.join(filter(str.isdigit, cel))
+                            st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
+            else: st.warning("Nenhum resultado.")
+        except Exception as e: st.error(f"Erro: {e}")
+    else: st.info("Digite para pesquisar! 🙏")
