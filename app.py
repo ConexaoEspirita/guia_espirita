@@ -31,6 +31,11 @@ div.stLinkButton > a {
     justify-content: center !important; 
 }
 .conta-pequena { font-size: 11px !important; color: #888 !important; margin-bottom: 8px !important; }
+div.stButton > button {
+    background-color: #0047AB !important;
+    color: white !important;
+    border-radius: 10px !important;
+}
 @media (max-width: 600px) {
     .nome-grande { font-size: 18px !important; }
     .nome-fantasia { font-size: 13px !important; }
@@ -58,9 +63,9 @@ if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
     col1, col2 = st.columns([1, 1])
     with col1:
-        email = st.text_input("E-mail", key="email_login")
+        email = st.text_input("E-mail")
     with col2:
-        senha = st.text_input("Senha", type="password", key="senha_login")
+        senha = st.text_input("Senha", type="password")
     if st.button("🔑 ACESSAR", use_container_width=True):
         resposta = supabase.table("acessos").select("*").eq("email", email).eq("senha", senha).execute()
         if resposta.data:
@@ -71,16 +76,18 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita")
     
-    # ✅ BUSCA SIMPLES - MOBILE FRIENDLY
-    col_busca, col_botao = st.columns([3, 1])
-    with col_busca:
-        st.text_input("🔍 Nome, cidade ou dia da semana", 
-                     placeholder="Kardec, Icém, sexta-feira...", key="busca_input")
-    with col_botao:
-        if st.button("🔎", use_container_width=True):
+    # ✅ BUSCA SIMPLES - SEM MICROFONE
+    col_busca, col_botao = st.columns([4, 1])
+    busca_input = st.text_input("🔍 Nome, cidade ou dia da semana", 
+                               placeholder="Kardec, Icém, sexta-feira...", 
+                               label_visibility="collapsed")
+    
+    if st.button("🔎 BUSCAR", use_container_width=True):
+        if busca_input.strip():
+            st.session_state.busca = busca_input.strip()
             st.rerun()
     
-    busca = st.session_state.get("busca_input", "").strip()
+    busca = st.session_state.get("busca", "").strip()
     
     if busca:
         try:
@@ -153,6 +160,9 @@ else:
             st.error(f"Erro: {str(erro)}")
     else:
         st.info("👆 Digite nome do centro, cidade ou dia da semana!")
-        
-    # Botão logout
-    st.sidebar.button("🚪 Sair", on_click=lambda: setattr(st.session_state, 'logado', False) or st.rerun())
+    
+    # Logout discreto no topo direito
+    if st.button("🚪 Sair", key="logout"):
+        st.session_state.logado = False
+        st.session_state.busca = ""
+        st.rerun()
