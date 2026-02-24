@@ -120,7 +120,7 @@ else:
     if busca:
 
         try:
-            # Lê a planilha
+            # Lê a planilha limpa
             df = pd.read_excel("guia.xlsx", header=0).fillna("").astype(str)
 
             # Limpa nomes das colunas (remove acento e espaços)
@@ -136,7 +136,7 @@ else:
 
                 for _, row in resultados.iterrows():
 
-                    # Pega pelo NOME DA COLUNA limpo
+                    # Acessa pelo nome da coluna limpo
                     v_fantasia = row.get("NOME FANTASIA", "")
                     v_nome_real = row.get("NOME", "")
                     v_cidade = row.get("CIDADE DO CENTRO ESPIRITA", "")
