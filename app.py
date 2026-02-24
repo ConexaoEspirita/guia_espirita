@@ -5,14 +5,9 @@ import urllib.parse
 import unicodedata
 
 # ==============================
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIGURAÇÃO
 # ==============================
-st.set_page_config(
-    page_title="Guia Espírita",
-    page_icon="🕊️",
-    layout="centered"
-)
-
+st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 st.cache_data.clear()
 
 # ==============================
@@ -20,10 +15,7 @@ st.cache_data.clear()
 # ==============================
 st.markdown("""
 <style>
-
-.stApp {
-    background: linear-gradient(to bottom, #F8F9FA, #E9F2FF);
-}
+.stApp { background: linear-gradient(to bottom, #F8F9FA, #E9F2FF); }
 
 .card-centro {
     background-color: white;
@@ -32,12 +24,6 @@ st.markdown("""
     border-left: 10px solid #0047AB;
     margin-bottom: 20px;
     box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-    transition: 0.3s;
-}
-
-.card-centro:hover {
-    transform: scale(1.01);
-    box-shadow: 0 12px 22px rgba(0,0,0,0.12);
 }
 
 .nome-grande {
@@ -66,11 +52,7 @@ div.stLinkButton > a {
     font-weight: bold !important;
     height: 48px !important;
     border-radius: 10px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -82,8 +64,13 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # ==============================
-# FUNÇÃO BUSCA
+# FUNÇÃO LIMPAR TEXTO
 # ==============================
+def limpar_texto(texto):
+    texto = unicodedata.normalize('NFD', str(texto))
+    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
+    return texto.strip().upper()
+
 def limpar_busca(texto):
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
@@ -104,8 +91,7 @@ if not st.session_state.logado:
 
     if st.button("ACESSAR GUIA"):
         resposta = (
-            supabase
-            .table("acessos")
+            supabase.table("acessos")
             .select("*")
             .eq("email", email)
             .eq("senha", senha)
@@ -125,11 +111,16 @@ else:
 
     st.title("🕊️ Guia Espírita")
 
-    busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
+    busca = st.text_input("🔍 O que você procura?")
 
     if busca:
 
         df = pd.read_excel("guia.xlsx").fillna("").astype(str)
+
+        # Padroniza nomes das colunas (remove acento e espaço)
+        colunas_originais = df.columns.tolist()
+        colunas_tratadas = [limpar_texto(c) for c in colunas_originais]
+        df.columns = colunas_tratadas
 
         termo = limpar_busca(busca)
 
@@ -143,51 +134,42 @@ else:
 
             for _, row in resultados.iterrows():
 
-                v_fantasia = row["Fantasia"]
-                v_nome_real = row["Nome Real"]
-                v_cidade = row["Cidade"]
-                v_endereco = row["Endereço"]
-                v_palestra = row["Palestra"]
-                v_resp = row["Responsável"]
-                v_celular = row["Celular"]
+                v_fantasia = row.get("NOME FANTASIA", "")
+                v_nome_real = row.get("NOME", "")
+                v_cidade = row.get("CIDADE DO CENTRO ESPIRITA", "")
+                v_endereco = row.get("ENDERCO", "")  # remove acento automaticamente
+                v_palestra = row.get("PALESTRA PUBLICA", "")
+                v_resp = row.get("RESPONSAVEL", "")
+                v_celular = row.get("CELULAR", "")
 
-                # CARD
                 st.markdown(f"""
                 <div class="card-centro">
-
                     <div class="nome-grande">{v_nome_real}</div>
                     <div class="nome-fantasia">{v_fantasia}</div>
 
                     <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                     <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
                     <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                    {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra else ''}
-
+                    {f'<div class="info-texto">🗓️ <b>Palestra Pública:</b> {v_palestra}</div>' if v_palestra else ''}
                 </div>
                 """, unsafe_allow_html=True)
 
                 col1, col2 = st.columns(2)
 
-                # GOOGLE MAPS
                 with col1:
                     if v_endereco:
                         query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                         link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
                         st.link_button("🗺️ GOOGLE MAPS", link_maps)
 
-                # WHATSAPP
                 with col2:
                     if v_celular.strip() != "":
                         numero = ''.join(filter(str.isdigit, v_celular))
-
                         if len(numero) >= 10:
                             if not numero.startswith("55"):
                                 numero = "55" + numero
-
                             link_whats = f"https://wa.me/{numero}"
                             st.link_button("💬 WHATSAPP", link_whats)
-
-                st.write("")
 
         else:
             st.warning("Nenhum resultado encontrado.")
