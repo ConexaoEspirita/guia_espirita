@@ -21,6 +21,7 @@ div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 .conta-pequena {font-size: 12px !important;color: #6B7280 !important;background: rgba(255,255,255,0.7);padding: 6px 12px;border-radius: 20px;display: inline-block;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}}
+.search-input input {font-size: 18px !important;padding: 16px 12px !important;border-radius: 12px !important;border: 2px solid #0047AB !important;}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -59,21 +60,11 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # CAMPO DE BUSCA - SEM KEY PROBLEMA + FOCO AUTOMÁTICO
-    st.markdown("""
-    <div style="position: relative; margin-bottom: 10px;">
-        <input type="text" id="search-input" placeholder="🔍 Toque aqui - nome, cidade ou qualquer palavra..." 
-               style="width: 100%; padding: 16px; font-size: 18px; border-radius: 12px; border: 2px solid #0047AB; 
-                      background: rgba(255,255,255,0.9); font-weight: 500;"
-               onclick="this.select(); this.focus();" onfocus="this.select();">
-    </div>
-    <script>
-    document.getElementById('search-input').focus();
-    </script>
-    """, unsafe_allow_html=True)
-    
-    # Campo Streamlit invisível para capturar valor
-    busca = st.text_input("", value="", label_visibility="collapsed", key="busca_temp")
+    # BUSCA SIMPLES E PERFEITA - SEM HTML QUEBRA-CABEÇA
+    busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", 
+                         label_visibility="collapsed",
+                         placeholder="Toque aqui para pesquisar...",
+                         key="busca_input")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -116,3 +107,59 @@ else:
                         limpar_busca(row.get('Nome Fantasia', '')),
                         limpar_busca(row.get('Nome Real / Razão Social', '')),
                         limpar_busca(row.get('Cidade', '')),
+                        limpar_busca(row.get('Endereço', '')),
+                        limpar_busca(row.get('Responsável', '')),
+                        limpar_busca(row.get('Palestra Pública', ''))
+                    ])
+                    
+                    if termo_limpo in texto_row:
+                        resultados.append(row)
+                
+                if resultados:
+                    st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
+                    
+                    for idx, row in pd.DataFrame(resultados).iterrows():
+                        v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
+                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+                        v_cidade = str(row.get('Cidade', 'N/I'))
+                        v_endereco = str(row.get('Endereço', 'N/I'))
+                        v_resp = str(row.get('Responsável', 'N/I'))
+                        v_celular = str(row.get('Celular', ''))
+
+                        st.markdown(f"""
+                        <div class="card-centro">
+                            <div class="nome-grande">{v_nome_real}</div>
+                            <div class="nome-fantasia">{v_fantasia}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            if 'N/I' not in v_endereco:
+                                query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                                st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+                        with col2:
+                            numero = ''.join(filter(str.isdigit, v_celular))
+                            if len(numero) >= 10:
+                                st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+                        st.divider()
+                else:
+                    st.info("❌ Nenhum resultado. Tente: 'São Paulo', 'João', 'segunda-feira'")
+                    
+        except FileNotFoundError:
+            st.error("❌ Arquivo guia.xlsx não encontrado!")
+        except Exception as e:
+            st.error(f"❌ Erro: {str(e)}")
+    else:
+        st.info("👆 Digite na barra acima e clique PESQUISAR!")
+    
+    st.markdown("---")
+    col_spacer, col_logout = st.columns([5, 1])
+    with col_logout:
+        if st.button("🚪 Sair", use_container_width=True):
+            st.session_state.logado = False
+            st.session_state.tem_busca = ""
+            st.rerun()
