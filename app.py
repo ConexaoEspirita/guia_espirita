@@ -39,6 +39,42 @@ def limpar_busca(texto):
     texto = re.sub(r'[^\w\s]', ' ', texto.lower())
     return texto.strip()
 
+def mostrar_resultados(resultados_df):
+    """Função para mostrar cards dos resultados"""
+    if not resultados_df.empty:
+        st.markdown(f'<div class="conta-pequena">achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
+
+        for _, row in resultados_df.iterrows():
+            v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
+            v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+            v_cidade = str(row.get('Cidade', 'Não informada'))
+            v_endereco = str(row.get('Endereço', 'Não informado'))
+            v_palestra = str(row.get('Palestra Pública', ''))
+            v_resp = str(row.get('Responsável', 'Não informado'))
+            v_celular = str(row.get('Celular', ''))
+
+            st.markdown(f"""
+            <div class="card-centro">
+                <div class="nome-grande">{v_nome_real}</div>
+                <div class="nome-fantasia">{v_fantasia}</div>
+                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if 'Não informado' not in v_endereco:
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
+            with col2:
+                numero = ''.join(filter(str.isdigit, v_celular))
+                if len(numero) >= 10:
+                    st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
+            st.divider()
+
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -56,11 +92,10 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     
-    # ✅ MENU PRINCIPAL SUSPENSO
+    # ✅ MENU PRINCIPAL
     menu_principal = st.selectbox("🌟 Escolha:", ["🔍 Busca livre", "🗓️ Por palestra/dia"])
     
     if menu_principal == "🔍 Busca livre":
-        # Busca normal
         col_busca, col_botao = st.columns([3, 1])
         with col_busca:
             st.text_input("Nome do centro, cidade...", placeholder="Kardec, Icém, Catanduva...", key="busca_input")
@@ -69,9 +104,7 @@ else:
                 st.rerun()
         
         busca = st.session_state.get("busca_input", "").strip()
-        
         if busca:
-            # [CÓDIGO DA BUSCA LIVRE - igual ao anterior]
             try:
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
                 if 'Unnamed: 0' in df.columns:
@@ -95,41 +128,57 @@ else:
                     campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
                              row.get('Cidade',''), row.get('Endereço',''), row.get('Responsável','')]
                     linha_completa = " ".join([limpar_busca(val) for val in campos])
-                    
                     if termo in linha_completa:
                         resultados.append(row)
 
                 resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+                mostrar_resultados(resultados_df)
+                
+            except Exception as erro:
+                st.error(f"Erro: {str(erro)}")
+    
+    elif menu_principal == "🗓️ Por palestra/dia":
+        # ✅ MENU DE DIAS DA SEMANA
+        dia_semana = st.selectbox("🗓️ Dia da semana:", 
+                                 ["Todos os dias", "segunda-feira", "terça-feira", "quarta-feira", 
+                                  "quinta-feira", "sexta-feira", "sábado", "domingo"])
+        
+        try:
+            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+            if 'Unnamed: 0' in df.columns:
+                df = df.drop('Unnamed: 0', axis=1)
+            df.columns = [col.strip() for col in df.columns]
+            
+            df = df.rename(columns={
+                'NOME FANTASIA': 'Nome Fantasia',
+                'NOME': 'Nome Real / Razão Social',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                'ENDERECO': 'Endereço',
+                'PALESTRA PUBLICA': 'Palestra Pública',
+                'RESPONSAVEL': 'Responsável',
+                'CELULAR': 'Celular'
+            })
 
-                if not resultados_df.empty:
-                    st.markdown(f'<div class="conta-pequena">achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
-                    # [resto dos cards igual ao anterior]
-                    for _, row in resultados_df.iterrows():
-                        v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
-                        v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
-                        v_cidade = str(row.get('Cidade', 'Não informada'))
-                        v_endereco = str(row.get('Endereço', 'Não informado'))
-                        v_palestra = str(row.get('Palestra Pública', ''))
-                        v_resp = str(row.get('Responsável', 'Não informado'))
-                        v_celular = str(row.get('Celular', ''))
+            resultados = []
+            if dia_semana == "Todos os dias":
+                # Mostra todos que tem palestra
+                for idx, row in df.iterrows():
+                    if row.get('Palestra Pública', '').strip():
+                        resultados.append(row)
+            else:
+                # Busca específica por dia
+                termo_dia = limpar_busca(dia_semana)
+                st.info(f"🔍 Buscando centros com palestra às {dia_semana}...")
+                for idx, row in df.iterrows():
+                    palestra = limpar_busca(row.get('Palestra Pública', ''))
+                    if termo_dia in palestra:
+                        resultados.append(row)
 
-                        st.markdown(f"""
-                        <div class="card-centro">
-                            <div class="nome-grande">{v_nome_real}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                            <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                            {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if 'Não informado' not in v_endereco:
-                                query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                                st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
-                        with col2:
-                            numero = ''.join(filter(str.isdigit, v_celular))
-                            if len(numero) >= 10:
-                                st.link_button("💬
+            resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+            mostrar_resultados(resultados_df)
+            
+        except Exception as erro:
+            st.error(f"Erro: {str(erro)}")
+    
+    else:
+        st.info("👆 Escolha 'Busca livre' ou 'Por palestra/dia'!")
