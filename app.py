@@ -5,10 +5,8 @@ import urllib.parse
 import unicodedata
 import re
 
-# Configuração da página
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# CSS customizado COMPLETO
 st.markdown("""
 <style>
 .stApp { 
@@ -105,7 +103,6 @@ div.stButton > button {
 </style>
 """, unsafe_allow_html=True)
 
-# Funções auxiliares
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
@@ -114,25 +111,21 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-z0-9\s]', ' ', texto)
     return ' '.join(texto.split())
 
-# Configuração Supabase
+# Config Supabase
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", "SUA_URL")
 SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "SUA_CHAVE")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Inicialização do session state
 if 'df_centros' not in st.session_state:
     st.session_state.df_centros = None
 if 'logado' not in st.session_state:
     st.session_state.logado = False
 
-# Título principal
 st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 st.markdown("---")
 
-# Verificar se está logado
 if not st.session_state.logado:
     st.info("👋 Bem-vindo! Faça login para acessar o guia completo.")
-    
     col1, col2 = st.columns([1, 2])
     with col1:
         if st.button("🔑 Login", use_container_width=True):
@@ -140,97 +133,84 @@ if not st.session_state.logado:
             st.rerun()
     st.markdown("---")
 else:
-    # Carregar dados (Supabase OU Fake) - SEM ERRO!
     if st.session_state.df_centros is None:
         try:
             response = supabase.table('centros_espirita').select("*").execute()
             data = response.data
             st.session_state.df_centros = pd.DataFrame(data)
-        except Exception as e:
-            st.warning("⚠️ Sem conexão Supabase. Usando dados de exemplo...")
-            # DADOS FAKE PARA TESTAR - FUNCIONA 100%
+        except:
+            st.warning("⚠️ Sem Supabase. Usando dados teste...")
             data_exemplo = [
                 {"Nome Fantasia": "Luz Divina", "Nome Real / Razão Social": "Centro Espírita Luz Divina", "Cidade": "São Paulo", "Endereço": "Rua das Flores, 123", "Responsável": "Maria Silva", "Palestra Pública": "Sexta 20h", "Celular": "(11)99999-9999"},
                 {"Nome Fantasia": "Paz Interior", "Nome Real / Razão Social": "Sociedade Espírita Paz Interior", "Cidade": "Rio de Janeiro", "Endereço": "Av. Beira Mar, 456", "Responsável": "João Santos", "Palestra Pública": "Domingo 18h", "Celular": "(21)98888-8888"},
-                {"Nome Fantasia": "Amor Fraterno", "Nome Real / Razão Social": "Grupo Espírita Amor Fraterno", "Cidade": "Catanduva", "Endereço": "Rua Central, 789", "Responsável": "José Oliveira", "Palestra Pública": "", "Celular": "(17)97777-7777"},
-                {"Nome Fantasia": "Estrela Guia", "Nome Real / Razão Social": "Casa Espírita Estrela Guia", "Cidade": "Campinas", "Endereço": "Rua das Estrelas, 321", "Responsável": "Ana Costa", "Palestra Pública": "Quarta 19h30", "Celular": "(19)96666-6666"}
+                {"Nome Fantasia": "Amor Fraterno", "Nome Real / Razão Social": "Grupo Espírita Amor Fraterno", "Cidade": "Catanduva", "Endereço": "Rua Central, 789", "Responsável": "José Oliveira", "Palestra Pública": "", "Celular": "(17)97777-7777"}
             ]
             st.session_state.df_centros = pd.DataFrame(data_exemplo)
-        
-        st.success(f"✅ Carregados {len(st.session_state.df_centros)} centros espíritas")
+        st.success(f"✅ Carregados {len(st.session_state.df_centros)} centros")
 
     df = st.session_state.df_centros
 
-    # Barra de busca
     col_busca, col_filtros = st.columns([3, 1])
-    
     with col_busca:
-        busca = st.text_input("🔍 Buscar centro, cidade ou responsável...", placeholder="Ex: Catanduva, Maria, Luz")
-    
+        busca = st.text_input("🔍 Buscar centro, cidade ou responsável...", placeholder="Ex: Centro Luz, São Paulo, João")
     with col_filtros:
         if st.button("🔄 Recarregar", use_container_width=True):
             st.session_state.df_centros = None
             st.rerun()
 
-    # Processar busca - CÓDIGO ORIGINAL QUE VOCÊ ENVIOU
-    if busca:
-        try:
-            termo = limpar_busca(busca)
-            resultados = []
-            
-            for idx, row in df.iterrows():
-                campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
-                         row.get('Cidade',''), row.get('Endereço',''), 
-                         row.get('Responsável',''), row.get('Palestra Pública','')]
-                linha_completa = " ".join([limpar_busca(val) for val in campos])
-                
-                if termo in linha_completa:
-                    resultados.append(row)
-
-            resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
-
-            if not resultados_df.empty:
-                st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
-
-                for _, row in resultados_df.iterrows():
-                    v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
-                    v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
-                    v_cidade = str(row.get('Cidade', 'Não informada'))
-                    v_endereco = str(row.get('Endereço', 'Não informado'))
-                    v_palestra = str(row.get('Palestra Pública', ''))
-                    v_resp = str(row.get('Responsável', 'Não informado'))
-                    v_celular = str(row.get('Celular', ''))
-
-                    st.markdown(f"""
-                    <div class="card-centro">
-                        <div class="nome-grande">{v_nome_real}</div>
-                        <div class="nome-fantasia">{v_fantasia}</div>
-                        <div class="info-texto"><span style='font-size:16px'>👤</span> <b>Responsável:</b> {v_resp}</div>
-                        <div class="info-texto"><span style='font-size:16px'>📍</span> <b>Endereço:</b> {v_endereco}</div>
-                        <div class="info-texto"><span style='font-size:16px'>🏙️</span> <b>Cidade:</b> {v_cidade}</div>
-                        {f'<div class="info-texto"><span style="font-size:16px">🗓️</span> <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if 'Não informado' not in v_endereco:
-                            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            st.link_button("🗺️ Ver no MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
-                    with col2:
-                        numero = ''.join(filter(str.isdigit, v_celular))
-                        if len(numero) >= 10:
-                            st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
-                    st.divider()
-            else:
-                st.warning("❌ Nenhum resultado encontrado.")
-                
-        except Exception as erro:
-            st.error(f"❌ Erro: {str(erro)}")
-    else:
-        st.info("✨ Digite nome do centro, cidade ou dia da semana!")
+    termo = limpar_busca(busca)
+    resultados = []
     
-    # Logout elegante no canto
+    for idx, row in df.iterrows():
+        campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
+                 row.get('Cidade',''), row.get('Endereço',''), 
+                 row.get('Responsável',''), row.get('Palestra Pública','')]
+        linha_completa = " ".join([limpar_busca(val) for val in campos])
+        
+        if termo in linha_completa:
+            resultados.append(row)
+
+    resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
+
+    if not resultados_df.empty:
+        st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
+
+        for _, row in resultados_df.iterrows():
+            v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
+            v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+            v_cidade = str(row.get('Cidade', 'Não informada'))
+            v_endereco = str(row.get('Endereço', 'Não informado'))
+            v_palestra = str(row.get('Palestra Pública', ''))
+            v_resp = str(row.get('Responsável', 'Não informado'))
+            v_celular = str(row.get('Celular', ''))
+
+            st.markdown(f"""
+            <div class="card-centro">
+                <div class="nome-grande">{v_nome_real}</div>
+                <div class="nome-fantasia">{v_fantasia}</div>
+                <div class="info-texto"><span style='font-size:16px'>👤</span> <b>Responsável:</b> {v_resp}</div>
+                <div class="info-texto"><span style='font-size:16px'>📍</span> <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto"><span style='font-size:16px'>🏙️</span> <b>Cidade:</b> {v_cidade}</div>
+                {f'<div class="info-texto"><span style="font-size:16px">🗓️</span> <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if 'Não informado' not in v_endereco:
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                    st.link_button("🗺️ Ver no MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+            with col2:
+                numero = ''.join(filter(str.isdigit, v_celular))
+                if len(numero) >= 10:
+                    st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+            st.divider()
+    else:
+        if busca:
+            st.warning("❌ Nenhum resultado encontrado.")
+        else:
+            st.info("✨ Digite nome do centro, cidade ou dia da semana!")
+    
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
@@ -239,10 +219,9 @@ else:
                 del st.session_state[key]
             st.rerun()
 
-# Footer
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: #6B7280; font-size: 12px; padding: 20px;'>
-    🕊️ Guia Espírita - Conectando corações em busca da luz ✨ | Catanduva-SP
+    🕊️ Guia Espírita - Conectando corações em busca da luz ✨
 </div>
 """, unsafe_allow_html=True)
