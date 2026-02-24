@@ -64,73 +64,72 @@ if not st.session_state.logado:
             st.error("Dados incorretos!")
 
 # ==============================
-# ÁREA PRINCIPAL - VERSÃO FINAL LIMPA
+# ÁREA PRINCIPAL - VERSÃO FINAL CORRIGIDA
 # ==============================
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
-        # Carrega e prepara os dados (sem mensagens)
-        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-        if 'Unnamed: 0' in df.columns:
-            df = df.drop('Unnamed: 0', axis=1)
-        df.columns = [col.strip() for col in df.columns]
-        
-        df = df.rename(columns={
-            'NOME FANTASIA': 'Nome Fantasia',
-            'NOME': 'Nome Real / Razão Social',
-            'CIDADE DO CENTRO ESPIRITA': 'Cidade',
-            'ENDERECO': 'Endereço',
-            'PALESTRA PUBLICA': 'Palestra Pública',
-            'RESPONSAVEL': 'Responsável',
-            'CELULAR': 'Celular'
-        })
+        try:
+            # Carrega e prepara os dados
+            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+            if 'Unnamed: 0' in df.columns:
+                df = df.drop('Unnamed: 0', axis=1)
+            df.columns = [col.strip() for col in df.columns]
+            
+            df = df.rename(columns={
+                'NOME FANTASIA': 'Nome Fantasia',
+                'NOME': 'Nome Real / Razão Social',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                'ENDERECO': 'Endereço',
+                'PALESTRA PUBLICA': 'Palestra Pública',
+                'RESPONSAVEL': 'Responsável',
+                'CELULAR': 'Celular'
+            })
 
-        # ✅ BUSCA MELHORADA - case insensitive e múltiplas palavras
-        termos = limpar_busca(busca).split()
-        def busca_flexivel(linha):
-            texto_linha = " ".join(linha.astype(str).apply(limpar_busca))
-            return all(termo in texto_linha for termo in termos)
+            # ✅ BUSCA SIMPLES E EFICAZ - acha TODOS os "kardec"
+            termo = limpar_busca(busca)
+            mascara = df.astype(str).apply(lambda linha: linha.str.contains(termo, case=False, na=False), axis=0).any()
+            resultados = df[mascara].copy()
 
-        mascara = df.apply(busca_flexivel, axis=1)
-        resultados = df[mascara].copy()
+            for _, row in resultados.iterrows():
+                v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
+                v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+                v_cidade = str(row.get('Cidade', 'Não informada'))
+                v_endereco = str(row.get('Endereço', 'Não informado'))
+                v_palestra = str(row.get('Palestra Pública', ''))
+                v_resp = str(row.get('Responsável', 'Não informado'))
+                v_celular = str(row.get('Celular', ''))
 
-        # ✅ MOSTRA TODOS OS RESULTADOS
-        for _, row in resultados.iterrows():
-            v_fantasia = row.get('Nome Fantasia', 'Não informado')
-            v_nome_real = row.get('Nome Real / Razão Social', 'Centro Espírita')
-            v_nome_real = f"{v_nome_real} 🕊️"
-            v_cidade = row.get('Cidade', 'Não informada')
-            v_endereco = row.get('Endereço', 'Não informado')
-            v_palestra = row.get('Palestra Pública', '')
-            v_resp = row.get('Responsável', 'Não informado')
-            v_celular = row.get('Celular', '')
+                # Card
+                st.markdown(f"""
+                <div class="card-centro">
+                    <div class="nome-grande">{v_nome_real}</div>
+                    <div class="nome-fantasia">{v_fantasia}</div>
+                    <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                    <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                    <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                    {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
+                </div>
+                """, unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class="card-centro">
-                <div class="nome-grande">{v_nome_real}</div>
-                <div class="nome-fantasia">{v_fantasia}</div>
-                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
-                {f'<div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
-            </div>
-            """, unsafe_allow_html=True)
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if v_endereco != 'Não informado':
-                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
-            with col2:
-                if v_celular.strip():
+                # Botões SEMPRE seguros
+                col1, col2 = st.columns(2)
+                with col1:
+                    if 'Não informado' not in v_endereco:
+                        query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                        st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
+                with col2:
                     numero = ''.join(filter(str.isdigit, v_celular))
                     if len(numero) >= 10:
                         st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
-            st.divider()
-            
-        if resultados.empty:
-            st.warning("Nenhum resultado encontrado.")
+                st.divider()
+
+            if resultados.empty:
+                st.warning("Nenhum resultado encontrado.")
+                
+        except Exception as erro:
+            st.error(f"Erro: {str(erro)}")
     else:
         st.info("👆 Digite nome, cidade ou responsável para buscar!")
