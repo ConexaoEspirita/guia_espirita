@@ -4,7 +4,7 @@ from supabase import create_client
 import urllib.parse
 import unicodedata
 
-# 1. Configuração e Estilo Profissional
+# 1. Estilo Profissional (Placar)
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -18,7 +18,6 @@ st.markdown("""
     .nome-completo { color: #0047AB; font-size: 24px; font-weight: bold; line-height: 1.2; }
     .nome-apelido { color: #5CACE2 !important; font-size: 17px !important; font-weight: 500; font-style: italic; margin-bottom: 12px; display: block; }
     .info-texto { color: #444; font-size: 14px; margin-bottom: 4px; }
-    .tag-palestra { background-color: #E3F2FD; color: #0D47A1; padding: 5px 10px; border-radius: 8px; font-size: 13px; font-weight: bold; display: inline-block; margin-top: 8px; }
     
     div.stLinkButton > a {
         width: 100% !important; font-weight: bold !important; height: 45px !important;
@@ -37,7 +36,7 @@ def limpar(txt):
 
 if 'logado' not in st.session_state: st.session_state.logado = False
 
-# --- ACESSO ---
+# --- TELA DE ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
     e = st.text_input("E-mail").strip().lower()
@@ -60,10 +59,9 @@ else:
 
             if not res.empty:
                 for _, row in res.iterrows():
-                    # ⚠️ AJUSTE DE POSIÇÃO AQUI:
-                    # Se o nome sair trocado, mude o 0 para 1 e o 1 para 0 abaixo:
-                    v_nome_real = row.iloc[1] # Tente mudar para 0 se estiver errado
-                    v_fantasia  = row.iloc[0] # Tente mudar para 1 se estiver errado
+                    # --- AJUSTE DE POSIÇÃO (A=0, B=1, C=2, D=3, E=4, F=5, G=6) ---
+                    v_nome_real = row.iloc[0] # Gaveta A (Título Grande)
+                    v_fantasia  = row.iloc[1] # Gaveta B (Nome Menor)
                     
                     v_cidade    = row.iloc[2]
                     v_endereco  = row.iloc[3]
@@ -79,7 +77,7 @@ else:
                             <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                             <div class="info-texto">📍 {v_endereco}</div>
                             <div class="info-texto">🏙️ {v_cidade}</div>
-                            {f'<div class="tag-palestra">🗓️ Palestra: {v_palestra}</div>' if v_palestra else ''}
+                            <div class="info-texto">🗓️ <b>Palestra:</b> {v_palestra}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
@@ -87,14 +85,14 @@ else:
                     with c1:
                         if v_endereco:
                             q = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
-                            # Link simplificado para evitar erro de DNS
                             st.link_button("🗺️ MAPS", f"https://www.google.com{q}")
                     with c2:
                         if v_celular:
                             num = ''.join(filter(str.isdigit, v_celular))
                             if len(num) >= 10:
+                                # Conserto da barra / no WhatsApp (wa.me/55...)
                                 st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
                     st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro: {e}")
+        except Exception as e: st.error(f"Erro ao carregar dados.")
     else: st.info("Digite para pesquisar! 🙏")
