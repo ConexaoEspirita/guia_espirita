@@ -8,7 +8,7 @@ import re
 # 1. Configuração da Página
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# 2. Estilização CSS
+# 2. Estilização CSS (Mantendo seu padrão visual)
 st.markdown("""
 <style>
 .stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
@@ -43,14 +43,15 @@ def limpar_busca(texto):
     texto = re.sub(r'[^\w\s]', ' ', texto.lower())
     return texto.strip()
 
+# Estados de sessão
 if "logado" not in st.session_state: st.session_state.logado = False
 if "termo_pesquisado" not in st.session_state: st.session_state.termo_pesquisado = ""
 
-# FUNÇÃO QUE LIMPA A BARRA DE CIMA E GUARDA A BUSCA
+# Funções de controle
 def executar_pesquisa():
     if st.session_state.campo_digitado:
         st.session_state.termo_pesquisado = st.session_state.campo_digitado
-        st.session_state.campo_digitado = "" # LIMPA A BARRA DE CIMA
+        st.session_state.campo_digitado = "" # LIMPA A BARRA DE DIGITAÇÃO
 
 def voltar_inicio():
     st.session_state.termo_pesquisado = ""
@@ -77,12 +78,13 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
+    # BARRA DE PESQUISA QUE SE AUTOLIMPA
     col_busca, col_btn = st.columns([4, 1])
     with col_busca:
         st.text_input("🔍 Buscar", placeholder="Digite o nome, rua ou bairro...", 
                       key="campo_digitado", label_visibility="collapsed", on_change=executar_pesquisa)
     with col_btn:
-        if st.button("🔎", use_container_width=True):
+        if st.button("🔎 Pesquisar", use_container_width=True):
             executar_pesquisa()
             st.rerun()
     
@@ -90,54 +92,80 @@ else:
     
     if busca:
         try:
+            # Carregamento do Excel
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
             df.columns = [col.strip() for col in df.columns]
+            
+            # Mapeamento exato das colunas da sua planilha
             df = df.rename(columns={
-                'NOME FANTASIA': 'Nome Fantasia', 'NOME': 'Nome Real',
-                'CIDADE DO CENTRO ESPIRITA': 'Cidade', 'ENDERECO': 'Endereco',
-                'RESPONSAVEL': 'Responsavel', 'CELULAR': 'Celular'
+                'NOME FANTASIA': 'Nome Fantasia',
+                'NOME': 'Nome Real',
+                'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                'ENDERECO': 'Endereco',
+                'RESPONSAVEL': 'Responsavel',
+                'CELULAR': 'Celular'
             })
 
             termo_limpo = limpar_busca(busca)
-            resultados = [row for _, row in df.iterrows() if termo_limpo in " ".join([limpar_busca(v) for v in [row.get('Nome Fantasia',''), row.get('Nome Real',''), row.get('Endereco',''), row.get('Cidade','')]])]
+            resultados = []
+            
+            for _, row in df.iterrows():
+                # Busca em Nome Real, Fantasia, Endereço e Cidade
+                campos_busca = [str(row.get('Nome Fantasia','')), str(row.get('Nome Real','')), 
+                               str(row.get('Endereco','')), str(row.get('Cidade',''))]
+                linha_completa = " ".join([limpar_busca(v) for v in campos_busca])
+                
+                if termo_limpo in linha_completa:
+                    resultados.append(row)
 
             if resultados:
-                # O CONTADOR QUE VOCÊ QUERIA VOLTOU:
-                st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados)} resultado{"s" if len(resultados) != 1 else ""}</div>', unsafe_allow_html=True)
+                # O CONTADOR VOLTOU
+                st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados)} resultado{"s" if len(resultados) != 1 else ""} para "{busca}"</div>', unsafe_allow_html=True)
                 
                 if st.button("⬅️ Voltar / Nova Pesquisa"):
                     voltar_inicio()
                     st.rerun()
 
                 for r in resultados:
+                    v_nome = str(r.get('Nome Real', 'Centro Espírita'))
+                    v_fantasia = str(r.get('Nome Fantasia', ''))
+                    v_endereco = str(r.get('Endereco', ''))
+                    v_cidade = str(r.get('Cidade', ''))
+                    v_celular = str(r.get('Celular', ''))
+                    v_resp = str(r.get('Responsavel', 'Não informado'))
+
                     st.markdown(f"""
                     <div class="card-centro">
-                        <div class="nome-grande">{r['Nome Real']}</div>
-                        <div style="color:#3B82F6; font-style:italic;">{r['Nome Fantasia']}</div>
-                        <div style="margin-top:8px;">📍 <b>Endereço:</b> {r['Endereco']}</div>
-                        <div>🏙️ <b>Cidade:</b> {r['Cidade']}</div>
-                        <div>👤 <b>Responsável:</b> {r['Responsavel']}</div>
+                        <div class="nome-grande">{v_nome}</div>
+                        {f'<div style="color:#3B82F6; font-weight:600; font-style:italic;">{v_fantasia}</div>' if v_fantasia else ''}
+                        <div style="margin-top:8px;">📍 <b>Endereço:</b> {v_endereco}</div>
+                        <div>🏙️ <b>Cidade:</b> {v_cidade}</div>
+                        <div>👤 <b>Responsável:</b> {v_resp}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
+                    # COLUNAS DOS BOTÕES (CORRIGIDOS)
                     c1, c2 = st.columns(2)
                     with c1:
-                        query = urllib.parse.quote(f"{r['Endereco']}, {r['Cidade']}")
-                        st.link_button("🗺️ Ver no MAPS", f"https://www.google.com{query}", use_container_width=True)
+                        # Gerando link do Google Maps com endereço + cidade
+                        if v_endereco:
+                            query_maps = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                            st.link_button("🗺️ Ver no MAPS", f"https://www.google.com{query_maps}", use_container_width=True)
                     with c2:
-                        num = ''.join(filter(str.isdigit, str(r['Celular'])))
-                        if len(num) >= 10:
-                            st.link_button("💬 WhatsApp", f"https://wa.me{num}", use_container_width=True)
+                        # Gerando link do WhatsApp (limpando o número)
+                        num_limpo = ''.join(filter(str.isdigit, v_celular))
+                        if len(num_limpo) >= 10:
+                            st.link_button("💬 WhatsApp", f"https://wa.me{num_limpo}", use_container_width=True)
                     st.divider()
             else:
-                st.warning(f"❌ '{busca}' não encontrado.")
+                st.warning(f"❌ Nenhum centro encontrado para '{busca}'.")
                 if st.button("⬅️ Voltar"):
                     voltar_inicio()
                     st.rerun()
         except Exception as e:
-            st.error(f"Erro: {e}")
+            st.error(f"Erro ao processar a planilha: {e}")
     else:
-        st.info("💡 Digite o **nome do centro**, a **rua** ou o **bairro**.")
+        st.info("💡 Digite o **nome do centro**, a **rua** ou o **bairro** para pesquisar.")
 
     if st.sidebar.button("🚪 Sair"):
         st.session_state.clear()
