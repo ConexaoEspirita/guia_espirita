@@ -64,13 +64,8 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # ==============================
-# FUNÇÃO LIMPAR TEXTO
+# FUNÇÃO BUSCA
 # ==============================
-def limpar_texto(texto):
-    texto = unicodedata.normalize('NFD', str(texto))
-    texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
-    return texto.strip().upper()
-
 def limpar_busca(texto):
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
@@ -117,11 +112,6 @@ else:
 
         df = pd.read_excel("guia.xlsx").fillna("").astype(str)
 
-        # Padroniza nomes das colunas (remove acento e espaço)
-        colunas_originais = df.columns.tolist()
-        colunas_tratadas = [limpar_texto(c) for c in colunas_originais]
-        df.columns = colunas_tratadas
-
         termo = limpar_busca(busca)
 
         mascara = df.apply(
@@ -134,13 +124,14 @@ else:
 
             for _, row in resultados.iterrows():
 
-                v_fantasia = row.get("NOME FANTASIA", "")
-                v_nome_real = row.get("NOME", "")
-                v_cidade = row.get("CIDADE DO CENTRO ESPIRITA", "")
-                v_endereco = row.get("ENDERCO", "")  # remove acento automaticamente
-                v_palestra = row.get("PALESTRA PUBLICA", "")
-                v_resp = row.get("RESPONSAVEL", "")
-                v_celular = row.get("CELULAR", "")
+                # USANDO POSIÇÃO FIXA DAS COLUNAS
+                v_fantasia = row.iloc[0]  # A
+                v_nome_real = row.iloc[1]  # B
+                v_cidade = row.iloc[2]  # C
+                v_endereco = row.iloc[3]  # D
+                v_palestra = row.iloc[4]  # E
+                v_resp = row.iloc[5]  # F
+                v_celular = row.iloc[6]  # G
 
                 st.markdown(f"""
                 <div class="card-centro">
