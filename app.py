@@ -37,17 +37,6 @@ def limpar_busca(texto):
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
-# ✅ DIAS DA SEMANA (números e nomes)
-dias_semana = {
-    '0': 'domingo', 'domingo': 'domingo',
-    '1': 'segunda', 'segunda': 'segunda', '2': 'segunda',
-    '3': 'terça', 'terca': 'terça', 'terça': 'terça', 
-    '4': 'quarta', 'quarta': 'quarta',
-    '5': 'quinta', 'quinta': 'quinta',
-    '6': 'sexta', 'sexta': 'sexta',
-    '7': 'sabado', 'sábado': 'sábado', 'sabado': 'sábado'
-}
-
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -65,14 +54,27 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     
-    # COLUNAS: BOTÃO + PESQUISA
-    col_busca, col_botao = st.columns([3, 1])
+    # ✅ MENU SUSPENSO PARA NAVEGAÇÃO FÁCIL
+    menu = st.selectbox(
+        "🗓️ Escolha como buscar:",
+        ["Digite livremente...", "Por dia da semana", "Por cidade", "Centros famosos"],
+        index=0
+    )
     
+    # INPUT DE PESQUISA
+    col_busca, col_botao = st.columns([3, 1])
     with col_busca:
-        st.text_input("🔍 O que você procura?", placeholder="Ex: Kardec Icém, 6 (sexta), terça...", key="busca_input")
+        if menu == "Por dia da semana":
+            st.text_input("🔍 Digite: 2=segunda, 3=terça, 4=quarta, 5=quinta, 6=sexta...", key="busca_input")
+        elif menu == "Por cidade":
+            st.text_input("🔍 Digite nome da cidade...", key="busca_input")
+        elif menu == "Centros famosos":
+            st.text_input("🔍 Ex: Kardec, Bezerra, Chico...", key="busca_input")
+        else:
+            st.text_input("🔍 Nome do centro + cidade (Ex: Kardec Icém)...", key="busca_input")
     
     with col_botao:
-        if st.button("🔎 BUSCAR", key="btn_buscar", help="Clique para buscar"):
+        if st.button("🔎 BUSCAR"):
             st.rerun()
     
     busca = st.session_state.get("busca_input", "").strip()
@@ -94,42 +96,15 @@ else:
                 'CELULAR': 'Celular'
             })
 
-            # ✅ BUSCA INTELIGENTE COM DIAS
-            termos = limpar_busca(busca).split()
-            eh_dia_semana = False
+            # ✅ BUSCA SIMPLIFICADA E ROBUSTA
+            termo = limpar_busca(busca)
+            resultados = []
             
-            # Verifica se é busca por dia da semana
-            for termo in termos:
-                if termo in dias_semana.values() or termo in dias_semana.keys():
-                    eh_dia_semana = True
-                    dia_procurado = dias_semana.get(termo, termo)
-                    break
-            
-            if eh_dia_semana:
-                # BUSCA POR DIA DA SEMANA na palestra
-                resultados = []
-                for idx, row in df.iterrows():
-                    palestra = limpar_busca(row.get('Palestra Pública', ''))
-                    if dia_procurado in palestra:
-                        resultados.append(row)
-            elif len(termos) >= 2:
-                # NOME + CIDADE
-                termo_nome = limpar_busca(termos[0])
-                termo_cidade = limpar_busca(" ".join(termos[1:]))
-                resultados = []
-                for idx, row in df.iterrows():
-                    linha_nome = limpar_busca(" ".join([row.get('Nome Fantasia', ''), row.get('Nome Real / Razão Social', '')]))
-                    linha_cidade = limpar_busca(row.get('Cidade', ''))
-                    if termo_nome in linha_nome and termo_cidade in linha_cidade:
-                        resultados.append(row)
-            else:
-                # BUSCA GERAL
-                termo = limpar_busca(busca)
-                resultados = []
-                for idx, row in df.iterrows():
-                    linha_texto = " ".join([limpar_busca(val) for val in row])
-                    if termo in linha_texto:
-                        resultados.append(row)
+            for idx, row in df.iterrows():
+                # Busca em TODO o conteúdo da linha
+                linha_completa = " ".join([limpar_busca(val) for val in row])
+                if termo in linha_completa:
+                    resultados.append(row)
 
             resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
 
@@ -173,4 +148,4 @@ else:
         except Exception as erro:
             st.error(f"Erro: {str(erro)}")
     else:
-        st.info("👆 Digite: 'Kardec Icém', '6' (sexta), 'terça', 'quinta'...")
+        st.info("👆 Use o menu suspenso e digite para buscar!")
