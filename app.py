@@ -3,7 +3,7 @@ import pandas as pd
 from supabase import create_client
 import urllib.parse
 
-# 1. Configuração e Estilo Profissional
+# 1. Configuração e Estilo
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 
 st.markdown("""
@@ -11,18 +11,18 @@ st.markdown("""
     .stApp { background-color: #F8F9FA; }
     .card-centro {
         background-color: white; padding: 18px; border-radius: 12px;
-        border-left: 6px solid #0047AB; margin-bottom: 5px;
+        border-left: 8px solid #0047AB; margin-bottom: 5px;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     .nome-principal { color: #0047AB; font-size: 22px; font-weight: bold; line-height: 1.1; }
     .nome-fantasia { color: #5CACE2; font-size: 15px; font-weight: 500; margin-bottom: 10px; font-style: italic; }
-    .info-texto { color: #555; font-size: 14px; margin-bottom: 3px; }
+    .info-texto { color: #444; font-size: 14px; margin-bottom: 3px; }
     
-    /* Botões Lado a Lado Pequenos */
+    /* Botões Lado a Lado */
     div.stLinkButton > a {
         width: 100% !important;
         font-size: 13px !important;
-        height: 40px !important;
+        height: 42px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -50,7 +50,7 @@ if not st.session_state.logado:
 else:
     st.image("https://images.unsplash.com", use_container_width=True)
     st.title("🕊️ Guia Espírita")
-    busca = st.text_input("🔍 O que você procura?", placeholder="Nome, Cidade ou Responsável...")
+    busca = st.text_input("🔍 O que você procura?", placeholder="Busque por Nome, Cidade ou Responsável...")
 
     if busca:
         try:
@@ -59,42 +59,51 @@ else:
 
             if not res.empty:
                 cols = df.columns.tolist()
-                # Procura colunas por palavras-chave
-                c_nome = next((c for c in cols if 'nome' in c.lower()), cols[0])
-                c_fant = next((c for c in cols if 'fantasia' in c.lower()), None)
-                c_end = next((c for c in cols if 'endere' in c.lower() or 'rua' in c.lower() or 'local' in c.lower()), None)
-                c_cid = next((c for c in cols if 'cidade' in c.lower()), "")
-                c_cel = next((c for c in cols if 'celular' in c.lower() or 'whats' in c.lower() or 'contato' in c.lower() or 'fone' in c.lower()), None)
+                
+                # FUNÇÃO PARA ENCONTRAR COLUNA POR PALAVRA-CHAVE
+                def get_c(terms):
+                    return next((c for c in cols if any(t in c.lower() for t in terms)), None)
+
+                c_fant = get_c(['fantasia'])
+                c_nome = get_c(['nome'])
+                c_cid = get_c(['cidade'])
+                c_end = get_c(['endere', 'rua', 'local'])
+                c_resp = get_c(['responsavel', 'dirigente', 'dono'])
+                c_cel = get_c(['celular', 'whats', 'contato', 'fone'])
 
                 for _, row in res.iterrows():
-                    n = row[c_nome]
-                    f = row[c_fant] if c_fant else ""
-                    e_txt = row[c_end] if c_end else ""
-                    ci = row[c_cid] if c_cid else ""
-                    ce = row[c_cel] if c_cel else ""
+                    val_nome = row[c_nome] if c_nome else "Centro"
+                    val_fant = row[c_fant] if c_fant else ""
+                    val_resp = row[c_resp] if c_resp else "Não informado"
+                    val_end = row[c_end] if c_end else ""
+                    val_cid = row[c_cid] if c_cid else ""
+                    val_cel = row[c_cel] if c_cel else ""
 
+                    # EXIBIÇÃO DO CARD
                     st.markdown(f"""
                         <div class="card-centro">
-                            <div class="nome-principal">{n}</div>
-                            <div class="nome-fantasia">{f}</div>
-                            <div class="info-texto">📍 {e_txt}</div>
-                            <div class="info-texto">🏙️ {ci}</div>
+                            <div class="nome-principal">{val_nome}</div>
+                            <div class="nome-fantasia">{val_fant}</div>
+                            <div class="info-texto">👤 <b>Responsável:</b> {val_resp}</div>
+                            <div class="info-texto">📍 {val_end}</div>
+                            <div class="info-texto">🏙️ {val_cid}</div>
                         </div>
                     """, unsafe_allow_html=True)
                     
                     # BOTÕES LADO A LADO
                     col1, col2 = st.columns(2)
                     with col1:
-                        if e_txt:
-                            link_m = f"https://www.google.com{urllib.parse.quote(f'{e_txt} {ci}')}"
-                            st.link_button("🗺️ MAPS", link_m)
+                        if val_end:
+                            # MAPS: Codifica endereço e cidade para o link funcionar
+                            end_full = f"{val_end} {val_cid}".strip()
+                            st.link_button("🗺️ MAPS", f"https://www.google.com{urllib.parse.quote(end_full)}")
                     with col2:
-                        if ce:
-                            num = ''.join(filter(str.isdigit, ce))
-                            st.link_button("💬 WHATSAPP", f"https://wa.me{num}")
+                        if val_cel:
+                            # WHATSAPP: Limpa tudo e deixa só números
+                            zap = ''.join(filter(str.isdigit, val_cel))
+                            if len(zap) >= 10:
+                                st.link_button("💬 WHATSAPP", f"https://wa.me{zap}")
                     st.write("") 
             else: st.warning("Nenhum resultado.")
-        except Exception as e: st.error(f"Erro: {e}")
+        except Exception as err: st.error(f"Erro: {err}")
     else: st.info("Digite para pesquisar! 🙏")
-
-
