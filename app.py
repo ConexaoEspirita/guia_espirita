@@ -54,12 +54,11 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     
-    # ✅ BUSCA SIMPLES E COMPLETA
     col_busca, col_botao = st.columns([3, 1])
     
     with col_busca:
-        st.text_input("🔍 Nome do centro, cidade ou dia da semana (sexta, terça...)", 
-                     placeholder="Ex: Kardec Icém, sexta, Catanduva...", key="busca_input")
+        st.text_input("🔍 Nome do centro, cidade ou dia da semana", 
+                     placeholder="Kardec, Icém, sexta-feira, Catanduva...", key="busca_input")
     
     with col_botao:
         if st.button("🔎 BUSCAR"):
@@ -87,9 +86,7 @@ else:
             termo = limpar_busca(busca)
             resultados = []
             
-            # ✅ BUSCA INTELIGENTE EM TUDO
             for idx, row in df.iterrows():
-                # Busca em todos os campos
                 campos = [row.get('Nome Fantasia',''), row.get('Nome Real / Razão Social',''), 
                          row.get('Cidade',''), row.get('Endereço',''), 
                          row.get('Responsável',''), row.get('Palestra Pública','')]
@@ -140,4 +137,4 @@ else:
         except Exception as erro:
             st.error(f"Erro: {str(erro)}")
     else:
-        st.info("👆 Digite nome do centro, cidade
+        st.info("Digite nome do centro, cidade ou dia da semana!")
