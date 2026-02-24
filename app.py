@@ -10,7 +10,7 @@ st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wid
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparente;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
+.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
@@ -134,7 +134,7 @@ else:
                 <div class="nome-grande">{v_nome_real}</div>
                 <div class="nome-fantasia">{v_fantasia}</div>
                 <div class="palestras-verde">
-                    📅 {v_palestras}
+                    🗣️ PALESTRAS {v_palestras}
                 </div>
                 <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                 <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
