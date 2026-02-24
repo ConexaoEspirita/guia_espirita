@@ -37,6 +37,17 @@ def limpar_busca(texto):
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
     return texto.lower()
 
+# ✅ DIAS DA SEMANA CORRETOS
+dias_semana = {
+    '0': 'domingo', 'domingo': 'domingo', 'dom': 'domingo',
+    '1': 'segunda', 'segunda': 'segunda', 'seg': 'segunda',
+    '2': 'terça', 'terca': 'terça', 'terça': 'terça', 'ter': 'terça',
+    '3': 'quarta', 'quarta': 'quarta', 'qua': 'quarta',
+    '4': 'quinta', 'quinta': 'quinta', 'qui': 'quinta',
+    '5': 'sexta', 'sexta': 'sexta', 'sex': 'sexta',
+    '6': 'sabado', 'sábado': 'sábado', 'sabado': 'sábado', 'sab': 'sábado'
+}
+
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -54,7 +65,7 @@ if not st.session_state.logado:
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     
-    # ✅ MENU SUSPENSO PARA NAVEGAÇÃO FÁCIL
+    # MENU SUSPENSO
     menu = st.selectbox(
         "🗓️ Escolha como buscar:",
         ["Digite livremente...", "Por dia da semana", "Por cidade", "Centros famosos"],
@@ -65,7 +76,7 @@ else:
     col_busca, col_botao = st.columns([3, 1])
     with col_busca:
         if menu == "Por dia da semana":
-            st.text_input("🔍 Digite: 2=segunda, 3=terça, 4=quarta, 5=quinta, 6=sexta...", key="busca_input")
+            st.text_input("🔍 Digite: 1=segunda, 2=terça, 3=quarta, 4=quinta, 5=sexta, 6=sábado...", key="busca_input")
         elif menu == "Por cidade":
             st.text_input("🔍 Digite nome da cidade...", key="busca_input")
         elif menu == "Centros famosos":
@@ -96,15 +107,30 @@ else:
                 'CELULAR': 'Celular'
             })
 
-            # ✅ BUSCA SIMPLIFICADA E ROBUSTA
             termo = limpar_busca(busca)
+            
+            # ✅ VERIFICA SE É DIA DA SEMANA
+            dia_procurado = None
+            for chave, dia in dias_semana.items():
+                if limpar_busca(chave) == termo or termo == dia:
+                    dia_procurado = dia
+                    break
+            
             resultados = []
             
-            for idx, row in df.iterrows():
-                # Busca em TODO o conteúdo da linha
-                linha_completa = " ".join([limpar_busca(val) for val in row])
-                if termo in linha_completa:
-                    resultados.append(row)
+            if dia_procurado and menu == "Por dia da semana":
+                # ✅ BUSCA APENAS NO CAMPO PALESTRA
+                st.info(f"🔍 Buscando centros com palestra em **{dia_procurado.title()}**")
+                for idx, row in df.iterrows():
+                    palestra = limpar_busca(row.get('Palestra Pública', ''))
+                    if dia_procurado in palestra:
+                        resultados.append(row)
+            else:
+                # BUSCA GERAL EM TUDO
+                for idx, row in df.iterrows():
+                    linha_completa = " ".join([limpar_busca(val) for val in row])
+                    if termo in linha_completa:
+                        resultados.append(row)
 
             resultados_df = pd.DataFrame(resultados) if resultados else pd.DataFrame()
 
@@ -148,4 +174,4 @@ else:
         except Exception as erro:
             st.error(f"Erro: {str(erro)}")
     else:
-        st.info("👆 Use o menu suspenso e digite para buscar!")
+        st.info("👆 Selecione no menu e digite: 5=sexta, Icém, Kardec...")
