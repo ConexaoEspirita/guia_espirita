@@ -7,13 +7,7 @@ import unicodedata
 # ==============================
 # CONFIGURAÇÃO DA PÁGINA
 # ==============================
-st.set_page_config(
-    page_title="Guia Espírita",
-    page_icon="🕊️",
-    layout="centered"
-)
-
-# Limpa cache para sempre atualizar os dados
+st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="centered")
 st.cache_data.clear()
 
 # ==============================
@@ -90,9 +84,7 @@ if "logado" not in st.session_state:
 # TELA DE LOGIN
 # ==============================
 if not st.session_state.logado:
-
     st.title("🕊️ Guia Espírita 🕊️")
-
     email = st.text_input("E-mail").strip().lower()
     senha = st.text_input("Senha", type="password")
 
@@ -105,7 +97,6 @@ if not st.session_state.logado:
             .eq("senha", senha)
             .execute()
         )
-
         if resposta.data:
             st.session_state.logado = True
             st.rerun()
@@ -116,27 +107,19 @@ if not st.session_state.logado:
 # ÁREA PRINCIPAL
 # ==============================
 else:
-
     st.title("🕊️ Guia Espírita")
-
     busca = st.text_input("🔍 O que você procura?", placeholder="Digite aqui...")
 
     if busca:
         try:
-            # Lê planilha
             df = pd.read_excel("guia.xlsx").astype(str).replace("nan", "")
-
             termo = limpar_busca(busca)
-
             mascara = df.apply(lambda linha: linha.apply(limpar_busca).str.contains(termo)).any(axis=1)
             resultados = df[mascara]
 
             if not resultados.empty:
-
                 for _, row in resultados.iterrows():
-
-                    # Certifique-se que as colunas da planilha estão nesta ordem:
-                    # A: Fantasia | B: Nome Real | C: Cidade | D: Endereço | E: Palestra Pública | F: Responsável | G: Celular
+                    # Ordem das colunas: A=Fantasia, B=Nome Real, C=Cidade, D=Endereço, E=Palestra Pública, F=Responsável, G=Celular
                     v_fantasia = row.iloc[0]
                     v_nome_real = row.iloc[1]
                     v_cidade = row.iloc[2]
@@ -166,7 +149,7 @@ else:
                             st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}")
 
                     with col2:
-                        if v_celular:
+                        if v_celular and v_celular.strip() != "":
                             numero = ''.join(filter(str.isdigit, v_celular))
                             if len(numero) >= 10:
                                 st.link_button("💬 WHATSAPP", f"https://wa.me/55{numero}")
@@ -175,6 +158,5 @@ else:
 
             else:
                 st.warning("Nenhum resultado encontrado.")
-
         except Exception as erro:
             st.error(f"Erro: {erro}")
