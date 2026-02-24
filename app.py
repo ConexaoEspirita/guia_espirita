@@ -16,7 +16,7 @@ st.markdown("""
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
 .palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;}
-.numero-card {position: absolute !important; top: 12px !important; right: 16px !important; background: rgba(0,71,171,0.8) !important; color: white !important; width: 28px !important; height: 28px !important; border-radius: 50% !important; font-size: 12px !important; font-weight: 700 !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;}
+.numero-card {position: absolute !important; bottom: 12px !important; right: 16px !important; top: auto !important; background: rgba(0,71,171,0.8) !important; color: white !important; width: 28px !important; height: 28px !important; border-radius: 50% !important; font-size: 12px !important; font-weight: 700 !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;}
 div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
@@ -34,10 +34,24 @@ def limpar_busca(texto):
     if pd.isna(texto):
         return ""
     texto = str(texto).lower().strip()
-    texto = unicodedata.normalize('NFD', texto)
-    texto = re.sub(r'[\u0300-\u036f]', '', texto)
-    texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
+    # Mantém acentos básicos para busca funcionar
+    texto = re.sub(r'[^a-zA-Z0-9áàâãéêíóôõúç\s]', '', texto)
     return texto
+
+def busca_flexivel(termo, texto_row):
+    """Busca flexível que funciona com erros de digitação e acentos"""
+    termo_limpo = limpar_busca(termo)
+    texto_limpo = limpar_busca(texto_row)
+    
+    # Busca normal primeiro
+    if termo_limpo in texto_limpo:
+        return True
+    
+    # Busca sem vogais (euripedes acha euripides)
+    termo_sem_vogais = re.sub(r'[aeiouáéíóú]', '', termo_limpo)
+    texto_sem_vogais = re.sub(r'[aeiouáéíóú]', '', texto_limpo)
+    
+    return termo_sem_vogais in texto_sem_vogais
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -97,8 +111,6 @@ else:
                     'CELULAR': 'Celular'
                 })
                 
-                termo_limpo = limpar_busca(termo)
-                
                 for idx, row in df.iterrows():
                     texto_row = " ".join([
                         limpar_busca(row.get('Nome Fantasia', '')),
@@ -109,7 +121,7 @@ else:
                         limpar_busca(row.get('Palestra Pública', ''))
                     ])
                     
-                    if termo_limpo in texto_row:
+                    if busca_flexivel(termo, texto_row):
                         resultados.append(row.to_dict())
 
         except FileNotFoundError:
@@ -153,6 +165,30 @@ else:
                 if len(numero_tel) >= 10:
                     st.link_button("💬 WhatsApp", f"https://wa.me/55{numero_tel}", use_container_width=True)
             st.divider()
+        
+        # Botão VOLTAR TOPO (só com +10 centros)
+        if len(resultados) > 10:
+            st.markdown("""
+            <div style="text-align: center; margin: 40px 0; padding: 20px;">
+                <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+                        style="
+                            background: linear-gradient(135deg, #0047AB, #1E40AF);
+                            color: white;
+                            border: none;
+                            border-radius: 12px;
+                            padding: 14px 28px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            box-shadow: 0 4px 12px rgba(0,71,171,0.4);
+                            transition: all 0.2s;
+                        "
+                        onmouseover="this.style.boxShadow='0 6px 20px rgba(0,71,171,0.6)'; this.style.transform='translateY(-2px)';"
+                        onmouseout="this.style.boxShadow='0 4px 12px rgba(0,71,171,0.4)'; this.style.transform='translateY(0)';">
+                    ⬆️ VOLTAR AO TOPO
+                </button>
+            </div>
+            """, unsafe_allow_html=True)
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
