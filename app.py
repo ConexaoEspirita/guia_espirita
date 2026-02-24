@@ -25,12 +25,11 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# BUSCA SIMPLES - SEM ACENTOS E FLEXIVEL
+# BUSCA FLEXÍVEL SEM ACENTOS
 def limpar_busca(texto):
     if pd.isna(texto):
         return ""
     texto = str(texto).lower().strip()
-    # Remove acentos e caracteres especiais
     texto = re.sub(r'[àáâãäå]', 'a', texto)
     texto = re.sub(r'[èéêë]', 'e', texto)
     texto = re.sub(r'[ìíîï]', 'i', texto)
@@ -41,8 +40,6 @@ def limpar_busca(texto):
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
-if "tem_busca" not in st.session_state:
-    st.session_state.tem_busca = ""
 
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
@@ -64,26 +61,35 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # BUSCA CLEAN E SIMPLES
-    busca = st.text_input("🔍 Nome, cidade ou responsável...", 
-                         placeholder="andre luiz, sao paulo, segunda-feira...",
-                         label_visibility="collapsed")
+    # FLUXO PERFEITO: LIMPAR → BUSCA → PESQUISAR
+    if "modo_limpo" not in st.session_state:
+        st.session_state.modo_limpo = True
     
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        if st.button("🔎 PESQUISAR", use_container_width=True):
-            if busca.strip():
-                st.session_state.tem_busca = busca.strip()
-                st.rerun()
-            else:
-                st.warning("❌ Digite algo!")
-    with col2:
-        if st.button("🗑️ LIMPAR", use_container_width=True):
-            st.session_state.tem_busca = ""
+    if st.session_state.modo_limpo:
+        # PASSO 1: Botão LIMPAR/Começar
+        if st.button("🧹 **COMEÇAR PESQUISA**", use_container_width=True):
+            st.session_state.modo_limpo = False
             st.rerun()
+    else:
+        # PASSO 2: Campo de busca LIMPO
+        busca = st.text_input("🔍 Nome, cidade ou responsável...", 
+                             placeholder="andre luiz, sao paulo, joao...",
+                             label_visibility="collapsed")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔎 **PESQUISAR**", use_container_width=True):
+                if busca.strip():
+                    st.session_state.tem_busca = busca.strip()
+                    st.rerun()
+        with col2:
+            if st.button("🧹 **LIMPAR**", use_container_width=True):
+                st.session_state.modo_limpo = True
+                st.session_state.tem_busca = ""
+                st.rerun()
     
-    termo = st.session_state.tem_busca.strip()
-    
+    # EXECUTA BUSCA
+    termo = st.session_state.get("tem_busca", "").strip()
     if termo:
         try:
             with st.spinner('🔍 Buscando...'):
@@ -106,17 +112,15 @@ else:
                 termo_limpo = limpar_busca(termo)
                 
                 for idx, row in df.iterrows():
-                    # Busca em todos os campos principais
-                    campos = [
+                    texto_row = " ".join([
                         limpar_busca(row.get('Nome Fantasia', '')),
                         limpar_busca(row.get('Nome Real / Razão Social', '')),
                         limpar_busca(row.get('Cidade', '')),
                         limpar_busca(row.get('Endereço', '')),
                         limpar_busca(row.get('Responsável', '')),
                         limpar_busca(row.get('Palestra Pública', ''))
-                    ]
+                    ])
                     
-                    texto_row = " ".join(campos)
                     if termo_limpo in texto_row:
                         resultados.append(row)
                 
@@ -152,14 +156,12 @@ else:
                                 st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                         st.divider()
                 else:
-                    st.info("❌ Nada encontrado. Exemplo: andre luiz, sao paulo, joao")
+                    st.info("❌ Nada encontrado")
                     
         except FileNotFoundError:
             st.error("❌ guia.xlsx não encontrado!")
         except Exception as e:
             st.error(f"❌ Erro: {str(e)}")
-    else:
-        st.info("💡 Dica: 'andre luiz', 'sao paulo', 'joao', 'segunda'")
     
     st.markdown("---")
     col_spacer, col_logout = st.columns([5, 1])
@@ -167,4 +169,5 @@ else:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
             st.session_state.tem_busca = ""
+            st.session_state.modo_limpo = True
             st.rerun()
