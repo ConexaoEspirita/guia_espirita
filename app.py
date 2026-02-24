@@ -2,9 +2,27 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client
 import urllib.parse
+from datetime import datetime
 
-# 1. Configuração e Estilo
+# 1. Configuração de App Profissional
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
+
+# Estilo Visual (Cards e Cores)
+st.markdown("""
+    <style>
+    .stApp { background-color: #F8F9FA; }
+    .centro-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+        border-left: 6px solid #0047AB;
+    }
+    .titulo-centro { color: #0047AB; font-size: 1.3rem; font-weight: bold; }
+    .info-texto { color: #666; font-size: 0.9rem; margin-top: 5px; }
+    </style>
+    """, unsafe_allow_html=True)
 
 # --- CONEXÃO SUPABASE ---
 url = "https://fjqowpuzenqraugcmmtp.supabase.co"
@@ -21,66 +39,89 @@ EMAIL_MESTRE = "seu-email@gmail.com"
 # --- TELA DE ACESSO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita 🕊️")
-    aba1, aba2 = st.tabs(["🔐 Entrar", "📝 Criar Conta"])
-    with aba1:
-        e_log = st.text_input("E-mail", key="e_log").strip().lower()
-        s_log = st.text_input("Senha", type="password", key="s_log")
+    aba_l, aba_c = st.tabs(["🔐 Entrar", "📝 Criar Conta"])
+    with aba_l:
+        e = st.text_input("E-mail").strip().lower()
+        s = st.text_input("Senha", type="password")
         if st.button("ACESSAR GUIA"):
-            res = supabase.table("acessos").select("*").eq("email", e_log).eq("senha", s_log).execute()
+            res = supabase.table("acessos").select("*").eq("email", e).eq("senha", s).execute()
             if len(res.data) > 0:
+                supabase.table("acessos").insert({"email": e, "status": "ENTRADA"}).execute()
                 st.session_state.logado = True
-                st.session_state.usuario_email = e_log
+                st.session_state.usuario_email = e
                 st.rerun()
-    with aba2:
-        e_cad = st.text_input("E-mail para cadastro", key="e_cad").strip().lower()
-        s_cad = st.text_input("Escolha uma senha", type="password", key="c_cad")
+    with aba_c:
+        ec = st.text_input("Novo E-mail").strip().lower()
+        sc = st.text_input("Nova Senha", type="password")
         if st.button("CADASTRAR"):
-            supabase.table("acessos").insert({"email": e_cad, "senha": s_cad, "status": "CADASTRO"}).execute()
-            st.success("Conta criada! Vá em 'Entrar'.")
+            supabase.table("acessos").insert({"email": ec, "senha": sc, "status": "CADASTRO"}).execute()
+            st.success("Conta criada!")
 
-# --- PAINEL ADMIN ---
+# --- PAINEL DO ADMINISTRADOR (ONDE FICA O EXCEL ESCONDIDO) ---
 elif st.session_state.usuario_email == EMAIL_MESTRE:
-    st.title("📊 Painel Admin")
-    if st.sidebar.button("Sair"): st.session_state.logado = False; st.rerun()
-    dados = supabase.table("acessos").select("*").execute()
-    st.dataframe(pd.DataFrame(dados.data), use_container_width=True)
+    st.title("📊 Painel Administrativo")
+    if st.sidebar.button("Visualizar Guia (Cards)"): 
+        st.session_state.usuario_email = "modo_visualizacao@admin.com"; st.rerun()
+    
+    aba_dados, aba_excel = st.tabs(["📈 Estatísticas de Acesso", "📂 Planilha Bruta (Excel)"])
+    
+    try:
+        # Busca dados do Supabase para estatísticas
+        acessos = supabase.table("acessos").select("*").execute()
+        df_ac = pd.DataFrame(acessos.data)
+        
+        with aba_dados:
+            st.metric("Total de Movimentações", len(df_ac))
+            st.dataframe(df_ac.sort_values(by='id', ascending=False), use_container_width=True)
 
-# --- GUIA DOS CENTROS (COM MAPS E WHATSAPP) ---
+        with aba_excel:
+            st.info("Aqui você vê os dados originais do arquivo guia.xlsx")
+            df_bruto = pd.read_excel("guia.xlsx").astype(str).replace('nan', '')
+            st.dataframe(df_bruto, use_container_width=True) # O Excel escondido só para você
+    except:
+        st.error("Erro ao carregar dados do administrador.")
+
+# --- TELA DO GUIA (VISÃO PROFISSIONAL COM CARDS) ---
 else:
     st.title("🕊️ Guia Espírita 🕊️")
     with st.sidebar:
-        if st.button("👋 SAIR"): st.session_state.logado = False; st.rerun()
-    
+        if st.button("👋 SAIR"):
+            supabase.table("acessos").insert({"email": st.session_state.usuario_email, "status": "SAIDA"}).execute()
+            st.session_state.logado = False; st.rerun()
+
     try:
         df = pd.read_excel("guia.xlsx").astype(str).replace('nan', '')
+        busca = st.text_input("🔍 O que você procura hoje?", placeholder="Cidade, Centro ou Bairro...")
         
-        # Lógica para criar links de Maps e WhatsApp
-        def criar_link_maps(end):
-            return f"https://www.google.com{urllib.parse.quote(end)}"
-        
-        def criar_link_whats(num):
-            num_limpo = ''.join(filter(str.isdigit, num))
-            return f"https://wa.me{num_limpo}?text=Olá,%20vi%20seu%20contato%20no%20Guia%20Espírita"
-
-        # Criando as colunas de clique (supondo que as colunas no Excel chamem 'Endereco' e 'Celular')
-        if 'Endereco' in df.columns:
-            df['📍 Ir ao Local'] = df['Endereco'].apply(criar_link_maps)
-        if 'Celular' in df.columns:
-            df['💬 WhatsApp'] = df['Celular'].apply(criar_link_whats)
-
-        busca = st.text_input("🔍 O QUE VOCÊ PROCURA?")
         if busca:
             df = df[df.apply(lambda r: r.str.contains(busca, case=False).any(), axis=1)]
 
-        # Configura a tabela para mostrar os links como botões clicáveis
-        st.dataframe(
-            df,
-            column_config={
-                "📍 Ir ao Local": st.column_config.LinkColumn("📍 Rota Maps"),
-                "💬 WhatsApp": st.column_config.LinkColumn("💬 Chamar no Zap")
-            },
-            use_container_width=True,
-            hide_index=True
-        )
+        # EXIBIÇÃO EM CARDS (SEM TABELA)
+        for _, row in df.iterrows():
+            nome = row.get('Nome', 'Centro Espírita')
+            end = row.get('Endereco', row.get('Endereço', ''))
+            cid = row.get('Cidade', '')
+            cel = row.get('Celular', '')
+
+            # O Card Visual
+            st.markdown(f"""
+            <div class="centro-card">
+                <div class="titulo-centro">{nome}</div>
+                <div class="info-texto">📍 {end} - {cid}</div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Botões de Ação embaixo do Card
+            c1, c2 = st.columns(2)
+            with c1:
+                if end:
+                    url_m = f"https://www.google.com{urllib.parse.quote(end + ' ' + cid)}"
+                    st.link_button("🗺️ ABRIR MAPS", url_m, use_container_width=True)
+            with c2:
+                if cel:
+                    num = ''.join(filter(str.isdigit, cel))
+                    st.link_button("📲 WHATSAPP", f"https://wa.me{num}", use_container_width=True)
+            st.write("") # Espaço entre cards
+
     except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error("Erro ao carregar o Guia das Pombinhas.")
