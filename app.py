@@ -100,15 +100,53 @@ div.stButton > button {
     border-radius: 20px;
     display: inline-block;
 }
+
+/* RESPONSIVO MOBILE - LETRAS MAIORES NO CELULAR */
+@media (max-width: 768px) {
+    .nome-grande { 
+        font-size: 28px !important;
+        line-height: 1.2 !important;
+    }
+    .nome-fantasia { 
+        font-size: 20px !important;
+    }
+    .info-texto { 
+        font-size: 16px !important;
+        line-height: 1.4 !important;
+        padding: 8px 0 !important;
+    }
+    .card-centro {
+        padding: 24px !important;
+        margin-bottom: 20px !important;
+    }
+    div.stButton > button, div.stLinkButton > a {
+        height: 52px !important;
+        font-size: 18px !important;
+        padding: 0 20px !important;
+    }
+    div.stTextInput > div > div > input {
+        font-size: 18px !important;
+        padding: 16px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .nome-grande { font-size: 26px !important; }
+    .nome-fantasia { font-size: 18px !important; }
+    .info-texto { font-size: 15px !important; }
+    .card-centro { padding: 20px !important; }
+}
+
 @media (max-width: 600px) {
-    .nome-grande { font-size: 20px !important; }
-    .nome-fantasia { font-size: 14px !important; }
-    .info-texto { font-size: 12px !important; }
+    .nome-grande { font-size: 24px !important; }
+    .nome-fantasia { font-size: 16px !important; }
+    .info-texto { font-size: 14px !important; }
     div.stLinkButton > a { height: 42px !important; font-size: 14px !important; }
 }
 </style>
 """, unsafe_allow_html=True)
 
+# Configuração Supabase
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
@@ -118,12 +156,14 @@ def limpar_busca(texto):
         return ""
     texto = unicodedata.normalize('NFD', str(texto))
     texto = ''.join(c for c in texto if unicodedata.category(c) != 'Mn')
-    texto = re.sub(r'[^\w\s]', ' ', texto.lower())
+    texto = re.sub(r'[^\\w\\s]', ' ', texto.lower())
     return texto.strip()
 
+# Estado inicial
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
+# TELA DE LOGIN
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     col1, col2 = st.columns([1, 2])
@@ -131,17 +171,27 @@ if not st.session_state.logado:
         email = st.text_input("📧 E-mail")
     with col2:
         senha = st.text_input("🔒 Senha", type="password")
+    
     if st.button("🚀 ACESSAR GUIA", use_container_width=True):
-        resposta = supabase.table("acessos").select("*").eq("email", email).eq("senha", senha).execute()
+        email_limpo = email.strip().lower()  # ✅ CORREÇÃO DO CELULAR
+        senha_limpa = senha.strip()          # ✅ CORREÇÃO DO CELULAR
+        
+        resposta = supabase.table("acessos").select("*") \
+            .eq("email", email_limpo) \
+            .eq("senha", senha_limpa) \
+            .execute()
+            
         if resposta.data:
             st.session_state.logado = True
             st.rerun()
         else:
             st.error("❌ E-mail ou senha incorretos!")
+
+# TELA PRINCIPAL (LOGADO)
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # Busca premium
+    # Barra de busca
     col_busca, col_botao = st.columns([4, 1])
     with col_busca:
         busca_input = st.text_input("🔍 Procure centros espíritas", 
@@ -171,7 +221,7 @@ else:
                 'RESPONSAVEL': 'Responsável',
                 'CELULAR': 'Celular'
             })
-
+            
             termo = limpar_busca(busca)
             resultados = []
             
@@ -189,7 +239,7 @@ else:
             if not resultados_df.empty:
                 st.markdown(f'<div class="conta-pequena">✨ achou {len(resultados_df)} resultado{"s" if len(resultados_df) != 1 else ""}</div>', unsafe_allow_html=True)
 
-                for _, row in resultados_df.iterrows():
+                for idx, row in resultados_df.iterrows():
                     v_fantasia = str(row.get('Nome Fantasia', 'Não informado'))
                     v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
                     v_cidade = str(row.get('Cidade', 'Não informada'))
@@ -202,14 +252,14 @@ else:
                     <div class="card-centro">
                         <div class="nome-grande">{v_nome_real}</div>
                         <div class="nome-fantasia">{v_fantasia}</div>
-                        <div class="info-texto"><span style='font-size:16px'>👤</span> <b>Responsável:</b> {v_resp}</div>
-                        <div class="info-texto"><span style='font-size:16px'>📍</span> <b>Endereço:</b> {v_endereco}</div>
-                        <div class="info-texto"><span style='font-size:16px'>🏙️</span> <b>Cidade:</b> {v_cidade}</div>
-                        {f'<div class="info-texto"><span style="font-size:16px">🗓️</span> <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
+                        <div class="info-texto"><span style='font-size:18px'>👤</span> <b>Responsável:</b> {v_resp}</div>
+                        <div class="info-texto"><span style='font-size:18px'>📍</span> <b>Endereço:</b> {v_endereco}</div>
+                        <div class="info-texto"><span style='font-size:18px'>🏙️</span> <b>Cidade:</b> {v_cidade}</div>
+                        {f'<div class="info-texto"><span style="font-size:18px">🗓️</span> <b>Palestra:</b> {v_palestra}</div>' if v_palestra.strip() else ''}
                     </div>
                     """, unsafe_allow_html=True)
 
-                    col1, col2 = st.columns(2)
+                    col1, col2 = st.columns([1,1])
                     with col1:
                         if 'Não informado' not in v_endereco:
                             query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
@@ -222,6 +272,8 @@ else:
             else:
                 st.warning("❌ Nenhum resultado encontrado.")
                 
+        except FileNotFoundError:
+            st.error("❌ Arquivo guia.xlsx não encontrado!")
         except Exception as erro:
             st.error(f"❌ Erro: {str(erro)}")
     else:
