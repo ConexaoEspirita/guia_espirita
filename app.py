@@ -5,76 +5,118 @@ import urllib.parse
 import unicodedata
 import re
 
-# --- CSS responsivo + hamburger ---
+# --- CSS Limpo e Responsivo ---
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);
+/* REMOVE TODO ESPAÇO/BRANCO ACIMA DO TOPO */
+.block-container { padding-top: 0rem !important; }
+
+/* REMOVE FUNDO PADRÃO STREAMLIT */
+[data-testid="stDecoration"] { display: none !important; }
+
+/* Fundo do app */
+.stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
+
+/* Header com título e menu */
+.titulo-premium-container {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 20px; margin-bottom: 20px;
+}
+.titulo-premium {
+    background: linear-gradient(90deg, #0047AB, #1976D2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 4px 12px rgba(0,71,171,0.3);
     font-size: 2.5rem !important;
     font-weight: 800 !important;
-    display: inline-block;
     margin: 0;
 }
-
-/* Remove padding branco acima do topo */
-.block-container {
-    padding-top: 0rem !important;
+.menu-icon-container {
+    cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; height: 25px; width: 30px;
 }
+.menu-icon-container span {
+    display: block; height: 4px; width: 100%; background-color: #1E3A8A; border-radius: 2px;
+}
+.menu { display: none; position: absolute; top: 60px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 10px; flex-direction: column; }
+.menu a { padding: 10px 20px; text-decoration: none; color: #1E3A8A; font-weight: 700; }
+.menu a:hover { background: rgba(16,185,129,0.15); border-radius: 8px; }
 
-/* Card centro */
-.card-centro {background: rgba(255,255,255,0.95);
+/* Cards */
+.card-centro {
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
     padding: 20px;
     border-radius: 20px;
     border: 1px solid rgba(0,71,171,0.1);
     box-shadow: 0 8px 32px rgba(0,71,171,0.15);
-    margin-bottom: 16px;}
-.nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
-.nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
-.info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
-.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;}
-div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;transition: all 0.2s !important;}
-div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
-div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
-div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
+    margin-bottom: 16px;
+}
+.nome-grande { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800 !important; }
+.nome-fantasia { color: #3B82F6 !important; font-size: 15px !important; font-weight: 600 !important; font-style: italic; }
+.info-texto { color: #374151 !important; font-size: 13px !important; display: flex; align-items: center; gap: 6px; }
+.palestras-verde {
+    color: #10B981 !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    background: rgba(16,185,129,0.15) !important;
+    padding: 8px 14px !important;
+    border-radius: 12px !important;
+    border-left: 4px solid #10B981 !important;
+    box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;
+}
 
-/* --- Login/Cadastro Responsivo --- */
-.login-title {font-size: 2rem !important;font-weight: 800 !important;color: #1E3A8A !important;text-align: center;margin-bottom: 20px;}
-.login-container {max-width: 450px;margin: 20px auto 20px auto;padding: 30px;background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);}
-input[type="text"], input[type="password"] {height: 45px !important;font-size: 15px !important;}
+/* Buttons */
+div.stButton > button {
+    background: linear-gradient(135deg, #0047AB, #1E40AF) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    height: 50px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;
+    transition: all 0.2s !important;
+}
+div.stButton > button:hover {
+    box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;
+    transform: translateY(-2px) !important;
+}
+div.stButton > button:active {
+    transform: translateY(0px) !important;
+    box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;
+}
 
-/* --- Hamburger Menu --- */
-.menu-hamburger {position: fixed; top: 20px; left: 20px; z-index: 1000;}
-.menu-hamburger input {display: none;}
-.menu-icon {cursor: pointer; width: 30px; height: 25px; position: relative;}
-.menu-icon span {background: #1E3A8A; display: block; position: absolute; height: 4px; width: 100%; border-radius: 2px; opacity: 1; left: 0; transition: all 0.3s ease;}
-.menu-icon span:nth-child(1) {top: 0px;}
-.menu-icon span:nth-child(2) {top: 10px;}
-.menu-icon span:nth-child(3) {top: 20px;}
-.menu {position: fixed; top: 0; left: -250px; width: 200px; height: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); box-shadow: 4px 0 12px rgba(0,0,0,0.1); transition: 0.3s; padding-top: 60px; z-index: 999;}
-.menu a {display: block; padding: 12px 20px; color: #1E3A8A; font-weight: 700; text-decoration: none; transition: 0.2s;}
-.menu a:hover {background: rgba(16,185,129,0.15); border-left: 4px solid #10B981;}
-.menu-hamburger input:checked ~ .menu {left: 0;}
+/* Login/Cadastro */
+.login-title { font-size: 2rem !important; font-weight: 800 !important; color: #1E3A8A !important; text-align: center; margin-bottom: 20px; }
+.login-container { max-width: 450px; margin: 20px auto; padding: 30px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0,71,171,0.1); box-shadow: 0 8px 32px rgba(0,71,171,0.15); }
+input[type="text"], input[type="password"] { height: 45px !important; font-size: 15px !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Menu hamburger HTML ---
+# --- JS do menu ---
 st.markdown("""
-<div class="menu-hamburger">
-    <input type="checkbox" id="menu-toggle">
-    <label class="menu-icon" for="menu-toggle">
-        <span></span>
-        <span></span>
-        <span></span>
-    </label>
-    <div class="menu">
+<script>
+function toggleMenu(){
+    const menu = document.getElementById('menu');
+    menu.classList.toggle('show');
+}
+</script>
+""", unsafe_allow_html=True)
+
+# --- Menu Hamburger dentro do header ---
+def header_hamburger():
+    st.markdown("""
+    <div class="titulo-premium-container">
+        <div class="titulo-premium">🕊️ Guia Espírita</div>
+        <div class="menu-icon-container" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div id="menu" class="menu">
         <a href="#">Admin</a>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # --- Supabase ---
 url = st.secrets["SUPABASE_URL"]
@@ -96,17 +138,16 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
     return texto
 
-# --- Login/Cadastro ---
+# --- Login / Cadastro ---
 if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
-
     aba = st.radio("", ["Login", "Cadastro"], horizontal=True)
 
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
-        if st.button("🚀 ACESSAR", key="login", use_container_width=True):
+        if st.button("🚀 ACESSAR", use_container_width=True):
             if email.strip() and senha.strip():
                 try:
                     resposta = supabase.table("acessos").select("*").eq("email", email.strip().lower()).eq("senha", senha.strip()).execute()
@@ -119,14 +160,12 @@ if not st.session_state.logado:
                     st.error(f"❌ Erro ao conectar: {str(e)}")
             else:
                 st.error("❌ Preencha e-mail e senha!")
-
-    elif aba == "Cadastro":
+    else:  # Cadastro
         nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
         senha_conf = st.text_input("", placeholder="🔒 Confirme a senha", type="password", label_visibility="collapsed")
-
-        if st.button("📝 CADASTRAR", key="cadastro", use_container_width=True):
+        if st.button("📝 CADASTRAR", use_container_width=True):
             if not nome.strip() or not email.strip() or not senha.strip() or not senha_conf.strip():
                 st.error("❌ Todos os campos são obrigatórios!")
             elif senha != senha_conf:
@@ -142,16 +181,14 @@ if not st.session_state.logado:
                         st.success("✅ Cadastro realizado! Agora faça login.")
                 except Exception as e:
                     st.error(f"❌ Erro ao conectar: {str(e)}")
-
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Tela principal ---
 else:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    header_hamburger()  # título + menu hamburger
 
-    # --- Código de busca/exibição ORIGINAL ---
+    # --- Código de busca original ---
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
-    
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔎 PESQUISAR", use_container_width=True):
@@ -168,8 +205,7 @@ else:
         try:
             with st.spinner('🔍 Buscando centros espíritas...'):
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-                if 'Unnamed: 0' in df.columns:
-                    df = df.drop('Unnamed: 0', axis=1)
+                if 'Unnamed: 0' in df.columns: df = df.drop('Unnamed: 0', axis=1)
                 df.columns = df.columns.str.strip()
                 df = df.rename(columns={
                     'NOME FANTASIA': 'Nome Fantasia',
@@ -230,12 +266,10 @@ else:
                 if len(numero) >= 10:
                     st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
             st.divider()
-
-    st.markdown("---")
+    
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
             st.session_state.usuario = None
-            if "tem_busca" in st.session_state:
-                del st.session_state.tem_busca
+            if "tem_busca" in st.session_state: del st.session_state.tem_busca
