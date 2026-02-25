@@ -8,26 +8,27 @@ from datetime import datetime
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- SEU ESTILO ORIGINAL (RESTAURADO) ---
+# --- SEU ESTILO ORIGINAL (RESTAURADO E COMPLETO) ---
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important; text-align: center;}
+.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important; text-align: center; padding: 20px;}
 .card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px; position: relative;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
 .palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;}
 
-/* Ajuste para o Menu Lateral (Hambúrguer) */
+/* Ajuste do Menu Lateral */
 [data-testid="stSidebar"] {background-color: #1E3A8A !important;}
 [data-testid="stSidebar"] * {color: white !important;}
 
-div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;}
+div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important; transition: 0.3s;}
+div.stButton > button:hover {transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,71,171,0.4);}
 </style>
 """, unsafe_allow_html=True)
 
-# --- SUA FUNÇÃO DE LIMPEZA ORIGINAL ---
+# --- FUNÇÃO DE LIMPEZA ORIGINAL ---
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
@@ -42,43 +43,51 @@ if "logado" not in st.session_state:
 if "usuario" not in st.session_state:
     st.session_state.usuario = ""
 
-# --- TELA DE CADASTRO/LOGIN ---
+# --- LOGICA DE TELA ---
+
+# 1. SE NÃO ESTIVER LOGADO -> MOSTRA ÁREA DE CADASTRO/LOGIN
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - ACESSO</h1>', unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - CADASTRO</h1>', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         with st.container(border=True):
-            nome = st.text_input("👤 Seu Nome")
-            email = st.text_input("📧 Seu E-mail")
-            if st.button("📝 ENTRAR NO GUIA", use_container_width=True):
-                if nome and email:
-                    st.session_state.logado = True
-                    st.session_state.usuario = nome
-                    st.rerun()
+            st.write("### 📝 Bem-vindo! Faça seu acesso:")
+            nome = st.text_input("👤 Nome Completo")
+            email = st.text_input("📧 E-mail")
+            st.write("")
+            if st.button("📝 CADASTRAR E ENTRAR", use_container_width=True):
+                if not nome.strip() or not email.strip():
+                    st.error("❌ Preencha **NOME e EMAIL**!")
+                elif "@" not in email:
+                    st.error("❌ E-mail inválido!")
                 else:
-                    st.error("Preencha seu nome e e-mail!")
+                    st.session_state.logado = True
+                    st.session_state.usuario = nome.strip()
+                    st.success(f"✅ Bem-vindo, {nome}!")
+                    st.rerun()
 
-# --- ÁREA LOGADA (MENU HAMBÚRGUER) ---
+# 2. SE ESTIVER LOGADO -> MOSTRA O APP COM MENU HAMBÚRGUER
 else:
+    # --- MENU LATERAL (HAMBÚRGUER) ---
     with st.sidebar:
-        st.markdown(f"## Olá, {st.session_state.usuario}! 🕊️")
+        st.markdown(f"## Olá,\n### {st.session_state.usuario}! 🕊️")
         st.divider()
         menu = st.radio("Navegação", ["🔍 Buscar Centros", "📍 Por Cidades", "🚪 Sair"])
         if menu == "🚪 Sair":
             st.session_state.logado = False
+            st.session_state.usuario = ""
             st.rerun()
 
-    # Título da página principal
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # Carregamento do Excel com suas colunas exatas
     try:
+        # Carregamento do Excel com suas colunas exatas
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         if 'Unnamed: 0' in df.columns:
             df = df.drop('Unnamed: 0', axis=1)
         
         df.columns = df.columns.str.strip()
-        # Seus nomes de colunas exatos
         df = df.rename(columns={
             'NOME FANTASIA': 'Nome Fantasia',
             'NOME': 'Nome Real / Razão Social',
@@ -90,28 +99,27 @@ else:
         })
 
         if menu == "📍 Por Cidades":
-            st.subheader("📍 Selecione uma Cidade")
+            st.markdown(f"<h2 style='color:#1E3A8A;'>📍 Filtro por Cidade</h2>", unsafe_allow_html=True)
             lista_cidades = sorted(df['Cidade'].dropna().unique())
-            cidade_f = st.selectbox("Cidades disponíveis:", ["Todas"] + lista_cidades)
+            cidade_f = st.selectbox("Selecione a cidade no menu abaixo:", ["Ver Todas"] + lista_cidades)
             
-            resultados = df if cidade_f == "Todas" else df[df['Cidade'] == cidade_f]
+            resultados = df if cidade_f == "Ver Todas" else df[df['Cidade'] == cidade_f]
+        
         else:
-            # Busca Geral (Seu código de busca original)
+            # Busca Geral
             busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...")
             termo_limpo = limpar_busca(busca)
             
             if termo_limpo:
-                indices_match = []
-                for idx, row in df.iterrows():
-                    texto_row = " ".join([limpar_busca(str(val)) for val in row.values])
-                    if termo_limpo in texto_row:
-                        indices_match.append(idx)
-                resultados = df.loc[indices_match]
+                # Lógica de busca em todas as colunas
+                mask = df.apply(lambda r: termo_limpo in limpar_busca(' '.join(map(str, r.values))), axis=1)
+                resultados = df[mask]
             else:
-                resultados = pd.DataFrame()
+                resultados = pd.DataFrame() # Começa vazio na busca geral até digitar
 
-        # EXIBIÇÃO DOS CARDS (Seu estilo original)
+        # EXIBIÇÃO DOS CARDS
         if not resultados.empty:
+            st.info(f"✨ Encontrados {len(resultados)} centros.")
             for idx, row in resultados.iterrows():
                 v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
                 v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
@@ -127,7 +135,7 @@ else:
                     <div class="nome-fantasia">{v_fantasia}</div>
                     <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
                     <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                    <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                    <div class="info-texto">📍 <b>Endereço:</b> {row.get('Endereço', 'N/I')}</div>
                     <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -141,9 +149,11 @@ else:
                     if len(numero) >= 10:
                         st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
                 st.divider()
+        elif menu == "📍 Por Cidades" and resultados.empty:
+            st.warning("Nenhum centro encontrado para esta cidade.")
 
     except Exception as e:
-        st.error(f"Erro ao carregar dados: {e}")
+        st.error(f"Erro ao carregar dados do Excel: {e}")
 
 # Botão Voltar ao Topo
 st.markdown("""
