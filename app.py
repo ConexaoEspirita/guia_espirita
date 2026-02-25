@@ -3,116 +3,170 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import re
-from datetime import datetime
 
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# SEU CSS ORIGINAL
+# --- CSS PARA LOGIN E APP PROFISSIONAL ---
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
-.card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
-.nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
-.nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
-.info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
-.palestras-verde {color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;}
+    .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
+    
+    /* Centralização da Caixa de Login */
+    .login-container {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,71,171,0.2);
+        text-align: center;
+        border: 1px solid #D1E9FF;
+    }
+    
+    /* Menu Lateral Azul Navy */
+    [data-testid="stSidebar"] {background-color: #1E3A8A !important;}
+    [data-testid="stSidebar"] * {color: white !important;}
+    
+    /* Cards do Guia */
+    .card-centro {
+        background: rgba(255,255,255,0.95);
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 6px solid #1E3A8A;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    
+    .nome-grande {color: #1E3A8A !important; font-size: 22px !important; font-weight: 800 !important;}
+    .palestras-verde {color: #10B981 !important; font-weight: 700; background: #E6F9F1; padding: 5px 10px; border-radius: 8px;}
+    
+    /* Botões */
+    div.stButton > button {
+        background: linear-gradient(135deg, #0047AB, #1E40AF) !important;
+        color: white !important;
+        border-radius: 10px !important;
+        height: 45px !important;
+        font-weight: 700 !important;
+        width: 100%;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-/* Menu Lateral Azul */
-[data-testid="stSidebar"] {background-color: #1E3A8A !important;}
-[data-testid="stSidebar"] * {color: white !important;}
-
-div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !important;color: white !important;border-radius: 12px !important;height: 50px !important;font-size: 16px !important;font-weight: 700 !important;}
-#back-to-top-fixed {position: fixed !important; bottom: 30px !important; right: 30px !important; background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important; border: none !important; border-radius: 50px !important; width: 60px !important; height: 60px !important; font-size: 24px !important; z-index: 9999; cursor: pointer;}
-</style>""", unsafe_allow_html=True)
-
+# --- FUNÇÕES TÉCNICAS ---
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
     texto = unicodedata.normalize('NFD', texto)
     texto = re.sub(r'[\u0300-\u036f]', '', texto)
-    texto = re.sub(r'[^a-z0-9\s]', '', texto)
-    return texto
+    return re.sub(r'[^a-z0-9\s]', '', texto)
 
-# SESSION STATE ORIGINAL
-if "usuarios" not in st.session_state: st.session_state.usuarios = []
-if "logado" not in st.session_state: st.session_state.logado = False
-if "usuario" not in st.session_state: st.session_state.usuario = ""
+# --- CONTROLE DE SESSÃO ---
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
 
-# --- TELA DE CADASTRO (IGUAL AO INÍCIO) ---
-if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - CADASTRO</h1>', unsafe_allow_html=True)
-    col1, col2, col_btn = st.columns([1, 1, 0.8])
-    with col1: nome = st.text_input("👤 Nome Completo")
-    with col2: email = st.text_input("📧 E-mail")
-    with col_btn:
-        st.write("")
-        if st.button("📝 CADASTRAR", use_container_width=True):
-            if nome and email:
-                st.session_state.logado = True
-                st.session_state.usuario = nome
-                st.rerun()
+# ==========================================
+# 1. ÁREA DE LOGIN E CADASTRO (TELA INICIAL)
+# ==========================================
+if not st.session_state.autenticado:
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    
+    with col2:
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown("<h1 style='color: #1E3A8A;'>🕊️ Guia Espírita</h1>", unsafe_allow_html=True)
+        
+        aba_login, aba_cadastro = st.tabs(["🔑 Login", "📝 Cadastro"])
+        
+        with aba_login:
+            email_log = st.text_input("E-mail", key="l_email")
+            senha_log = st.text_input("Senha", type="password", key="l_senha")
+            if st.button("ENTRAR AGORA"):
+                if email_log and senha_log:
+                    st.session_state.autenticado = True
+                    st.session_state.usuario = email_log.split('@')[0]
+                    st.rerun()
+                else:
+                    st.error("Preencha os dados de acesso.")
+        
+        with aba_cadastro:
+            nome_cad = st.text_input("Nome Completo", key="c_nome")
+            email_cad = st.text_input("E-mail", key="c_email")
+            senha_cad = st.text_input("Crie uma Senha", type="password", key="c_senha")
+            if st.button("CRIAR CONTA"):
+                if nome_cad and email_cad and senha_cad:
+                    st.success("Cadastro realizado! Use a aba Login.")
+                else:
+                    st.error("Preencha todos os campos para cadastrar.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# --- ÁREA LOGADA COM MENU LATERAL ---
+# ==========================================
+# 2. APP PRINCIPAL (SÓ APARECE APÓS LOGIN)
+# ==========================================
 else:
+    # MENU HAMBÚRGUER (SIDEBAR)
     with st.sidebar:
-        st.markdown(f"### Olá, {st.session_state.usuario}! 🕊️")
+        st.markdown(f"### Bem-vindo, \n## {st.session_state.usuario} 🕊️")
         st.divider()
-        menu = st.radio("Escolha uma opção:", ["🔍 Busca Geral", "🏙️ Por Cidades", "🚪 Sair"])
+        menu = st.radio("Navegação:", ["🔍 Buscar Centros", "🏙️ Por Cidades", "🚪 Sair"])
+        
         if menu == "🚪 Sair":
-            st.session_state.logado = False
+            st.session_state.autenticado = False
             st.rerun()
 
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #1E3A8A; text-align:center;'>🕊️ Guia de Centros Espíritas</h1>", unsafe_allow_html=True)
 
-    # Carregar Dados
     try:
+        # Carregamento dos dados
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         df = df.rename(columns={
-            'NOME FANTASIA': 'Nome Fantasia', 'NOME': 'Nome Real / Razão Social',
-            'CIDADE DO CENTRO ESPIRITA': 'Cidade', 'ENDERECO': 'Endereço',
-            'PALESTRA PUBLICA': 'Palestra Pública', 'RESPONSAVEL': 'Responsável', 'CELULAR': 'Celular'
+            'NOME FANTASIA': 'Fantasia', 'NOME': 'Nome',
+            'CIDADE DO CENTRO ESPIRITA': 'Cidade', 'ENDERECO': 'Endereco',
+            'PALESTRA PUBLICA': 'Palestra', 'CELULAR': 'Celular'
         })
 
-        # LOGICA DE FILTRO
+        # --- LÓGICA DE FILTRAGEM ---
         if menu == "🏙️ Por Cidades":
-            cidades_unificadas = sorted(df['Cidade'].dropna().unique())
-            cidade_selecionada = st.selectbox("Selecione a cidade:", ["Todas"] + cidades_unificadas)
-            resultados_df = df if cidade_selecionada == "Todas" else df[df['Cidade'] == cidade_selecionada]
+            cidades = sorted(df['Cidade'].dropna().unique())
+            escolha_cidade = st.selectbox("Selecione a cidade:", ["Todas"] + cidades)
+            resultados = df if escolha_cidade == "Todas" else df[df['Cidade'] == escolha_cidade]
         else:
-            busca = st.text_input("🔍 Digite o que procura...", label_visibility="collapsed")
-            termo_limpo = limpar_busca(busca)
-            if termo_limpo:
-                mask = df.apply(lambda r: termo_limpo in limpar_busca(' '.join(map(str, r.values))), axis=1)
-                resultados_df = df[mask]
+            busca = st.text_input("Pesquisar por nome ou palavra-chave...")
+            termo = limpar_busca(busca)
+            if termo:
+                mask = df.apply(lambda r: termo in limpar_busca(' '.join(map(str, r.values))), axis=1)
+                resultados = df[mask]
             else:
-                resultados_df = pd.DataFrame()
+                resultados = pd.DataFrame()
 
-        # EXIBIÇÃO DOS SEUS CARDS ORIGINAIS
-        for idx, row in resultados_df.iterrows():
-            st.markdown(f"""
-            <div class="card-centro">
-                <div class="nome-grande">{row['Nome Real / Razão Social']} 🕊️</div>
-                <div class="nome-fantasia">{row['Nome Fantasia']}</div>
-                <div class="palestras-verde">🗣️ PALESTRAS {row['Palestra Pública']}</div>
-                <div class="info-texto">👤 <b>Responsável:</b> {row['Responsável']}</div>
-                <div class="info-texto">📍 <b>Endereço:</b> {row['Endereço']}</div>
-                <div class="info-texto">🏙️ <b>Cidade:</b> {row['Cidade']}</div>
-            </div>""", unsafe_allow_html=True)
-
-            c1, c2 = st.columns(2)
-            with c1:
-                query = urllib.parse.quote(f"{row['Endereço']}, {row['Cidade']}")
-                st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
-            with c2:
-                numero = ''.join(filter(str.isdigit, str(row['Celular'])))
-                if len(numero) >= 10:
-                    st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
-            st.divider()
+        # --- EXIBIÇÃO DOS CARDS ---
+        if not resultados.empty:
+            for _, row in resultados.iterrows():
+                st.markdown(f"""
+                <div class="card-centro">
+                    <div class="nome-grande">{row['Nome']}</div>
+                    <div style="color:#3B82F6; font-style:italic; margin-bottom:10px;">{row['Fantasia']}</div>
+                    <div class="info-texto">📍 <b>Endereço:</b> {row['Endereco']}</div>
+                    <div class="info-texto">🏙️ <b>Cidade:</b> {row['Cidade']}</div>
+                    <div class="palestras-verde">🗣️ Palestras: {row['Palestra']}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                c1, c2 = st.columns(2)
+                with c1:
+                    q = urllib.parse.quote(f"{row['Endereco']}, {row['Cidade']}")
+                    st.link_button("🗺️ VER NO MAPA", f"https://www.google.com/maps/search/{q}", use_container_width=True)
+                with c2:
+                    num = ''.join(filter(str.isdigit, str(row['Celular'])))
+                    if len(num) >= 10:
+                        st.link_button("💬 WHATSAPP", f"https://wa.me/55{num}", use_container_width=True)
+                st.divider()
 
     except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro ao carregar banco de dados: {e}")
 
-# Botão voltar ao topo
-st.markdown('<button onclick="window.scrollTo({top: 0, behavior: \'smooth\'})" id="back-to-top-fixed">⬆️</button>', unsafe_allow_html=True)
+# Botão de voltar ao topo
+st.markdown("""
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+    style="position: fixed; bottom: 20px; right: 20px; background: #1E3A8A; color: white; 
+    border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; z-index: 100;">↑</button>
+""", unsafe_allow_html=True)
