@@ -5,7 +5,7 @@ import urllib.parse
 import unicodedata
 import re
 
-# --- CSS responsivo ---
+# --- CSS responsivo + hamburger ---
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
@@ -14,7 +14,17 @@ st.markdown("""
     -webkit-text-fill-color: transparent;
     text-shadow: 0 4px 12px rgba(0,71,171,0.3);
     font-size: 2.5rem !important;
-    font-weight: 800 !important;}
+    font-weight: 800 !important;
+    display: inline-block;
+    margin: 0;
+}
+
+/* Remove padding branco acima do topo */
+.block-container {
+    padding-top: 0rem !important;
+}
+
+/* Card centro */
 .card-centro {background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
     padding: 20px;
@@ -33,18 +43,37 @@ div[data-testid="stTextInputBlock"] > label > div > small {display: none !import
 
 /* --- Login/Cadastro Responsivo --- */
 .login-title {font-size: 2rem !important;font-weight: 800 !important;color: #1E3A8A !important;text-align: center;margin-bottom: 20px;}
-.login-container {max-width: 450px;margin: 40px auto 20px auto;padding: 30px;background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);}
+.login-container {max-width: 450px;margin: 20px auto 20px auto;padding: 30px;background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);}
 input[type="text"], input[type="password"] {height: 45px !important;font-size: 15px !important;}
-@media (max-width: 768px) {
-    .login-container {width: 90%;padding: 20px;margin: 30px auto;}
-    .login-title {font-size: 1.8rem !important;}
-    div.stButton > button {height: 50px !important;font-size: 15px !important;}
-}
-@media (max-width: 480px) {
-    .login-title {font-size: 1.5rem !important;}
-    div.stButton > button {height: 45px !important;font-size: 14px !important;}
-}
+
+/* --- Hamburger Menu --- */
+.menu-hamburger {position: fixed; top: 20px; left: 20px; z-index: 1000;}
+.menu-hamburger input {display: none;}
+.menu-icon {cursor: pointer; width: 30px; height: 25px; position: relative;}
+.menu-icon span {background: #1E3A8A; display: block; position: absolute; height: 4px; width: 100%; border-radius: 2px; opacity: 1; left: 0; transition: all 0.3s ease;}
+.menu-icon span:nth-child(1) {top: 0px;}
+.menu-icon span:nth-child(2) {top: 10px;}
+.menu-icon span:nth-child(3) {top: 20px;}
+.menu {position: fixed; top: 0; left: -250px; width: 200px; height: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); box-shadow: 4px 0 12px rgba(0,0,0,0.1); transition: 0.3s; padding-top: 60px; z-index: 999;}
+.menu a {display: block; padding: 12px 20px; color: #1E3A8A; font-weight: 700; text-decoration: none; transition: 0.2s;}
+.menu a:hover {background: rgba(16,185,129,0.15); border-left: 4px solid #10B981;}
+.menu-hamburger input:checked ~ .menu {left: 0;}
 </style>
+""", unsafe_allow_html=True)
+
+# --- Menu hamburger HTML ---
+st.markdown("""
+<div class="menu-hamburger">
+    <input type="checkbox" id="menu-toggle">
+    <label class="menu-icon" for="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </label>
+    <div class="menu">
+        <a href="#">Admin</a>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # --- Supabase ---
@@ -67,7 +96,7 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
     return texto
 
-# --- Tela login/cadastro ---
+# --- Login/Cadastro ---
 if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
@@ -116,11 +145,11 @@ if not st.session_state.logado:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Tela principal do app ---
+# --- Tela principal ---
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # --- Código de busca/exibição original ---
+    # --- Código de busca/exibição ORIGINAL ---
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     
     col1, col2 = st.columns(2)
