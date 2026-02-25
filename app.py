@@ -34,6 +34,8 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
+if "tentou_login" not in st.session_state:
+    st.session_state.tentou_login = False
 
 # --- Tela de login/cadastro ---
 if not st.session_state.logado:
@@ -45,17 +47,21 @@ if not st.session_state.logado:
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
+        
         if st.button("🚀 ACESSAR", key="login", use_container_width=True):
             email_limpo = email.strip().lower()
             senha_limpa = senha.strip()
-            resposta = supabase.table("acessos").select("*").eq("email", email_limpo).eq("senha", senha_limpa).execute()
-            if resposta.data:
-                st.session_state.logado = True
-                st.session_state.usuario = email_limpo
-                st.experimental_rerun()
+            if email_limpo and senha_limpa:
+                resposta = supabase.table("acessos").select("*").eq("email", email_limpo).eq("senha", senha_limpa).execute()
+                if resposta.data is not None and len(resposta.data) > 0:
+                    st.session_state.logado = True
+                    st.session_state.usuario = email_limpo
+                    st.experimental_rerun()
+                else:
+                    st.error("❌ E-mail ou senha incorretos!")
             else:
-                st.error("❌ E-mail ou senha incorretos!")
-    
+                st.error("❌ Preencha e-mail e senha!")
+
     elif aba == "Cadastro":
         nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
@@ -70,7 +76,7 @@ if not st.session_state.logado:
             else:
                 email_limpo = email.strip().lower()
                 existe = supabase.table("acessos").select("*").eq("email", email_limpo).execute()
-                if existe.data:
+                if existe.data is not None and len(existe.data) > 0:
                     st.error("❌ E-mail já cadastrado!")
                 else:
                     supabase.table("acessos").insert({"nome": nome.strip(), "email": email_limpo, "senha": senha}).execute()
