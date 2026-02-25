@@ -104,7 +104,7 @@ if not st.session_state.logado:
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # Barra de pesquisa
+    # --- Barra de pesquisa funcional ---
     termo_busca = st.text_input("🔍 Pesquise por nome, cidade ou palavra...", label_visibility="collapsed")
     resultados = []
 
@@ -135,10 +135,7 @@ else:
                 st.session_state.cards_visiveis[cidade] = False
 
             def toggle_cidade(cidade=cidade):
-                # Recolhe todos os outros
-                for c in st.session_state.cards_visiveis.keys():
-                    st.session_state.cards_visiveis[c] = False
-                st.session_state.cards_visiveis[cidade] = True
+                st.session_state.cards_visiveis[cidade] = not st.session_state.cards_visiveis[cidade]
 
             st.button(f"{cidade}", key=f"btn_{cidade}", on_click=toggle_cidade)
 
@@ -178,7 +175,7 @@ else:
 
                 st.button(f"− Recolher {cidade}", key=f"recolher_{cidade}", on_click=toggle_cidade)
 
-    # --- Mostrar resultados da busca ---
+    # --- Resultados da busca ---
     if resultados:
         st.success(f"✨ Encontrados {len(resultados)} centros!")
         for idx, row in enumerate(resultados):
