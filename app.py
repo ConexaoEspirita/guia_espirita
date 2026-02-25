@@ -7,10 +7,8 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS Limpo e Responsivo - TARJA BRANCA REMOVIDA ---
 st.markdown("""
 <style>
-/* Remove TARJA BRANCA e espaços estranhos */
 .block-container { 
     padding-top: 0rem !important; 
     padding-right: 0 !important;
@@ -19,7 +17,6 @@ st.markdown("""
 }
 [data-testid="stDecoration"] { display: none !important; }
 .stApp > div > div { background: transparent !important; }
-
 .stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
 
 .titulo-premium { 
@@ -95,12 +92,10 @@ div.stButton > button {
     box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important; 
     transition: all 0.2s !important; 
 }
-
 div.stButton > button:hover { 
     box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important; 
     transform: translateY(-2px) !important; 
 }
-
 div.stButton > button:active { 
     transform: translateY(0px) !important; 
     box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important; 
@@ -124,17 +119,14 @@ input[type="text"], input[type="password"] {
 </style>
 """, unsafe_allow_html=True)
 
-# --- Supabase ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-# --- Sessão ---
 if "logado" not in st.session_state: st.session_state.logado = False
 if "usuario" not in st.session_state: st.session_state.usuario = None
 if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
 
-# --- Função auxiliar ---
 def limpar_busca(texto):
     if pd.isna(texto): 
         return ""
@@ -144,7 +136,6 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-zA-Z0-9\\s]', '', texto)
     return texto
 
-# --- Login / Cadastro ---
 if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🕊️<br>Guia Espírita</div>', unsafe_allow_html=True)
@@ -153,30 +144,4 @@ if not st.session_state.logado:
 
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
-        senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
-        if st.button("🚀 ACESSAR", use_container_width=True):
-            if email.strip() and senha.strip():
-                try:
-                    resposta = supabase.table("acessos").select("*").eq("email", email.strip().lower()).eq("senha", senha.strip()).execute()
-                    if resposta.data and len(resposta.data) > 0:
-                        st.session_state.logado = True
-                        st.session_state.usuario = email.strip().lower()
-                        st.rerun()
-                    else:
-                        st.error("❌ E-mail ou senha incorretos!")
-                except Exception as e:
-                    st.error(f"❌ Erro ao conectar: {str(e)}")
-            else:
-                st.error("❌ Preencha e-mail e senha!")
-    else:
-        nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
-        email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
-        senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
-        senha_conf = st.text_input("", placeholder="🔒 Confirme a senha", type="password", label_visibility="collapsed")
-        if st.button("📝 CADASTRAR", use_container_width=True):
-            if not nome.strip() or not email.strip() or not senha.strip() or not senha_conf.strip():
-                st.error("❌ Todos os campos são obrigatórios!")
-            elif senha != senha_conf:
-                st.error("❌ Senhas não conferem!")
-            else:
-                try:
+        senha = st.text_input("", placeholder="🔒 Digite sua
