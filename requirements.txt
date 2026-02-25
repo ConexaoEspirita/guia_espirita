@@ -3,3 +3,6 @@ pandas
 supabase
 streamlit-option-menu
 openpyxl
+numpy
+requests
+python-dotenv
