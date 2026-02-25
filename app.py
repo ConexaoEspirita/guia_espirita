@@ -17,6 +17,12 @@ st.markdown("""
 -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 text-shadow: 0 4px 12px rgba(0,71,171,0.3);
 font-size: 2.5rem !important; font-weight: 800 !important; margin: 0; padding-bottom: 1rem; }
+
+.search-container { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.search-container input { flex: 1; padding: 8px 12px; font-size: 16px; border-radius: 8px; border: 2px solid #1E3A8A; outline: none; }
+.search-container button { padding: 8px 16px; font-size: 16px; background-color: #0047AB; color: white; border: none; border-radius: 8px; cursor: pointer; }
+.search-container button:hover { background-color: #1E40AF; }
+
 .card-centro { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
 padding: 20px; border-radius: 20px; border: 1px solid rgba(0,71,171,0.1);
 box-shadow: 0 8px 32px rgba(0,71,171,0.15); margin-bottom: 16px; position: relative; }
@@ -36,8 +42,7 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # --- Sessão ---
-if "logado" not in st.session_state: st.session_state.logado = False
-if "usuario" not in st.session_state: st.session_state.usuario = None
+if "logado" not in st.session_state: st.session_state.logado = True  # assume logado para teste
 if "cards_visiveis" not in st.session_state: st.session_state.cards_visiveis = {}
 
 # --- Função de limpeza ---
@@ -49,12 +54,6 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
     return texto
 
-# --- Tela principal ---
-st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-
-# --- Barra de pesquisa ---
-termo_busca = st.text_input("🔍 Pesquise por nome, cidade ou palavra...", label_visibility="collapsed")
-
 # --- Carregar planilha ---
 try:
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
@@ -63,9 +62,15 @@ except:
     st.error("Erro ao carregar planilha")
     df = pd.DataFrame()
 
+# --- Barra de pesquisa funcional ---
+st.markdown('<div class="search-container">', unsafe_allow_html=True)
+termo_busca = st.text_input("", placeholder="🔍 Pesquise por nome, cidade ou palavra...", key="busca_input")
+pesquisar = st.button("Pesquisar")
+st.markdown('</div>', unsafe_allow_html=True)
+
 # --- Resultados da pesquisa ---
 resultados = []
-if termo_busca.strip():
+if pesquisar and termo_busca.strip():
     termo_limpo = limpar_busca(termo_busca)
     for idx, row in df.iterrows():
         texto_row = " ".join([limpar_busca(str(row.get(c,""))) for c in ['NOME FANTASIA','NOME','CIDADE DO CENTRO ESPIRITA','ENDERECO','RESPONSAVEL','PALESTRA PUBLICA']])
@@ -76,22 +81,19 @@ if termo_busca.strip():
 with st.expander("☰ Menu", expanded=False):
     st.markdown("### Admin")
     st.markdown("### Cidades")
-    col_cidade_name = 'CIDADE DO CENTRO ESPIRITA'
-    cidades_unicas = sorted(df[col_cidade_name].dropna().unique())
+    cidades_unicas = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
     for cidade in cidades_unicas:
-        count_centro = len(df[df[col_cidade_name]==cidade])
+        count_centro = len(df[df['CIDADE DO CENTRO ESPIRITA']==cidade])
         if cidade not in st.session_state.cards_visiveis:
             st.session_state.cards_visiveis[cidade] = False
 
-        # botão da cidade com contagem de centros
         def toggle_cidade(cidade=cidade):
             st.session_state.cards_visiveis[cidade] = not st.session_state.cards_visiveis[cidade]
 
         st.button(f"{cidade} ({count_centro})", key=f"btn_{cidade}", on_click=toggle_cidade)
 
-        # se clicou, abre cards automaticamente
         if st.session_state.cards_visiveis[cidade]:
-            centros = df[df[col_cidade_name]==cidade].reset_index()
+            centros = df[df['CIDADE DO CENTRO ESPIRITA']==cidade].reset_index()
             for idx, row in centros.iterrows():
                 v_nome_real = row.get('NOME','Centro Espírita') + " 🕊️"
                 v_fantasia = row.get('NOME FANTASIA','N/I')
@@ -123,7 +125,6 @@ with st.expander("☰ Menu", expanded=False):
                     if len(numero) >= 10:
                         st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
 
-            # botão para recolher
             st.button(f"− Recolher {cidade}", key=f"recolher_{cidade}", on_click=toggle_cidade)
 
 # --- Exibir resultados da pesquisa ---
