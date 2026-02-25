@@ -5,7 +5,7 @@ import urllib.parse
 import unicodedata
 import re
 
-# --- CSS unificado para login/cadastro e app principal ---
+# --- CSS unificado ---
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
@@ -34,31 +34,29 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
-if "tentou_login" not in st.session_state:
-    st.session_state.tentou_login = False
 
-# --- Tela de login/cadastro ---
+# --- Tela login/cadastro ---
 if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
-    
+
     aba = st.radio("Escolha:", ["Login", "Cadastro"], horizontal=True)
-    
+
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
-        
         if st.button("🚀 ACESSAR", key="login", use_container_width=True):
-            email_limpo = email.strip().lower()
-            senha_limpa = senha.strip()
-            if email_limpo and senha_limpa:
-                resposta = supabase.table("acessos").select("*").eq("email", email_limpo).eq("senha", senha_limpa).execute()
-                if resposta.data is not None and len(resposta.data) > 0:
-                    st.session_state.logado = True
-                    st.session_state.usuario = email_limpo
-                    st.experimental_rerun()
-                else:
-                    st.error("❌ E-mail ou senha incorretos!")
+            if email.strip() and senha.strip():
+                try:
+                    resposta = supabase.table("acessos").select("*").eq("email", email.strip().lower()).eq("senha", senha.strip()).execute()
+                    if resposta.data and len(resposta.data) > 0:
+                        st.session_state.logado = True
+                        st.session_state.usuario = email.strip().lower()
+                        st.experimental_rerun()
+                    else:
+                        st.error("❌ E-mail ou senha incorretos!")
+                except Exception as e:
+                    st.error(f"❌ Erro ao conectar: {str(e)}")
             else:
                 st.error("❌ Preencha e-mail e senha!")
 
@@ -67,28 +65,31 @@ if not st.session_state.logado:
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
         senha_conf = st.text_input("", placeholder="🔒 Confirme a senha", type="password", label_visibility="collapsed")
-        
+
         if st.button("📝 CADASTRAR", key="cadastro", use_container_width=True):
             if not nome.strip() or not email.strip() or not senha.strip() or not senha_conf.strip():
                 st.error("❌ Todos os campos são obrigatórios!")
             elif senha != senha_conf:
                 st.error("❌ Senhas não conferem!")
             else:
-                email_limpo = email.strip().lower()
-                existe = supabase.table("acessos").select("*").eq("email", email_limpo).execute()
-                if existe.data is not None and len(existe.data) > 0:
-                    st.error("❌ E-mail já cadastrado!")
-                else:
-                    supabase.table("acessos").insert({"nome": nome.strip(), "email": email_limpo, "senha": senha}).execute()
-                    st.success("✅ Cadastro realizado! Agora faça login.")
-    
+                try:
+                    email_limpo = email.strip().lower()
+                    existe = supabase.table("acessos").select("*").eq("email", email_limpo).execute()
+                    if existe.data and len(existe.data) > 0:
+                        st.error("❌ E-mail já cadastrado!")
+                    else:
+                        supabase.table("acessos").insert({"nome": nome.strip(), "email": email_limpo, "senha": senha}).execute()
+                        st.success("✅ Cadastro realizado! Agora faça login.")
+                except Exception as e:
+                    st.error(f"❌ Erro ao conectar: {str(e)}")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Tela principal do app (não mexer em nada) ---
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-    
-    # --- Todo o código de busca e exibição do seu app permanece exatamente como está aqui ---
+
+    # --- Todo o código de busca e exibição permanece intacto ---
     
     # --- Botão de logout ---
     col_spacer, col_logout = st.columns([5, 1])
