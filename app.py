@@ -24,21 +24,19 @@ div[data-testid="stTextInputBlock"] > label > div > small {display: none !import
 div[data-testid="stInfoBlock"] div {display: none !important;}
 #back-to-top-fixed {position: fixed !important; bottom: 30px !important; right: 30px !important; background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important; border: none !important; border-radius: 50px !important; width: 60px !important; height: 60px !important; font-size: 24px !important; cursor: pointer !important; box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important; z-index: 99999 !important; display: block !important;}
 #back-to-top-fixed:hover {transform: translateY(-3px) !important; box-shadow: 0 8px 25px rgba(16,185,129,0.6) !important;}
-.metric-container {background: rgba(16,185,129,0.1) !important; padding: 10px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important;}
+.admin-panel {background: linear-gradient(135deg, #1E3A8A, #1E40AF) !important; color: white !important; padding: 15px !important; border-radius: 15px !important; margin: 10px 0 !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;} #back-to-top-fixed {bottom: 20px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 20px !important;}}
 </style>""", unsafe_allow_html=True)
 
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
-    import unicodedata
-    import re
     texto = unicodedata.normalize('NFD', texto)
     texto = re.sub(r'[\u0300-\u036f]', '', texto)
     texto = re.sub(r'[^a-z0-9\s]', '', texto)
     return texto
 
-# BANCO LOCAL SIMPLES
+# SESSION STATE COMPLETO
 if "usuarios" not in st.session_state:
     st.session_state.usuarios = []
 if "total_entradas" not in st.session_state:
@@ -49,6 +47,10 @@ if "logado" not in st.session_state:
     st.session_state.logado = False
 if "usuario" not in st.session_state:
     st.session_state.usuario = ""
+if "admin_senha" not in st.session_state:
+    st.session_state.admin_senha = ""
+if "mostra_admin" not in st.session_state:
+    st.session_state.mostra_admin = False
 
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - CADASTRO</h1>', unsafe_allow_html=True)
@@ -66,7 +68,7 @@ if not st.session_state.logado:
             elif "@" not in email or "." not in email:
                 st.error("❌ E-mail inválido! Use: usuario@dominio.com")
             else:
-                # VERIFICA SE JÁ EXISTE LOCALMENTE
+                # VERIFICA SE JÁ EXISTE
                 usuario_existe = False
                 for usuario in st.session_state.usuarios:
                     if usuario["email"] == email.strip().lower():
@@ -80,7 +82,7 @@ if not st.session_state.logado:
                     st.success(f"✅ Bem-vindo de volta, **{st.session_state.usuario}**!")
                     st.rerun()
                 else:
-                    # NOVO CADASTRO LOCAL
+                    # NOVO CADASTRO
                     novo_usuario = {
                         "nome": nome.strip(),
                         "email": email.strip().lower(),
@@ -97,12 +99,33 @@ else:
     # ÁREA LOGADA
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
-    # CONTADORES
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("👥 Total Cadastros", st.session_state.total_entradas)
-    with col2:
-        st.metric("🚪 Saídas", st.session_state.total_saidas)
+    # === MENU ADMIN ESCONDIDO ===
+    col_admin1, col_admin2 = st.columns([4, 1])
+    with col_admin2:
+        if st.button("🔐 ADMIN", key="btn_admin", use_container_width=True):
+            st.session_state.mostra_admin = not st.session_state.mostra_admin
+            st.rerun()
+    
+    # === PAINEL ADMIN (ESCONDIDO) ===
+    if st.session_state.mostra_admin:
+        st.markdown("""
+        <div class="admin-panel">
+            <h3>🔐 PAINEL ADMINISTRADOR</h3>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        senha_admin = st.text_input("🔑 Senha Admin:", type="password", key="senha_admin")
+        if senha_admin == "123456":  # ← MUDA ESSA SENHA AQUI!
+            st.session_state.admin_senha = senha_admin
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("👥 Total Cadastros", st.session_state.total_entradas)
+            with col2:
+                st.metric("🚪 Total Saídas", st.session_state.total_saidas)
+            st.info(f"📋 Total usuários: {len(st.session_state.usuarios)}")
+            st.json({"Últimos usuários": [u["nome"] for u in st.session_state.usuarios[-5:]]})
+        elif senha_admin:
+            st.error("❌ Senha incorreta!")
     
     st.markdown('<hr style="border: 2px solid #10B981; margin: 20px 0;">', unsafe_allow_html=True)
     st.markdown(f'<h2 style="color: #1E3A8A; font-size: 1.5rem;">Bem-vindo(a), {st.session_state.usuario}! 🕊️</h2>', unsafe_allow_html=True)
