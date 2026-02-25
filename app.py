@@ -8,7 +8,7 @@ import re
 # --- Configuração da página ---
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS limpo e responsivo ---
+# --- CSS ---
 st.markdown("""
 <style>
 .block-container { padding-top: 3rem !important; }
@@ -26,7 +26,7 @@ box-shadow: 0 8px 32px rgba(0,71,171,0.15); margin-bottom: 16px; position: relat
 .palestras-verde { color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important;
 background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important;
 border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important; }
-.num-card { position: absolute; top: 8px; right: 12px; font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); cursor:pointer; }
+.num-card { position: absolute; top: 8px; right: 12px; font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); }
 .login-title { font-size: 2rem !important; font-weight: 800 !important; color: #1E3A8A !important; text-align: center; margin-bottom: 20px; }
 .login-container { max-width: 450px; margin: 20px auto; padding: 30px; background: rgba(255,255,255,0.95);
 backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0,71,171,0.1);
@@ -46,7 +46,7 @@ if "usuario" not in st.session_state: st.session_state.usuario = None
 if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
 if "cards_visiveis" not in st.session_state: st.session_state.cards_visiveis = {}
 
-# --- Função de limpeza para busca ---
+# --- Função de limpeza ---
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
@@ -106,9 +106,7 @@ else:
 
     # --- Barra de pesquisa funcional ---
     termo_busca = st.text_input("🔍 Pesquise por nome, cidade ou palavra...", label_visibility="collapsed")
-    resultados = []
 
-    # Carregar planilha
     try:
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
@@ -117,6 +115,7 @@ else:
         df = pd.DataFrame()
 
     # --- Busca ---
+    resultados = []
     if termo_busca.strip():
         termo_limpo = limpar_busca(termo_busca)
         for idx, row in df.iterrows():
@@ -175,7 +174,7 @@ else:
 
                 st.button(f"− Recolher {cidade}", key=f"recolher_{cidade}", on_click=toggle_cidade)
 
-    # --- Resultados da busca ---
+    # --- Exibir resultados da busca ---
     if resultados:
         st.success(f"✨ Encontrados {len(resultados)} centros!")
         for idx, row in enumerate(resultados):
