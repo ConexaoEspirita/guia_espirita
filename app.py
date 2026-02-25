@@ -10,7 +10,7 @@ st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 35px; }
     div[data-testid="stMarkdownContainer"] p { font-size: 20px !important; font-weight: 700 !important; color: #1E3A8A; }
-    .stTextInput input { border-radius: 12px !important; border: 2px solid #D4E8F7 !important; padding: 10px 15px !important; }
+    .stTextInput input { border-radius: 12px !important; border: 2px solid #D4E8F7 !important; padding: 12px !important; }
     .stApp { background: #f4f7f9; }
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
@@ -41,11 +41,14 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp (Lógica Consertada +55)
+    # WhatsApp CORRIGIDO conforme sua instrução
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
-    link_wa = f"https://wa.me{whats_num}" if len(whats_num) >= 10 else "#"
+    if len(whats_num) >= 10:
+        whats_num = "+55" + whats_num
+        link_wa = f"https://wa.me{whats_num}"
+    else: link_wa = "#"
     
-    # Maps (Lógica Consertada Quote)
+    # Maps CORRIGIDO conforme sua instrução
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
     link_maps = f"https://www.google.com{query_maps}"
 
@@ -67,7 +70,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- SISTEMA ---
+# --- NAVEGAÇÃO ---
 if "logado" not in st.session_state: st.session_state.logado = False
 
 if not st.session_state.logado:
@@ -90,13 +93,12 @@ else:
     df.columns = df.columns.str.strip()
 
     if opcao == "🏠 Início":
-        st.title("🕊️ Bem-vindo")
+        st.title("🕊️ Bem-vindo ao Guia")
         st.info("Abra o menu lateral para pesquisar.")
 
     elif opcao == "🔎 Pesquisar Geral":
-        termo = st.text_input("Busca por nome, cidade ou palavra-chave:", placeholder="Ex: Kardec")
-        if termo:
-            # --- ✅ LÓGICA DE SUPER BUSCA FLEXÍVEL ---
+        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
+        if termo and len(termo) >= 4:
             def normalizar_texto(texto):
                 if pd.isna(texto): return ""
                 texto = str(texto).lower()
@@ -105,27 +107,30 @@ else:
                        .replace('ó','o').replace('ú','u').replace('â','a')
                        .replace('ê','e').replace('ô','o').replace('û','u'))
             
-            def busca_super_flexivel(texto_celula):
-                texto_norm = normalizar_texto(texto_celula)
+            def busca_refinada(texto):
+                texto_norm = normalizar_texto(texto)
                 termo_norm = normalizar_texto(termo)
                 if not texto_norm or not termo_norm: return False
-                # Batida direta, Sequência de letras ou 70% de similaridade
+                palavras_texto = texto_norm.split()
                 if termo_norm in texto_norm: return True
-                if all(letra in texto_norm for letra in termo_norm): return True
-                if sum(1 for letra in termo_norm if letra in texto_norm) / len(termo_norm) > 0.7: return True
+                if any(termo_norm in palavra for palavra in palavras_texto): return True
                 return False
 
-            mask = df.apply(lambda row: row.astype(str).apply(busca_super_flexivel).any(), axis=1)
+            mask = df.apply(lambda row: row.astype(str).apply(busca_refinada).any(), axis=1)
             resultados = df[mask]
             
-            st.write(f"Encontrados **{len(resultados)}** resultados:")
-            for i, (_, row) in enumerate(resultados.iterrows(), 1):
-                renderizar_card(row, i)
+            if len(resultados) == 0:
+                st.warning("❌ Nenhum resultado encontrado. Tente outra palavra!")
+            else:
+                st.success(f"✅ Encontrados {len(resultados)} centro(s)")
+                for i, (_, row) in enumerate(resultados.iterrows(), 1):
+                    renderizar_card(row, i)
+        elif termo:
+            st.warning("⚠️ Digite pelo menos 4 letras para buscar!")
 
     elif opcao == "📍 Por Cidade":
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
         sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
         if sel != "-- Selecione --":
-            dados = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            for i, (_, row) in enumerate(dados.iterrows(), 1):
+            for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
                 renderizar_card(row, i)
