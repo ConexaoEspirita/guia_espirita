@@ -12,13 +12,20 @@ st.set_page_config(
     layout="wide"
 )
 
-# ---------------- CSS PREMIUM ----------------
+# ---------------- CSS PREMIUM - CORRIGIDO ----------------
 st.markdown("""
 <style>
-
-/* Remove espaço estranho do topo */
+/* Remove espaço estranho do topo E TARJA BRANCA */
 .block-container {
     padding-top: 2rem !important;
+    padding-right: 0 !important;
+    padding-left: 0 !important;
+    margin: 0 !important;
+}
+
+/* Remove qualquer tarja branca estranha */
+.stApp > div > div {
+    background: transparent !important;
 }
 
 /* Fundo suave */
@@ -26,13 +33,16 @@ st.markdown("""
     background: linear-gradient(135deg,#f5f9ff 0%, #e8f2ff 100%);
 }
 
-/* Título principal */
+/* Título principal - MELHORADO */
 .titulo-app {
     text-align:center;
     font-size:38px;
     font-weight:800;
     color:#0f2c59;
     margin-bottom:20px;
+    background: transparent !important;
+    padding: 0 !important;
+    line-height: 1.1;
 }
 
 /* Login container */
@@ -90,18 +100,16 @@ st.markdown("""
 .stButton>button {
     border-radius:10px;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------- FUNÇÕES ----------------
-
 def limpar_texto(texto):
     if pd.isna(texto):
         return ""
     texto = str(texto).lower()
     texto = unicodedata.normalize('NFD', texto)
-    texto = re.sub(r'[\u0300-\u036f]', '', texto)
+    texto = re.sub(r'[\\u0300-\\u036f]', '', texto)
     return texto
 
 # ---------------- SUPABASE ----------------
@@ -119,11 +127,12 @@ if "modo" not in st.session_state:
 if "cidade_aberta" not in st.session_state:
     st.session_state.cidade_aberta = None
 
-# ---------------- LOGIN ----------------
+# ---------------- LOGIN - CORRIGIDO ----------------
 if not st.session_state.logado:
 
     st.markdown('<div class="login-box">', unsafe_allow_html=True)
-    st.markdown('<div class="titulo-app">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
+    # TÍTULO CORRIGIDO - POMBINHA SEM CORTE
+    st.markdown('<div class="titulo-app">🕊️<br>Guia Espírita</div>', unsafe_allow_html=True)
 
     aba = st.radio("", ["Login", "Cadastro"], horizontal=True)
 
@@ -132,9 +141,10 @@ if not st.session_state.logado:
         senha = st.text_input("Senha", type="password")
 
         if st.button("Entrar"):
-            resposta = supabase.table("acessos").select("*").eq("email", email).eq("senha", senha).execute()
+            resposta = supabase.table("acessos").select("*").eq("email", email.lower().strip()).eq("senha", senha).execute()
             if resposta.data:
                 st.session_state.logado = True
+                st.success("Login realizado com sucesso!")
                 st.rerun()
             else:
                 st.error("E-mail ou senha incorretos")
@@ -147,7 +157,7 @@ if not st.session_state.logado:
         if st.button("Cadastrar"):
             supabase.table("acessos").insert({
                 "nome": nome,
-                "email": email,
+                "email": email.lower().strip(),
                 "senha": senha
             }).execute()
             st.success("Cadastro realizado!")
@@ -157,7 +167,7 @@ if not st.session_state.logado:
 # ---------------- APP PRINCIPAL ----------------
 else:
 
-    st.markdown('<div class="titulo-app">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
+    st.markdown('<div class="titulo-app">🕊️<br>Guia Espírita</div>', unsafe_allow_html=True)
 
     # -------- MENU HAMBURGER --------
     with st.expander("☰ Menu", expanded=False):
@@ -224,7 +234,7 @@ else:
                     if numero:
                         st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}")
 
-    # -------- MODO CIDADES --------
+    # -------- MODO CIDADES - CORRIGIDO --------
     if st.session_state.modo == "cidades":
 
         cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
@@ -243,9 +253,7 @@ else:
 
             st.markdown(f"## {cidade}")
 
-            for i, row in enumerate(centros.iterrows(), start=1):
-                row = row[1]
-
+            for i, (_, row) in enumerate(centros.iterrows(), start=1):
                 numero = ''.join(filter(str.isdigit, str(row.get("CELULAR",""))))
                 query = urllib.parse.quote(f"{row.get('ENDERECO','')} {cidade}")
 
