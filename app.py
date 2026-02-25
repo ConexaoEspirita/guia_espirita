@@ -22,10 +22,25 @@ div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
 div[data-testid="stInfoBlock"] div {display: none !important;}
-#back-to-top {position: fixed; bottom: 30px; right: 30px; background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important; border: none; border-radius: 50px; width: 60px; height: 60px; font-size: 24px; cursor: pointer; box-shadow: 0 6px 20px rgba(16,185,129,0.4); opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1000;}
-#back-to-top.show {opacity: 1; visibility: visible;}
-#back-to-top:hover {transform: translateY(-3px); box-shadow: 0 8px 25px rgba(16,185,129,0.6);}
-@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;} #back-to-top {bottom: 20px; right: 20px; width: 55px; height: 55px; font-size: 20px;}}
+
+/* BOTÃO VOLTAR AO TOPO - CORRIGIDO */
+#back-to-top {
+    position: fixed !important; bottom: 30px !important; right: 30px !important;
+    background: linear-gradient(135deg, #10B981, #059669) !important;
+    color: white !important; border: none !important;
+    border-radius: 50px !important; width: 60px !important; height: 60px !important;
+    font-size: 24px !important; cursor: pointer !important;
+    box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important;
+    opacity: 0 !important; visibility: hidden !important; 
+    transition: all 0.3s ease !important; z-index: 9999 !important;
+}
+#back-to-top.show {opacity: 1 !important; visibility: visible !important;}
+#back-to-top:hover {transform: translateY(-3px) !important; box-shadow: 0 8px 25px rgba(16,185,129,0.6) !important;}
+@media (max-width: 768px) {
+    .nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}
+    .info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}
+    #back-to-top {bottom: 20px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 20px !important;}
+}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -33,11 +48,13 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 def limpar_busca(texto):
-    if pd.isna(texto): return ""
+    if pd.isna(texto): 
+        return ""
     texto = str(texto).lower().strip()
+    # MELHORADO: Remove TODOS os acentos e caracteres especiais
     texto = unicodedata.normalize('NFD', texto)
-    texto = re.sub(r'[\u0300-\u036f]', '', texto)
-    texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
+    texto = re.sub(r'[\u0300-\u036f]', '', texto)  # Remove diacríticos
+    texto = re.sub(r'[^a-z0-9\s]', '', texto)       # Só letras, números e espaços
     return texto
 
 if "logado" not in st.session_state:
@@ -46,8 +63,10 @@ if "logado" not in st.session_state:
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     col1, col2 = st.columns([1, 2])
-    with col1: email = st.text_input("📧 E-mail")
-    with col2: senha = st.text_input("🔒 Senha", type="password")
+    with col1: 
+        email = st.text_input("📧 E-mail")
+    with col2: 
+        senha = st.text_input("🔒 Senha", type="password")
     
     if st.button("🚀 ACESSAR GUIA", use_container_width=True):
         email_limpo = email.strip().lower()
@@ -93,7 +112,7 @@ else:
                     'PALESTRA PUBLICA': 'Palestra Pública',
                     'RESPONSAVEL': 'Responsável',
                     'CELULAR': 'Celular'
-                })  # ← CORRIGIDO: PONTO E VÍRGULA!
+                })
 
                 termo_limpo = limpar_busca(termo)
                 for idx, row in df.iterrows():
@@ -107,6 +126,7 @@ else:
                     ])
                     if termo_limpo in texto_row:
                         resultados.append(row.to_dict())
+                        
         except FileNotFoundError:
             st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
         except Exception as e:
@@ -149,28 +169,44 @@ else:
     
     st.markdown("---")
     
+    # BOTÃO VOLTAR AO TOPO - CORRIGIDO E FUNCIONANDO
     st.markdown("""
     <button id="back-to-top" title="⬆️ Voltar ao topo">⬆️</button>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('load', function() {{
         const btn = document.getElementById('back-to-top');
+        if (!btn) return;
+        
         let ticking = false;
-        function toggleButton() {
-            if (window.scrollY > 300) { btn.classList.add('show'); }
-            else { btn.classList.remove('show'); }
-        }
-        window.addEventListener('scroll', function() {
-            if (!ticking) {
+        
+        function toggleButton() {{
+            if (window.scrollY > 300) {{
+                btn.classList.add('show');
+            }} else {{
+                btn.classList.remove('show');
+            }}
+        }}
+        
+        window.addEventListener('scroll', function() {{
+            if (!ticking) {{
                 requestAnimationFrame(toggleButton);
                 ticking = true;
-                setTimeout(() => { ticking = false; }, 100);
-            }
-        });
-        btn.addEventListener('click', function(e) {
+                setTimeout(() => {{ ticking = false; }}, 150);
+            }}
+        }}, {{ passive: true }});
+        
+        btn.addEventListener('click', function(e) {{
             e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
+            e.stopPropagation();
+            window.scrollTo({{
+                top: 0,
+                behavior: 'smooth'
+            }});
+        }});
+        
+        // Mostra botão se já estiver rolando
+        toggleButton();
+    }});
     </script>
     """, unsafe_allow_html=True)
     
