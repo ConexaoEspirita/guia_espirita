@@ -8,25 +8,27 @@ from supabase import create_client, Client
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CONEXÃO SUPABASE (COM LIMPEZA DE ESPAÇOS) ---
+# --- CONEXÃO SUPABASE (VERSÃO DETETIVE) ---
 @st.cache_resource
 def conectar_supabase():
-    try:
-        # Puxa os segredos e remove espaços em branco acidentais
-        url = st.secrets["supabase_url"].strip()
-        key = st.secrets["supabase_key"].strip()
-        
-        # Validação básica de formato
-        if not url.startswith("https"):
-            st.error("⚠️ A URL do Supabase precisa começar com https://")
-            st.stop()
-            
-        return create_client(url, key)
-    except KeyError:
-        st.error("❌ Chaves não encontradas! Verifique se os nomes nos Secrets são 'supabase_url' e 'supabase_key'.")
+    # Tenta buscar de várias formas comuns (minúsculas, maiúsculas, prefixos)
+    url = st.secrets.get("supabase_url") or st.secrets.get("SUPABASE_URL")
+    key = st.secrets.get("supabase_key") or st.secrets.get("SUPABASE_KEY")
+
+    if not url or not key:
+        st.error("❌ ERRO DE CONFIGURAÇÃO NOS SECRETS")
+        st.write("O código procurou por 'supabase_url' e 'supabase_key' mas não achou.")
+        st.write("Nomes encontrados nos seus Secrets atualmente:", list(st.secrets.keys()))
+        st.info("💡 Vá em Settings > Secrets e certifique-se de usar nomes minúsculos.")
         st.stop()
+    
+    try:
+        # Limpa espaços em branco acidentais
+        url_clean = url.strip()
+        key_clean = key.strip()
+        return create_client(url_clean, key_clean)
     except Exception as e:
-        st.error(f"❌ Erro inesperado na conexão: {e}")
+        st.error(f"❌ Erro ao inicializar cliente Supabase: {e}")
         st.stop()
 
 supabase = conectar_supabase()
@@ -35,77 +37,60 @@ supabase = conectar_supabase()
 st.markdown("""
 <style>
     .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-    .login-box {background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,71,171,0.1); border: 1px solid #1E3A8A;}
+    .login-box {background: white; padding: 35px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 1px solid #1E3A8A;}
     [data-testid="stSidebar"] {background-color: #1E3A8A !important;}
     [data-testid="stSidebar"] * {color: white !important;}
     .card-centro {background: white; padding: 20px; border-radius: 15px; border-left: 8px solid #1E3A8A; margin-bottom: 15px;}
     .nome-grande {color: #1E3A8A !important; font-size: 22px !important; font-weight: 800 !important;}
-    .palestras-verde {color: #10B981 !important; font-weight: 700; background: #E6F9F1; padding: 5px 10px; border-radius: 8px;}
-    div.stButton > button {background: #1E3A8A !important; color: white !important; border-radius: 10px !important; font-weight: 700 !important;}
+    div.stButton > button {background: #1E3A8A !important; color: white !important; font-weight: 700 !important; width: 100%; border-radius: 10px !important;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNÇÕES ---
-def limpar_busca(texto):
-    if pd.isna(texto): return ""
-    texto = str(texto).lower().strip()
-    texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode("utf-8")
-    return re.sub(r'[^a-z0-9\s]', '', texto)
-
-# --- LÓGICA DE SESSÃO ---
+# --- SISTEMA DE ACESSO ---
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
-# --- TELA DE ACESSO ---
 if not st.session_state.logado:
+    st.markdown("<br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.2, 1])
     with col2:
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown("<h2 style='text-align:center; color:#1E3A8A;'>🕊️ Área de Acesso</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align:center; color:#1E3A8A;'>🕊️ Guia Espírita</h2>", unsafe_allow_html=True)
         
-        tab_login, tab_cadastro = st.tabs(["🔑 Login", "📝 Cadastro"])
+        tab_l, tab_c = st.tabs(["🔑 Login", "📝 Cadastro"])
         
-        with tab_login:
-            e_log = st.text_input("E-mail")
-            s_log = st.text_input("Senha", type="password")
-            if st.button("ENTRAR NO GUIA"):
-                try:
-                    res = supabase.table("usuarios").select("*").eq("email", e_log).eq("senha", s_log).execute()
-                    if res.data:
-                        st.session_state.logado = True
-                        st.session_state.usuario_nome = res.data[0]['nome']
-                        st.rerun()
-                    else:
-                        st.error("E-mail ou senha incorretos!")
-                except Exception as e:
-                    st.error(f"Erro ao consultar banco: {e}")
-        
-        with tab_cadastro:
-            n_cad = st.text_input("Nome Completo")
-            e_cad = st.text_input("E-mail para cadastro")
-            s_cad = st.text_input("Defina uma senha", type="password")
-            if st.button("FINALIZAR CADASTRO"):
-                if n_cad and e_cad and s_cad:
-                    try:
-                        supabase.table("usuarios").insert({"nome": n_cad, "email": e_cad, "senha": s_cad}).execute()
-                        st.success("Cadastro realizado! Use a aba Login.")
-                    except Exception as e:
-                        st.error(f"Erro: {e}")
+        with tab_l:
+            e = st.text_input("E-mail")
+            s = st.text_input("Senha", type="password")
+            if st.button("ACESSAR"):
+                # Validação real
+                res = supabase.table("usuarios").select("*").eq("email", e).eq("senha", s).execute()
+                if res.data:
+                    st.session_state.logado = True
+                    st.session_state.usuario_nome = res.data[0]['nome']
+                    st.rerun()
                 else:
-                    st.warning("Preencha todos os campos.")
+                    st.error("❌ Dados incorretos. Verifique e-mail e senha.")
+        
+        with tab_c:
+            n_c = st.text_input("Nome Completo")
+            e_c = st.text_input("E-mail de Cadastro")
+            s_c = st.text_input("Senha de Cadastro", type="password")
+            if st.button("CADASTRAR"):
+                if n_c and e_c and s_c:
+                    supabase.table("usuarios").insert({"nome": n_c, "email": e_c, "senha": s_c}).execute()
+                    st.success("✅ Sucesso! Agora faça login na aba ao lado.")
         st.markdown('</div>', unsafe_allow_html=True)
 
 else:
-    # --- ÁREA LOGADA ---
+    # --- APP PRINCIPAL ---
     with st.sidebar:
-        st.markdown(f"### Olá, {st.session_state.usuario_nome}! 🕊️")
+        st.markdown(f"### Olá, {st.session_state.usuario_nome}! 👋")
         st.divider()
-        menu = st.radio("Menu", ["🔍 Busca", "🏙️ Cidades", "🚪 Sair"])
+        menu = st.radio("Navegação", ["🔍 Buscar", "🏙️ Cidades", "🚪 Sair"])
         if menu == "🚪 Sair":
             st.session_state.logado = False
             st.rerun()
-
-    st.markdown("<h1 style='color:#1E3A8A; text-align:center;'>Guia de Centros Espíritas</h1>", unsafe_allow_html=True)
 
     try:
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
@@ -118,24 +103,19 @@ else:
 
         if menu == "🏙️ Cidades":
             cidades = sorted(df['Cidade'].dropna().unique())
-            cid_sel = st.selectbox("Escolha uma cidade:", ["Ver Todas"] + cidades)
-            res_df = df if cid_sel == "Ver Todas" else df[df['Cidade'] == cid_sel]
+            c_sel = st.selectbox("Cidade:", ["Todas"] + cidades)
+            dados = df if c_sel == "Todas" else df[df['Cidade'] == c_sel]
         else:
-            busca = st.text_input("O que você procura?")
-            termo = limpar_busca(busca)
-            if termo:
-                mask = df.apply(lambda r: termo in limpar_busca(' '.join(map(str, r.values))), axis=1)
-                res_df = df[mask]
-            else:
-                res_df = pd.DataFrame()
+            busca = st.text_input("Pesquisar...")
+            dados = df[df.apply(lambda r: busca.lower() in str(r.values).lower(), axis=1)] if busca else pd.DataFrame()
 
-        for _, row in res_df.iterrows():
+        for _, row in dados.iterrows():
             st.markdown(f"""
                 <div class="card-centro">
                     <div class="nome-grande">{row['Nome']}</div>
-                    <div style="color:#3B82F6; font-weight:600;">{row['Fantasia']}</div>
-                    <div style="margin-top:10px;">📍 {row['Endereco']} | 🏙️ {row['Cidade']}</div>
-                    <div class="palestras-verde" style="margin-top:10px;">🗣️ {row['Palestra']}</div>
+                    <div style="color:#3B82F6; font-style:italic;">{row['Fantasia']}</div>
+                    <p>📍 {row['Endereco']} | 🏙️ {row['Cidade']}</p>
+                    <p style="color:#10B981; font-weight:bold;">🗣️ {row['Palestra']}</p>
                 </div>
             """, unsafe_allow_html=True)
             
@@ -148,8 +128,5 @@ else:
                 if len(num) >= 10:
                     st.link_button("💬 WHATSAPP", f"https://wa.me/55{num}", use_container_width=True)
             st.divider()
-
     except Exception as e:
-        st.error(f"Erro ao carregar Excel: {e}")
-
-st.markdown('<button onclick="window.scrollTo({top: 0, behavior: \'smooth\'})" style="position: fixed; bottom: 20px; right: 20px; background: #1E3A8A; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; z-index: 999;">↑</button>', unsafe_allow_html=True)
+        st.error(f"Erro no Excel: {e}")
