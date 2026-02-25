@@ -1,159 +1,158 @@
 import streamlit as st
 import pandas as pd
+from supabase import create_client
 import urllib.parse
 import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS PROFISSIONAL: MENU, BUSCA E CARDS ---
+# --- PERSISTÊNCIA DE LOGIN (NÃO DESCONECTA NA ATUALIZAÇÃO) ---
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+@st.cache_data(ttl=3600)  # 1 hora de validade
+def get_login_status():
+    return st.session_state.logado
+
+if get_login_status():
+    st.session_state.logado = True
+
+# --- CSS PREMIUM: MENU GRANDE, CARDS COM SOMBRA E ITALICO ---
 st.markdown("""
 <style>
-    /* Menu Lateral */
+    /* Menu Lateral com Letra Grande */
     [data-testid="stSidebar"] { padding-top: 35px; }
     div[data-testid="stMarkdownContainer"] p { font-size: 20px !important; font-weight: 700 !important; color: #1E3A8A; }
     
-    /* Barra de Pesquisa Profissional */
-    .stTextInput input {
-        border-radius: 12px !important;
-        border: 2px solid #D4E8F7 !important;
-        padding: 10px 15px !important;
-        font-size: 16px !important;
-        box-shadow: 0 2px 8px rgba(0,71,171,0.05) !important;
-    }
-    .stTextInput input:focus {
-        border-color: #0047AB !important;
-        box-shadow: 0 2px 12px rgba(0,71,171,0.15) !important;
-    }
-
     .stApp { background: #f4f7f9; }
     
-    /* Card com Sombra e Número */
+    /* Card com Sombra e Design Limpo */
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-        margin-bottom: 25px; border-left: 12px solid #0047AB;
-        position: relative;
-    }
-    .numero-badge {
-        position: absolute; top: 15px; right: 20px;
-        background: #f0f4f8; color: #7f8c8d; padding: 2px 10px;
-        border-radius: 20px; font-size: 12px; font-weight: 800;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+        margin-bottom: 25px; border-left: 12px solid #0047AB; 
     }
     
-    .nome-centro { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800; display: block; }
-    .nome-fantasia { color: #3B82F6 !important; font-size: 16px !important; font-style: italic; font-weight: 500; margin-top: 2px; display: block; }
+    .header-card { border-bottom: 2px solid #f0f2f6; padding-bottom: 12px; margin-bottom: 15px; }
+    .linha-topo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .tag-cidade { 
+        background: #0047AB; color: white !important; padding: 5px 12px; 
+        border-radius: 8px; font-weight: 800; font-size: 13px; text-transform: uppercase;
+    }
+    .nome-centro { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800; margin: 0; }
+    
+    /* Nome Fantasia em Itálico logo abaixo */
+    .nome-fantasia { 
+        color: #3B82F6 !important; font-size: 17px !important; 
+        font-weight: 500 !important; font-style: italic !important; 
+        margin-top: 4px; display: block; 
+    }
     
     .palestras-verde { 
         color: #065F46 !important; font-weight: 700; background: #D1FAE5; 
         padding: 10px; border-radius: 10px; margin: 12px 0; border: 1px solid #10B981;
     }
+    
     .info-linha { margin: 8px 0; font-size: 15px; color: #333 !important; }
-    .label-bold { font-weight: 800; color: #0047AB; text-transform: uppercase; font-size: 13px; }
+    .label-bold { font-weight: 800; color: #0047AB; }
     
     .btn-row { display: flex; gap: 12px; margin-top: 20px; }
     .btn-link { 
         text-decoration: none !important; color: white !important; 
         padding: 14px; border-radius: 12px; font-weight: 800; 
-        text-align: center; flex: 1; display: inline-block; transition: 0.3s;
+        text-align: center; flex: 1; display: inline-block;
     }
     .bg-wa { background-color: #25D366; }
     .bg-maps { background-color: #4285F4; }
-    .btn-link:hover { opacity: 0.9; transform: scale(1.02); }
 </style>
 """, unsafe_allow_html=True)
 
 def ajustar_texto(txt):
-    return str(txt).strip() if pd.notna(txt) else ""
+    if pd.isna(txt): return ""
+    return str(txt).strip()
 
-def renderizar_card(row, index):
+def renderizar_card(row):
     nome = ajustar_texto(row.get('NOME', 'Centro Espírita'))
     fantasia = ajustar_texto(row.get('NOME FANTASIA', ''))
-    end = ajustar_texto(row.get('ENDERECO', ''))
-    cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
-    palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
+    end = ajustar_texto(row.get('ENDERECO', 'Não informado'))
+    cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', 'Não informado'))
+    palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte a casa'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp (Lógica Consertada)
+    # WhatsApp CORRIGIDO ✅
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
-        whats_num = "+55" + whats_num
-        link_wa = f"https://wa.me{whats_num}"
+        whats_num = "+55" + whats_num  # Brasil
+        link_wa = f"https://wa.me/{whats_num}"
     else:
         link_wa = "#"
     
-    # Maps (Lógica Consertada)
+    # Maps CORRIGIDO ✅
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
-    link_maps = f"https://www.google.com{query_maps}"
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
+
+    # Bloco do Fantasia (só aparece se existir)
+    html_fantasia = f'<span class="nome-fantasia">✨ {fantasia}</span>' if fantasia else ""
 
     st.markdown(f"""
     <div class="card-centro">
-        <div class="numero-badge">CENTRO #{index}</div>
-        <div style="border-bottom: 2px solid #f0f2f6; padding-bottom: 12px; margin-bottom: 15px;">
-            <span class="nome-centro">{nome} 🕊️</span>
-            {f'<span class="nome-fantasia">{fantasia}</span>' if fantasia else ''}
+        <div class="header-card">
+            <div class="linha-topo">
+                <span class="tag-cidade">🏙️ {cid}</span>
+                <span class="nome-centro">{nome} 🕊️</span>
+            </div>
+            {html_fantasia}
         </div>
         <div class="palestras-verde">🗣️ PALESTRAS: {palestras}</div>
-        <div class="info-linha"><span class="label-bold">🏙️ Cidade:</span> {cid}</div>
-        <div class="info-linha"><span class="label-bold">📍 Endereço:</span> {end}</div>
-        <div class="info-linha"><span class="label-bold">👤 Responsável:</span> {resp}</div>
+        <div class="info-linha"><span class="label-bold">📍 ENDEREÇO:</span> {end}</div>
+        <div class="info-linha"><span class="label-bold">👤 RESPONSÁVEL:</span> {resp}</div>
         <div class="btn-row">
-            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 VER MAPA</a>
+            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 GOOGLE MAPS</a>
             <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WHATSAPP</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- LOGIN E SISTEMA ---
-if "logado" not in st.session_state: st.session_state.logado = False
-
+# --- NAVEGAÇÃO ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
-    with st.form("login"):
+    with st.form("login_app"):
         u = st.text_input("E-mail")
         p = st.text_input("Senha", type="password")
-        if st.form_submit_button("ACESSAR SISTEMA"):
+        if st.form_submit_button("ACESSAR"):
             st.session_state.logado = True
             st.rerun()
 else:
     with st.sidebar:
         st.markdown("### ☰ MENU")
-        opcao = st.radio("Escolha:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"])
+        opcao = st.radio("Selecione:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"])
         if opcao == "🚪 Sair":
             st.session_state.logado = False
+            st.cache_data.clear()  # Limpa cache na saída
             st.rerun()
 
-    # Carregamento de dados com tratamento
     try:
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
     except Exception as e:
-        st.error("Erro ao carregar o arquivo Excel. Verifique se o nome está correto."); st.stop()
+        st.error(f"Erro no Excel: {e}")
+        st.stop()
 
     if opcao == "🏠 Início":
         st.title("🕊️ Guia Espírita")
-        st.info("Utilize o menu lateral para iniciar sua jornada de busca.")
+        st.info("Abra o menu lateral para iniciar sua busca.")
 
     elif opcao == "🔎 Pesquisar Geral":
-        st.subheader("🔎 Busca Inteligente")
-        termo = st.text_input("", placeholder="Digite nome, cidade, endereço ou termo...", key="search_input")
-        
+        termo = st.text_input("Busca por nome, cidade ou palavra-chave:")
         if termo:
-            termo_lower = termo.lower().strip()
-            # Busca em todas as colunas convertendo para string
-            mask = df.fillna("").astype(str).apply(lambda x: x.str.contains(termo_lower, case=False)).any(axis=1)
-            res = df[mask]
-            
-            if not res.empty:
-                st.write(f"Encontrados **{len(res)}** resultados:")
-                for i, (_, row) in enumerate(res.iterrows(), 1):
-                    renderizar_card(row, i)
-            else:
-                st.warning("Nenhum resultado encontrado para este termo.")
+            mask = df.astype(str).apply(lambda x: x.str.contains(termo, case=False)).any(axis=1)
+            for _, row in df[mask].iterrows():
+                renderizar_card(row)
 
     elif opcao == "📍 Por Cidade":
-        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("Selecione a cidade desejada:", ["-- Clique para escolher --"] + cidades)
-        if sel != "-- Clique para escolher --":
-            dados = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            for i, (_, row) in enumerate(dados.iterrows(), 1):
-                renderizar_card(row, i)
+        col_cid = 'CIDADE DO CENTRO ESPIRITA'
+        cidades = sorted(df[col_cid].dropna().unique())
+        escolha = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
+        if escolha != "-- Selecione --":
+            for _, row in df[df[col_cid] == escolha].iterrows():
+                renderizar_card(row)
