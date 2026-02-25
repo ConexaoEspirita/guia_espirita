@@ -34,7 +34,8 @@ supabase = create_client(url, key)
 
 if "logado" not in st.session_state: st.session_state.logado = False
 if "usuario" not in st.session_state: st.session_state.usuario = None
-if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
+if "modo" not in st.session_state: st.session_state.modo = "principal"
+if "cidade_aberta" not in st.session_state: st.session_state.cidade_aberta = None
 
 def limpar_busca(texto):
     if pd.isna(texto): return ""
@@ -84,41 +85,109 @@ if not st.session_state.logado:
 
 else:
     st.markdown('<h1 class="titulo-premium">🕊️<br>Guia Espirita</h1>', unsafe_allow_html=True)
-    with st.expander("☰ Menu", expanded=False):
-        st.markdown("### Admin")
-        st.markdown("### Cidades")
-    try:
-        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-        df.columns = df.columns.str.strip()
-        col_cidade = 'CIDADE DO CENTRO ESPIRITA'
-        cidades_unicas = sorted(df[col_cidade].dropna().unique())
-        for cidade in cidades_unicas:
-            with st.expander(cidade):
-                centros = df[df[col_cidade]==cidade]
-                for idx, row in centros.iterrows():
-                    v_nome_real = row.get('NOME', 'Centro Espírita') + " 🕊️"
-                    v_fantasia = row.get('NOME FANTASIA', 'N/I')
-                    v_endereco = row.get('ENDERECO', 'N/I')
-                    v_resp = row.get('RESPONSAVEL', 'N/I')
-                    v_celular = str(row.get('CELULAR', ''))
-                    v_palestras = row.get('PALESTRA PUBLICA', '')
+    
+    # MENU ☰ COM 3 OPCOES
+    if st.session_state.modo == "principal":
+        col1, col2 = st.columns([3,1])
+        with col2:
+            if st.button("☰ MENU", use_container_width=True):
+                st.session_state.modo = "menu"
+                st.rerun()
+        
+        # BUSCA PRINCIPAL
+        busca = st.text_input("🔍 Pesquise nome, cidade ou responsável...", label_visibility="collapsed")
+        if busca:
+            try:
+                df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+                df.columns = df.columns.str.strip()
+                resultados = []
+                for _, row in df.iterrows():
+                    texto_total = " ".join([
+                        limpar_busca(row.get('NOME','')),
+                        limpar_busca(row.get('NOME FANTASIA','')),
+                        limpar_busca(row.get('CIDADE DO CENTRO ESPIRITA','')),
+                        limpar_busca(row.get('RESPONSAVEL',''))
+                    ])
+                    if limpar_busca(busca) in texto_total:
+                        resultados.append(row)
+                
+                for i, row in enumerate(resultados, 1):
+                    numero = ''.join(filter(str.isdigit, str(row.get('CELULAR',''))))
+                    query = urllib.parse.quote(f"{row.get('ENDERECO','')} {row.get('CIDADE DO CENTRO ESPIRITA','')}")
                     st.markdown(f"""
                     <div class="card-centro">
-                        <div class="nome-grande">{v_nome_real}</div>
-                        <div class="nome-fantasia">{v_fantasia}</div>
-                        <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
-                        <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                        <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                        <div style="font-size:12px;opacity:0.6;position:absolute;top:10px;right:15px;">{i}</div>
+                        <div class="nome-grande">{row.get('NOME','')} 🕊️</div>
+                        <div class="nome-fantasia">{row.get('NOME FANTASIA','')}</div>
+                        <div class="palestras-verde">🗣️ PALESTRAS {row.get('PALESTRA PUBLICA','')}</div>
+                        <div class="info-texto">👤 <b>Responsável:</b> {row.get('RESPONSAVEL','')}</div>
+                        <div class="info-texto">📍 <b>Endereço:</b> {row.get('ENDERECO','')}</div>
                     </div>
                     """, unsafe_allow_html=True)
-    except Exception as e:
-        st.error("Erro ao carregar cidades: " + str(e))
-    busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔎 PESQUISAR", use_container_width=True):
-            if busca.strip():
-                st.session_state.tem_busca = busca.strip()
-    with col2:
-        if st.button("🗑️ LIMPAR", use_container_width=True):
-            st.session_state.tem_busca = ""
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+                    with col2:
+                        if numero:
+                            st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+            except:
+                st.error("Erro na busca")
+    
+    # MENU ☰
+    elif st.session_state.modo == "menu":
+        st.button("← VOLTAR", use_container_width=True, on_click=lambda: setattr(st.session_state, 'modo', 'principal') or st.rerun())
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("🏙️ CIDADES", use_container_width=True):
+                st.session_state.modo = "cidades"
+                st.rerun()
+        with col2:
+            if st.button("🔎 BUSCA", use_container_width=True):
+                st.session_state.modo = "principal"
+                st.rerun()
+        with col3:
+            if st.button("👨‍💼 ADMIN", use_container_width=True):
+                st.info("Área administrativa em desenvolvimento")
+    
+    # MODO CIDADES
+    elif st.session_state.modo == "cidades":
+        st.button("← VOLTAR", use_container_width=True, on_click=lambda: setattr(st.session_state, 'modo', 'menu') or st.rerun())
+        try:
+            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+            df.columns = df.columns.str.strip()
+            col_cidade = 'CIDADE DO CENTRO ESPIRITA'
+            cidades_unicas = sorted(df[col_cidade].dropna().unique())
+            for cidade in cidades_unicas:
+                total = len(df[df[col_cidade]==cidade])
+                if st.button(f"📍 {cidade} ({total})", use_container_width=True):
+                    st.session_state.cidade_aberta = cidade
+                    st.rerun()
+            
+            if st.session_state.cidade_aberta:
+                st.markdown(f"<h2 style='color:#1E3A8A;text-align:center;'>📍 {st.session_state.cidade_aberta}</h2>", unsafe_allow_html=True)
+                centros = df[df[col_cidade]==st.session_state.cidade_aberta]
+                for i, row in enumerate(centros.iterrows(), 1):
+                    row = row[1]
+                    numero = ''.join(filter(str.isdigit, str(row.get('CELULAR',''))))
+                    query = urllib.parse.quote(f"{row.get('ENDERECO','')} {st.session_state.cidade_aberta}")
+                    st.markdown(f"""
+                    <div class="card-centro">
+                        <div style="font-size:12px;opacity:0.6;position:absolute;top:10px;right:15px;">{i}</div>
+                        <div class="nome-grande">{row.get('NOME','')} 🕊️</div>
+                        <div class="nome-fantasia">{row.get('NOME FANTASIA','')}</div>
+                        <div class="palestras-verde">🗣️ PALESTRAS {row.get('PALESTRA PUBLICA','')}</div>
+                        <div class="info-texto">👤 <b>Responsável:</b> {row.get('RESPONSAVEL','')}</div>
+                        <div class="info-texto">📍 <b>Endereço:</b> {row.get('ENDERECO','')}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+                    with col2:
+                        if numero:
+                            st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+                if st.button("🔙 Voltar Cidades", use_container_width=True):
+                    st.session_state.cidade_aberta = None
+                    st.rerun()
+        except Exception as e:
+            st.error("Erro ao carregar cidades: " + str(e))
