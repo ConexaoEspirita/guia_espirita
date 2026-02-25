@@ -40,17 +40,17 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp ✅ CONSERTADO COM +55
+    # WhatsApp ✅ CONSERTADO
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
         whats_num_com_prefixo = "+55" + whats_num
-        link_wa = f"https://wa.me{whats_num_com_prefixo}"
+        link_wa = f"https://wa.me/{whats_num_com_prefixo}"
     else:
         link_wa = "#"
     
-    # Maps ✅ CONSERTADO COM QUOTE
+    # Maps ✅ CONSERTADO
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
-    link_maps = f"https://www.google.com{query_maps}"
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -114,15 +114,19 @@ else:
         termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
+            
             def normalizar(t):
                 if pd.isna(t): return ""
                 t = str(t).lower()
                 return (t.replace('ç','c').replace('ã','a').replace('õ','o').replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u'))
+            
             def checar_linha(row):
                 texto_linha = normalizar(" ".join(row.astype(str)))
                 return all(normalizar(p) in texto_linha for p in palavras_busca)
+
             mask = df.apply(checar_linha, axis=1)
             res = df[mask]
+            
             if len(res) > 0:
                 st.success(f"✅ Encontrados {len(res)} centro(s)")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
@@ -131,16 +135,8 @@ else:
         elif termo: st.warning("⚠️ Mínimo de 4 letras!")
 
     elif opcao == "📍 Por Cidade":
-        # ✅ NOVA LÓGICA DE CIDADES ENCAIXADA
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("🏙️ Escolha a cidade:", cidades)
-        
-        if sel:
-            dados_cid = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            st.markdown(f"### 📍 Centros em **{sel}**")
-            st.caption(f"Encontrados {len(dados_cid)} centros")
-            
-            for i, (_, row) in enumerate(dados_cid.iterrows(), 1):
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
+        if sel != "-- Selecione --":
+            for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
                 renderizar_card(row, i)
-        else:
-            st.info("👆 Clique para escolher uma cidade!")
