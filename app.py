@@ -26,7 +26,7 @@ box-shadow: 0 8px 32px rgba(0,71,171,0.15); margin-bottom: 16px; position: relat
 .palestras-verde { color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important;
 background: rgba(16,185,129,0.15) !important; padding: 8px 14px !important;
 border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important; }
-.num-card { position: absolute; top: 8px; right: 12px; font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); }
+.num-card { position: absolute; top: 8px; right: 12px; font-size: 12px; font-weight: 600; color: rgba(0,0,0,0.4); cursor:pointer; }
 .login-title { font-size: 2rem !important; font-weight: 800 !important; color: #1E3A8A !important; text-align: center; margin-bottom: 20px; }
 .login-container { max-width: 450px; margin: 20px auto; padding: 30px; background: rgba(255,255,255,0.95);
 backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0,71,171,0.1);
@@ -44,6 +44,7 @@ supabase = create_client(url, key)
 if "logado" not in st.session_state: st.session_state.logado = False
 if "usuario" not in st.session_state: st.session_state.usuario = None
 if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
+if "cards_visiveis" not in st.session_state: st.session_state.cards_visiveis = {}
 
 # --- Função de limpeza para busca ---
 def limpar_busca(texto):
@@ -76,7 +77,7 @@ if not st.session_state.logado:
                     st.error(f"❌ Erro ao conectar: {str(e)}")
             else:
                 st.error("❌ Preencha e-mail e senha!")
-    else:  # Cadastro
+    else:
         nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
@@ -106,57 +107,69 @@ else:
     # --- Barra de pesquisa ---
     termo_busca = st.text_input("🔍 Pesquise por nome, cidade ou palavra...", label_visibility="collapsed")
     resultados = []
+
+    # --- Carregar planilha ---
+    try:
+        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+        df.columns = df.columns.str.strip()
+    except Exception as e:
+        st.error(f"Erro ao carregar planilha: {str(e)}")
+        df = pd.DataFrame()
+
+    # --- Pesquisa ---
     if termo_busca.strip():
-        try:
-            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            df.columns = df.columns.str.strip()
-            termo_limpo = limpar_busca(termo_busca)
-            for idx, row in df.iterrows():
-                texto_row = " ".join([limpar_busca(str(row.get(c, ""))) for c in ['NOME FANTASIA','NOME','CIDADE DO CENTRO ESPIRITA','ENDERECO','RESPONSAVEL','PALESTRA PUBLICA']])
-                if termo_limpo in texto_row:
-                    resultados.append(row.to_dict())
-        except Exception as e:
-            st.error(f"Erro ao buscar: {str(e)}")
+        termo_limpo = limpar_busca(termo_busca)
+        for idx, row in df.iterrows():
+            texto_row = " ".join([limpar_busca(str(row.get(c,""))) for c in ['NOME FANTASIA','NOME','CIDADE DO CENTRO ESPIRITA','ENDERECO','RESPONSAVEL','PALESTRA PUBLICA']])
+            if termo_limpo in texto_row:
+                resultados.append(row.to_dict())
 
     # --- Menu Hamburger Recolhível ---
     with st.expander("☰ Menu", expanded=False):
-        st.markdown("### Admin")
+        st.markdown("### Admin")  # Recolhido por padrão
         st.markdown("### Cidades")
 
-        try:
-            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            df.columns = df.columns.str.strip()
-            col_cidade = 'CIDADE DO CENTRO ESPIRITA'
-            cidades_unicas = sorted(df[col_cidade].dropna().unique())
-            for cidade in cidades_unicas:
-                # expander por cidade
-                with st.expander(f"{cidade} [-]"):
-                    centros = df[df[col_cidade]==cidade]
-                    for idx, row in centros.iterrows():
-                        v_nome_real = row.get('NOME', 'Centro Espírita') + " 🕊️"
-                        v_fantasia = row.get('NOME FANTASIA', 'N/I')
-                        v_endereco = row.get('ENDERECO', 'N/I')
-                        v_resp = row.get('RESPONSAVEL', 'N/I')
-                        v_celular = str(row.get('CELULAR',''))
-                        v_palestras = row.get('PALESTRA PUBLICA','')
-                        st.markdown(f"""
-                        <div class="card-centro">
-                            <div class="nome-grande">{v_nome_real}</div>
-                            <div class="nome-fantasia">{v_fantasia}</div>
-                            <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
-                            <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
-                            <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                            <div class="num-card">{idx+1}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-        except Exception as e:
-            st.error("Erro ao carregar cidades: " + str(e))
+        col_cidade_name = 'CIDADE DO CENTRO ESPIRITA'
+        cidades_unicas = sorted(df[col_cidade_name].dropna().unique())
 
-    # --- Mostrar resultados da busca se houver ---
+        for cidade in cidades_unicas:
+            if cidade not in st.session_state.cards_visiveis:
+                st.session_state.cards_visiveis[cidade] = False
+
+            def toggle_cidade(cidade=cidade):
+                st.session_state.cards_visiveis[cidade] = not st.session_state.cards_visiveis[cidade]
+
+            st.button(f"{cidade}", key=f"btn_{cidade}", on_click=toggle_cidade)
+
+            if st.session_state.cards_visiveis[cidade]:
+                centros = df[df[col_cidade_name]==cidade].reset_index()
+                for idx, row in centros.iterrows():
+                    v_nome_real = row.get('NOME','Centro Espírita') + " 🕊️"
+                    v_fantasia = row.get('NOME FANTASIA','N/I')
+                    v_endereco = row.get('ENDERECO','N/I')
+                    v_resp = row.get('RESPONSAVEL','N/I')
+                    v_celular = str(row.get('CELULAR',''))
+                    v_palestras = row.get('PALESTRA PUBLICA','')
+
+                    # Card com sinal "-" para recolher a cidade
+                    st.markdown(f"""
+                    <div class="card-centro">
+                        <div class="num-card" onclick="return false;" title="Clique para recolher">{idx+1}</div>
+                        <div class="nome-grande">{v_nome_real}</div>
+                        <div class="nome-fantasia">{v_fantasia}</div>
+                        <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
+                        <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                        <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                st.button(f"− Recolher {cidade}", key=f"recolher_{cidade}", on_click=toggle_cidade)
+
+    # --- Mostrar resultados da busca ---
     if resultados:
         st.success(f"✨ Encontrados {len(resultados)} centros!")
         for idx, row in enumerate(resultados):
-            v_nome_real = row.get('NOME', 'Centro Espírita') + " 🕊️"
+            v_nome_real = row.get('NOME','Centro Espírita') + " 🕊️"
             v_fantasia = row.get('NOME FANTASIA','N/I')
             v_endereco = row.get('ENDERECO','N/I')
             v_resp = row.get('RESPONSAVEL','N/I')
@@ -164,11 +177,11 @@ else:
             v_palestras = row.get('PALESTRA PUBLICA','')
             st.markdown(f"""
             <div class="card-centro">
+                <div class="num-card">{idx+1}</div>
                 <div class="nome-grande">{v_nome_real}</div>
                 <div class="nome-fantasia">{v_fantasia}</div>
                 <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
                 <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                 <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
-                <div class="num-card">{idx+1}</div>
             </div>
             """, unsafe_allow_html=True)
