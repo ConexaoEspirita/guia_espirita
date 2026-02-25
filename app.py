@@ -123,9 +123,12 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-if "logado" not in st.session_state: st.session_state.logado = False
-if "usuario" not in st.session_state: st.session_state.usuario = None
-if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
+if "logado" not in st.session_state: 
+    st.session_state.logado = False
+if "usuario" not in st.session_state: 
+    st.session_state.usuario = None
+if "tem_busca" not in st.session_state: 
+    st.session_state.tem_busca = ""
 
 def limpar_busca(texto):
     if pd.isna(texto): 
@@ -144,4 +147,37 @@ if not st.session_state.logado:
 
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
-        senha = st.text_input("", placeholder="🔒 Digite sua
+        senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
+        if st.button("🚀 ACESSAR", use_container_width=True):
+            if email.strip() and senha.strip():
+                resposta = supabase.table("acessos").select("*").eq("email", email.strip().lower()).eq("senha", senha.strip()).execute()
+                if resposta.data and len(resposta.data) > 0:
+                    st.session_state.logado = True
+                    st.session_state.usuario = email.strip().lower()
+                    st.rerun()
+                else:
+                    st.error("❌ E-mail ou senha incorretos!")
+            else:
+                st.error("❌ Preencha e-mail e senha!")
+    else:
+        nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
+        email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
+        senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
+        senha_conf = st.text_input("", placeholder="🔒 Confirme a senha", type="password", label_visibility="collapsed")
+        if st.button("📝 CADASTRAR", use_container_width=True):
+            if not nome.strip() or not email.strip() or not senha.strip() or not senha_conf.strip():
+                st.error("❌ Todos os campos são obrigatórios!")
+            elif senha != senha_conf:
+                st.error("❌ Senhas não conferem!")
+            else:
+                email_limpo = email.strip().lower()
+                existe = supabase.table("acessos").select("*").eq("email", email_limpo).execute()
+                if existe.data and len(existe.data) > 0:
+                    st.error("❌ E-mail já cadastrado!")
+                else:
+                    supabase.table("acessos").insert({"nome": nome.strip(), "email": email_limpo, "senha": senha}).execute()
+                    st.success("✅ Cadastro realizado! Agora faça login.")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+else:
+    st.markdown('<h1 class="titulo-premium">🕊️<br>Guia
