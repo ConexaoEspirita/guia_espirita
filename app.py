@@ -8,23 +8,25 @@ from supabase import create_client, Client
 # --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CONEXÃO SUPABASE ---
-# O Streamlit buscará automaticamente em st.secrets ou você pode preencher aqui
+# --- CONEXÃO SUPABASE (CORRIGIDA) ---
+# Aqui ele tenta ler do segredo do Streamlit. Certifique-se que no site do Streamlit 
+# as chaves estão como: supabase_url e supabase_key
 try:
     URL_SUPABASE = st.secrets["supabase_url"]
     KEY_SUPABASE = st.secrets["supabase_key"]
-except:
-    URL_SUPABASE = "SUA_URL_AQUI"
-    KEY_SUPABASE = "SUA_CHAVE_AQUI"
-
-supabase: Client = create_client(URL_SUPABASE, KEY_SUPABASE)
+    # Verifica se a URL é válida antes de tentar conectar
+    if not URL_SUPABASE or "https" not in URL_SUPABASE:
+        st.error("❌ A URL do Supabase no 'Secrets' está inválida ou vazia.")
+        st.stop()
+    supabase: Client = create_client(URL_SUPABASE, KEY_SUPABASE)
+except Exception as e:
+    st.error(f"❌ Erro de Conexão: Verifique se as chaves 'supabase_url' e 'supabase_key' estão configuradas no Streamlit Cloud.")
+    st.stop()
 
 # --- CSS PROFISSIONAL (AZUL NAVY + PAZ) ---
 st.markdown("""
 <style>
     .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-    
-    /* Container de Login Centralizado */
     .login-box {
         background: white; 
         padding: 40px; 
@@ -32,12 +34,8 @@ st.markdown("""
         box-shadow: 0 15px 35px rgba(0,71,171,0.2); 
         border: 1px solid #1E3A8A;
     }
-    
-    /* Menu Lateral Azul */
     [data-testid="stSidebar"] {background-color: #1E3A8A !important;}
     [data-testid="stSidebar"] * {color: white !important;}
-    
-    /* Cards Originais Restaurados */
     .card-centro {
         background: rgba(255,255,255,0.95);
         padding: 20px;
@@ -47,10 +45,7 @@ st.markdown("""
         margin-bottom: 16px;
     }
     .nome-grande {color: #1E3A8A !important; font-size: 22px !important; font-weight: 800 !important;}
-    .nome-fantasia {color: #3B82F6 !important; font-size: 15px !important; font-weight: 600; font-style: italic;}
     .palestras-verde {color: #10B981 !important; font-weight: 700; background: rgba(16,185,129,0.1); padding: 5px 10px; border-radius: 10px; display: inline-block; margin-top: 10px;}
-
-    /* Botões */
     div.stButton > button {
         background: linear-gradient(135deg, #0047AB, #1E40AF) !important;
         color: white !important;
@@ -60,7 +55,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNÇÕES DE SEGURANÇA E DADOS ---
+# --- FUNÇÕES ---
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
@@ -72,10 +67,10 @@ def verificar_login(email, senha):
     try:
         res = supabase.table("usuarios").select("*").eq("email", email).eq("senha", senha).execute()
         return res.data
-    except:
+    except Exception as e:
         return []
 
-# --- LOGICA DE SESSÃO ---
+# --- LÓGICA DE SESSÃO ---
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
@@ -98,7 +93,7 @@ if not st.session_state.logado:
                     st.session_state.usuario_nome = user_db[0]['nome']
                     st.rerun()
                 else:
-                    st.error("❌ Acesso negado. E-mail ou senha incorretos.")
+                    st.error("❌ E-mail ou senha incorretos.")
         
         with tab_cad:
             n_nome = st.text_input("Nome Completo")
@@ -146,13 +141,11 @@ else:
             else:
                 resultados = pd.DataFrame()
 
-        # EXIBIÇÃO DOS CARDS
         if not resultados.empty:
             for _, row in resultados.iterrows():
                 st.markdown(f"""
                 <div class="card-centro">
                     <div class="nome-grande">{row['Nome']}</div>
-                    <div class="nome-fantasia">{row['Fantasia']}</div>
                     <div class="palestras-verde">🗣️ PALESTRAS: {row['Palestra']}</div>
                     <div style="font-size:14px; margin-top:10px; color:#4B5563;">
                         📍 <b>Endereço:</b> {row['Endereco']}<br>
@@ -164,7 +157,7 @@ else:
                 c1, c2 = st.columns(2)
                 with c1:
                     q = urllib.parse.quote(f"{row['Endereco']}, {row['Cidade']}")
-                    st.link_button("🗺️ GOOGLE MAPS", f"https://www.google.com/maps/search/?api=1&query={q}", use_container_width=True)
+                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={q}", use_container_width=True)
                 with c2:
                     num = ''.join(filter(str.isdigit, str(row['Celular'])))
                     if len(num) >= 10:
@@ -172,7 +165,6 @@ else:
                 st.divider()
 
     except Exception as e:
-        st.error(f"Erro ao carregar o banco de dados Excel: {e}")
+        st.error(f"Erro ao carregar o Excel: {e}")
 
-# Botão Voltar ao Topo
 st.markdown('<button onclick="window.scrollTo({top: 0, behavior: \'smooth\'})" style="position: fixed; bottom: 30px; right: 30px; background: #1E3A8A; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; z-index: 9999;">↑</button>', unsafe_allow_html=True)
