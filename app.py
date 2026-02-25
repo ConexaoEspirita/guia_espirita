@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
-from supabase import create_client
 import urllib.parse
 import unicodedata
 import re
+from datetime import datetime
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
@@ -24,32 +24,35 @@ div[data-testid="stTextInputBlock"] > label > div > small {display: none !import
 div[data-testid="stInfoBlock"] div {display: none !important;}
 #back-to-top-fixed {position: fixed !important; bottom: 30px !important; right: 30px !important; background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important; border: none !important; border-radius: 50px !important; width: 60px !important; height: 60px !important; font-size: 24px !important; cursor: pointer !important; box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important; z-index: 99999 !important; display: block !important;}
 #back-to-top-fixed:hover {transform: translateY(-3px) !important; box-shadow: 0 8px 25px rgba(16,185,129,0.6) !important;}
+.metric-container {background: rgba(16,185,129,0.1) !important; padding: 10px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important;}
 @media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;} #back-to-top-fixed {bottom: 20px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 20px !important;}}
 </style>""", unsafe_allow_html=True)
-
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
-supabase = create_client(url, key)
 
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
+    import unicodedata
+    import re
     texto = unicodedata.normalize('NFD', texto)
     texto = re.sub(r'[\u0300-\u036f]', '', texto)
     texto = re.sub(r'[^a-z0-9\s]', '', texto)
     return texto
 
-# INICIALIZA SESSION STATE
+# BANCO LOCAL SIMPLES
+if "usuarios" not in st.session_state:
+    st.session_state.usuarios = []
+if "total_entradas" not in st.session_state:
+    st.session_state.total_entradas = 0
+if "total_saidas" not in st.session_state:
+    st.session_state.total_saidas = 0
 if "logado" not in st.session_state:
     st.session_state.logado = False
+if "usuario" not in st.session_state:
     st.session_state.usuario = ""
-    st.session_state.total_entradas = 0
-    st.session_state.total_saidas = 0
 
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - CADASTRO</h1>', unsafe_allow_html=True)
     
-    # CADASTRO SIMPLES - NOME + EMAIL COM VALIDAÇÃO
     col1, col2, col_btn = st.columns([1, 1, 0.8])
     with col1:
         nome = st.text_input("👤 Nome Completo")
@@ -63,39 +66,35 @@ if not st.session_state.logado:
             elif "@" not in email or "." not in email:
                 st.error("❌ E-mail inválido! Use: usuario@dominio.com")
             else:
-                try:
-                    # VERIFICA SE JÁ EXISTE
-                    verifica = supabase.table("cadastros").select("id").eq("email", email.strip().lower()).execute()
-                    
-                    if verifica.data:
-                        # JÁ CADASTRADO = LOGIN AUTOMÁTICO
-                        dados_usuario = supabase.table("cadastros").select("nome").eq("email", email.strip().lower()).execute()
-                        st.session_state.logado = True
-                        st.session_state.usuario = dados_usuario.data[0]['nome']
-                        st.session_state.total_entradas += 1
-                        st.success(f"✅ Bem-vindo de volta, **{st.session_state.usuario}**!")
-                        st.rerun()
-                    else:
-                        # NOVO USUÁRIO
-                        dados = {
-                            "nome": nome.strip(),
-                            "email": email.strip().lower(),
-                            "data_entrada": pd.Timestamp.now().isoformat(),
-                            "status": "ativo"
-                        }
-                        supabase.table("cadastros").insert(dados).execute()
-                        
-                        st.session_state.total_entradas += 1
-                        st.session_state.logado = True
-                        st.session_state.usuario = nome.strip()
-                        st.success(f"✅ **{nome.strip()}** cadastrado com sucesso!")
-                        st.rerun()
-                        
-                except Exception as e:
-                    st.error("❌ Erro no servidor. Tente novamente!")
+                # VERIFICA SE JÁ EXISTE LOCALMENTE
+                usuario_existe = False
+                for usuario in st.session_state.usuarios:
+                    if usuario["email"] == email.strip().lower():
+                        usuario_existe = True
+                        st.session_state.usuario = usuario["nome"]
+                        break
+                
+                if usuario_existe:
+                    st.session_state.total_entradas += 1
+                    st.session_state.logado = True
+                    st.success(f"✅ Bem-vindo de volta, **{st.session_state.usuario}**!")
+                    st.rerun()
+                else:
+                    # NOVO CADASTRO LOCAL
+                    novo_usuario = {
+                        "nome": nome.strip(),
+                        "email": email.strip().lower(),
+                        "data_entrada": datetime.now().isoformat()
+                    }
+                    st.session_state.usuarios.append(novo_usuario)
+                    st.session_state.total_entradas += 1
+                    st.session_state.logado = True
+                    st.session_state.usuario = nome.strip()
+                    st.success(f"✅ **{nome.strip()}** cadastrado com sucesso!")
+                    st.rerun()
 
 else:
-    # === ÁREA LOGADA ===
+    # ÁREA LOGADA
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
     
     # CONTADORES
@@ -106,7 +105,7 @@ else:
         st.metric("🚪 Saídas", st.session_state.total_saidas)
     
     st.markdown('<hr style="border: 2px solid #10B981; margin: 20px 0;">', unsafe_allow_html=True)
-    st.markdown(f'<h2 style="color: #1E3A8A;">Bem-vindo(a), {st.session_state.usuario}!</h2>', unsafe_allow_html=True)
+    st.markdown(f'<h2 style="color: #1E3A8A; font-size: 1.5rem;">Bem-vindo(a), {st.session_state.usuario}! 🕊️</h2>', unsafe_allow_html=True)
     
     # BUSCA
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
@@ -119,7 +118,8 @@ else:
                 st.rerun()
     with col2:
         if st.button("🗑️ LIMPAR", use_container_width=True):
-            st.session_state.tem_busca = ""
+            if "tem_busca" in st.session_state:
+                del st.session_state.tem_busca
             st.rerun()
     
     termo = st.session_state.get("tem_busca", "").strip()
@@ -156,7 +156,7 @@ else:
                     if termo_limpo in texto_row:
                         resultados.append(row.to_dict())
         except FileNotFoundError:
-            st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
+            st.error("❌ Arquivo **guia.xlsx** não encontrado!")
         except Exception as e:
             st.error(f"❌ ERRO: {str(e)}")
     
