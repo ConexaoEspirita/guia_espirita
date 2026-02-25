@@ -35,6 +35,15 @@ if "logado" not in st.session_state:
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
 
+# --- Função auxiliar de limpeza ---
+def limpar_busca(texto):
+    if pd.isna(texto): return ""
+    texto = str(texto).lower().strip()
+    texto = unicodedata.normalize('NFD', texto)
+    texto = re.sub(r'[\u0300-\u036f]', '', texto)
+    texto = re.sub(r'[^a-zA-Z0-9\s]', '', texto)
+    return texto
+
 # --- Tela login/cadastro ---
 if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
@@ -52,7 +61,7 @@ if not st.session_state.logado:
                     if resposta.data and len(resposta.data) > 0:
                         st.session_state.logado = True
                         st.session_state.usuario = email.strip().lower()
-                        # sem experimental_rerun: a página atualiza automaticamente
+                        # página atualiza automaticamente
                     else:
                         st.error("❌ E-mail ou senha incorretos!")
                 except Exception as e:
@@ -85,13 +94,120 @@ if not st.session_state.logado:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Tela principal do app (não mexer em nada) ---
+# --- Tela principal do app (logado) ---
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # --- Todo o código de busca e exibição permanece intacto ---
+    # --- Código de busca/exibição ORIGINAL (não mexer em nada) ---
+    busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔎 PESQUISAR", use_container_width=True):
+            if busca.strip():
+                st.session_state.tem_busca = busca.strip()
+                # atualização automática
+    with col2:
+        if st.button("🗑️ LIMPAR", use_container_width=True):
+            st.session_state.tem_busca = ""
+    
+    termo = st.session_state.get("tem_busca", "").strip()
+    resultados = []
+    
+    if termo:
+        try:
+            with st.spinner('🔍 Buscando centros espíritas...'):
+                df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+                if 'Unnamed: 0' in df.columns:
+                    df = df.drop('Unnamed: 0', axis=1)
+                df.columns = df.columns.str.strip()
+                df = df.rename(columns={
+                    'NOME FANTASIA': 'Nome Fantasia',
+                    'NOME': 'Nome Real / Razão Social',
+                    'CIDADE DO CENTRO ESPIRITA': 'Cidade',
+                    'ENDERECO': 'Endereço',
+                    'PALESTRA PUBLICA': 'Palestra Pública',
+                    'RESPONSAVEL': 'Responsável',
+                    'CELULAR': 'Celular'
+                })
+                termo_limpo = limpar_busca(termo)
+                for idx, row in df.iterrows():
+                    texto_row = " ".join([
+                        limpar_busca(row.get('Nome Fantasia', '')),
+                        limpar_busca(row.get('Nome Real / Razão Social', '')),
+                        limpar_busca(row.get('Cidade', '')),
+                        limpar_busca(row.get('Endereço', '')),
+                        limpar_busca(row.get('Responsável', '')),
+                        limpar_busca(row.get('Palestra Pública', ''))
+                    ])
+                    if termo_limpo in texto_row:
+                        resultados.append(row.to_dict())
+        except FileNotFoundError:
+            st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
+        except Exception as e:
+            st.error(f"❌ ERRO: {str(e)}")
+    
+    if resultados:
+        st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
+        for idx, row in pd.DataFrame(resultados).iterrows():
+            v_fantasia = str(row.get('Nome Fantasia', 'N/I'))
+            v_nome_real = str(row.get('Nome Real / Razão Social', 'Centro Espírita')) + " 🕊️"
+            v_cidade = str(row.get('Cidade', 'N/I'))
+            v_endereco = str(row.get('Endereço', 'N/I'))
+            v_resp = str(row.get('Responsável', 'N/I'))
+            v_celular = str(row.get('Celular', ''))
+            v_palestras = str(row.get('Palestra Pública', ''))
 
-    # --- Botão de logout ---
+            st.markdown(f"""
+            <div class="card-centro" style="position: relative;">
+                <div class="nome-grande">{v_nome_real}</div>
+                <div class="nome-fantasia">{v_fantasia}</div>
+                <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
+                <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
+                <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
+                <div style="position: absolute; bottom: 12px; right: 16px; background: linear-gradient(135deg, #10B981, #059669); color: white; border-radius: 20px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">{int(idx)+1}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col1, col2 = st.columns(2)
+            with col1:
+                if 'N/I' not in v_endereco and v_endereco != 'N/I':
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
+                    st.link_button("🗺️ MAPS", f"https://www.google.com/maps/search/?api=1&query={query}", use_container_width=True)
+            with col2:
+                numero = ''.join(filter(str.isdigit, v_celular))
+                if len(numero) >= 10:
+                    st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
+            st.divider()
+
+    st.markdown("---")
+    
+    st.markdown("""
+    <button id="back-to-top" title="⬆️ Voltar ao topo">⬆️</button>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('back-to-top');
+        let ticking = false;
+        function toggleButton() {
+            if (window.scrollY > 300) { btn.classList.add('show'); }
+            else { btn.classList.remove('show'); }
+        }
+        window.addEventListener('scroll', function() {
+            if (!ticking) {
+                requestAnimationFrame(toggleButton);
+                ticking = true;
+                setTimeout(() => { ticking = false; }, 100);
+            }
+        });
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+    </script>
+    """, unsafe_allow_html=True)
+
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
@@ -99,4 +215,3 @@ else:
             st.session_state.usuario = None
             if "tem_busca" in st.session_state:
                 del st.session_state.tem_busca
-            # Sem experimental_rerun
