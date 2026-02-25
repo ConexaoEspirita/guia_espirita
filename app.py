@@ -151,8 +151,9 @@ else:
                     v_resp = row.get('RESPONSAVEL','N/I')
                     v_celular = str(row.get('CELULAR',''))
                     v_palestras = row.get('PALESTRA PUBLICA','')
+                    v_cidade = row.get('CIDADE DO CENTRO ESPIRITA','')
 
-                    query = urllib.parse.quote(f"{v_endereco}, {cidade}")
+                    query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
                     numero = ''.join(filter(str.isdigit, v_celular))
 
                     st.markdown(f"""
@@ -163,6 +164,7 @@ else:
                         <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
                         <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                         <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                        <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
                     </div>
                     """, unsafe_allow_html=True)
 
@@ -186,8 +188,9 @@ else:
             v_resp = row.get('RESPONSAVEL','N/I')
             v_celular = str(row.get('CELULAR',''))
             v_palestras = row.get('PALESTRA PUBLICA','')
+            v_cidade = row.get('CIDADE DO CENTRO ESPIRITA','')
 
-            query = urllib.parse.quote(f"{v_endereco}, {row.get('CIDADE DO CENTRO ESPIRITA','')}")
+            query = urllib.parse.quote(f"{v_endereco}, {v_cidade}")
             numero = ''.join(filter(str.isdigit, v_celular))
 
             st.markdown(f"""
@@ -198,6 +201,7 @@ else:
                 <div class="palestras-verde">🗣️ PALESTRAS {v_palestras}</div>
                 <div class="info-texto">👤 <b>Responsável:</b> {v_resp}</div>
                 <div class="info-texto">📍 <b>Endereço:</b> {v_endereco}</div>
+                <div class="info-texto">🏙️ <b>Cidade:</b> {v_cidade}</div>
             </div>
             """, unsafe_allow_html=True)
 
