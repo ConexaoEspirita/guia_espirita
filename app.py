@@ -22,25 +22,10 @@ div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 
 div.stLinkButton > a {background: linear-gradient(135deg, #10B981, #059669) !important;color: white !important;border-radius: 12px !important;height: 44px !important;font-size: 15px !important;}
 div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
 div[data-testid="stInfoBlock"] div {display: none !important;}
-
-/* BOTÃO VOLTAR AO TOPO - CORRIGIDO */
-#back-to-top {
-    position: fixed !important; bottom: 30px !important; right: 30px !important;
-    background: linear-gradient(135deg, #10B981, #059669) !important;
-    color: white !important; border: none !important;
-    border-radius: 50px !important; width: 60px !important; height: 60px !important;
-    font-size: 24px !important; cursor: pointer !important;
-    box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important;
-    opacity: 0 !important; visibility: hidden !important; 
-    transition: all 0.3s ease !important; z-index: 9999 !important;
-}
-#back-to-top.show {opacity: 1 !important; visibility: visible !important;}
-#back-to-top:hover {transform: translateY(-3px) !important; box-shadow: 0 8px 25px rgba(16,185,129,0.6) !important;}
-@media (max-width: 768px) {
-    .nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}
-    .info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;}
-    #back-to-top {bottom: 20px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 20px !important;}
-}
+#back-to-top-fixed {position: fixed !important; bottom: 30px !important; right: 30px !important; background: linear-gradient(135deg, #10B981, #059669) !important; color: white !important; border: none !important; border-radius: 50px !important; width: 60px !important; height: 60px !important; font-size: 24px !important; cursor: pointer !important; box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important; z-index: 99999 !important; display: block !important;}
+#back-to-top-fixed:hover {transform: translateY(-3px) !important; box-shadow: 0 8px 25px rgba(16,185,129,0.6) !important;}
+.metric-container {background: rgba(16,185,129,0.1) !important; padding: 10px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important;}
+@media (max-width: 768px) {.nome-grande {font-size: 28px !important;}.nome-fantasia {font-size: 20px !important;}.info-texto {font-size: 16px !important;}.stButton > button {height: 55px !important;font-size: 18px !important;} #back-to-top-fixed {bottom: 20px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 20px !important;}}
 </style>""", unsafe_allow_html=True)
 
 url = st.secrets["SUPABASE_URL"]
@@ -48,38 +33,66 @@ key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 def limpar_busca(texto):
-    if pd.isna(texto): 
-        return ""
+    if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
-    # MELHORADO: Remove TODOS os acentos e caracteres especiais
     texto = unicodedata.normalize('NFD', texto)
-    texto = re.sub(r'[\u0300-\u036f]', '', texto)  # Remove diacríticos
-    texto = re.sub(r'[^a-z0-9\s]', '', texto)       # Só letras, números e espaços
+    texto = re.sub(r'[\u0300-\u036f]', '', texto)
+    texto = re.sub(r'[^a-z0-9\s]', '', texto)
     return texto
 
+# INICIALIZA CONTADORES
 if "logado" not in st.session_state:
     st.session_state.logado = False
+    st.session_state.usuario = ""
+    st.session_state.total_entradas = 0
+    st.session_state.total_saidas = 0
 
 if not st.session_state.logado:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-    col1, col2 = st.columns([1, 2])
-    with col1: 
+    
+    col1, col2 = st.columns([1,1])
+    with col1:
         email = st.text_input("📧 E-mail")
-    with col2: 
-        senha = st.text_input("🔒 Senha", type="password")
+    with col2:
+        celular = st.text_input("📱 WhatsApp")
     
-    if st.button("🚀 ACESSAR GUIA", use_container_width=True):
-        email_limpo = email.strip().lower()
-        senha_limpa = senha.strip()
-        resposta = supabase.table("acessos").select("*").eq("email", email_limpo).eq("senha", senha_limpa).execute()
-        if resposta.data:
-            st.session_state.logado = True
-            st.rerun()
+    if st.button("🚀 ENTRAR", use_container_width=True):
+        if not email or not celular:
+            st.error("❌ Preencha **email E celular**!")
         else:
-            st.error("❌ E-mail ou senha incorretos!")
+            try:
+                # SALVA ACESSO
+                dados = {
+                    "email": email.strip().lower(),
+                    "celular": celular.strip(),
+                    "data_entrada": pd.Timestamp.now().isoformat(),
+                    "status": "ativo"
+                }
+                supabase.table("acessos_simples").upsert(dados).execute()
+                
+                # CONTADOR LOCAL
+                st.session_state.total_entradas += 1
+                st.session_state.logado = True
+                st.session_state.usuario = email.strip()
+                st.success("✅ Bem-vindo ao Guia Espírita!")
+                st.rerun()
+            except:
+                st.error("❌ Erro ao conectar. Tente novamente!")
 else:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    # === CONTADORES (SÓ VOCÊ VE) ===
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+        st.metric("👥 Total Entradas", st.session_state.total_entradas)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
+        st.metric("🚪 Total Saídas", st.session_state.total_saidas)
+        st.markdown('</div>', unsafe_allow_html=True)
     
+    st.markdown('<hr style="border: 2px solid #10B981; margin: 20px 0;">', unsafe_allow_html=True)
+    
+    # === BUSCA ===
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     
     col1, col2 = st.columns(2)
@@ -126,7 +139,6 @@ else:
                     ])
                     if termo_limpo in texto_row:
                         resultados.append(row.to_dict())
-                        
         except FileNotFoundError:
             st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
         except Exception as e:
@@ -167,52 +179,27 @@ else:
                     st.link_button("💬 WhatsApp", f"https://wa.me/55{numero}", use_container_width=True)
             st.divider()
     
-    st.markdown("---")
+    # ESPAÇO PARA SCROLL
+    st.markdown('<div style="height: 100vh;"></div>', unsafe_allow_html=True)
     
-    # BOTÃO VOLTAR AO TOPO - CORRIGIDO E FUNCIONANDO
+    # BOTÃO VOLTAR AO TOPO - SEMPRE VISÍVEL
     st.markdown("""
-    <button id="back-to-top" title="⬆️ Voltar ao topo">⬆️</button>
-    <script>
-    window.addEventListener('load', function() {{
-        const btn = document.getElementById('back-to-top');
-        if (!btn) return;
-        
-        let ticking = false;
-        
-        function toggleButton() {{
-            if (window.scrollY > 300) {{
-                btn.classList.add('show');
-            }} else {{
-                btn.classList.remove('show');
-            }}
-        }}
-        
-        window.addEventListener('scroll', function() {{
-            if (!ticking) {{
-                requestAnimationFrame(toggleButton);
-                ticking = true;
-                setTimeout(() => {{ ticking = false; }}, 150);
-            }}
-        }}, {{ passive: true }});
-        
-        btn.addEventListener('click', function(e) {{
-            e.preventDefault();
-            e.stopPropagation();
-            window.scrollTo({{
-                top: 0,
-                behavior: 'smooth'
-            }});
-        }});
-        
-        // Mostra botão se já estiver rolando
-        toggleButton();
-    }});
-    </script>
+    <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
+            id="back-to-top-fixed"
+            title="⬆️ Voltar ao topo"
+            style="position: fixed !important; bottom: 30px !important; right: 30px !important; 
+                   background: linear-gradient(135deg, #10B981, #059669) !important; 
+                   color: white !important; border: none !important; 
+                   border-radius: 50px !important; width: 60px !important; height: 60px !important; 
+                   font-size: 24px !important; cursor: pointer !important; 
+                   box-shadow: 0 6px 20px rgba(16,185,129,0.4) !important;
+                   z-index: 99999 !important; display: block !important;">⬆️</button>
     """, unsafe_allow_html=True)
     
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
+            st.session_state.total_saidas += 1  # CONTA SAÍDA
             st.session_state.logado = False
             if "tem_busca" in st.session_state:
                 del st.session_state.tem_busca
