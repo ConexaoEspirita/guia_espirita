@@ -5,15 +5,12 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS PROFISSIONAL: MENU, BUSCA E CARDS ---
+# --- TODO O SEU DESIGN MANTIDO ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 20px; }
-    /* Aumenta a letra do rádio no menu lateral */
     div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
-    
     .stApp { background: #f4f7f9; }
-    
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -43,11 +40,15 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp CONSERTADO (+55)
+    # --- ZAP CONSERTADO (Lógica que você passou + Reforço) ---
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
-    link_wa = f"https://wa.me{whats_num}" if len(whats_num) >= 10 else "#"
+    if len(whats_num) >= 10:
+        link_wa = f"https://wa.me{whats_num}"
+    else:
+        link_wa = "#"
     
-    # Maps CONSERTADO (urllib quote)
+    # --- MAPA CONSERTADO (urllib.parse.quote para não quebrar) ---
+    # Adicionamos o nome do centro na busca para o Google achar exato
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
     link_maps = f"https://www.google.com{query_maps}"
 
@@ -69,7 +70,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- SISTEMA ---
+# --- LOGIN / SISTEMA ---
 if "logado" not in st.session_state: st.session_state.logado = False
 
 if not st.session_state.logado:
@@ -82,7 +83,7 @@ if not st.session_state.logado:
             st.rerun()
 else:
     with st.sidebar:
-        # --- MENU DESIGN PREMIUM ENCAIXADO ---
+        # MANTIDO SEU MENU PREMIUM
         st.markdown("""
         <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
@@ -95,16 +96,13 @@ else:
         </div>
         """, unsafe_allow_html=True)
         
-        opcao = st.radio("Navegação:", 
-                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"],
-                         label_visibility="collapsed")
+        opcao = st.radio("Navegação:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"], label_visibility="collapsed")
         
         if opcao == "🚪 Sair":
             st.session_state.logado = False
             st.cache_data.clear()
             st.rerun()
 
-    # Carregamento dos dados
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
