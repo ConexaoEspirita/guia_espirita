@@ -18,12 +18,10 @@ st.markdown("""
     margin: 0 !important;
 }
 [data-testid="stDecoration"] { display: none !important; }
-/* Remove qualquer fundo branco indesejado */
 .stApp > div > div { background: transparent !important; }
 
 .stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
 
-/* TÍTULO CORRIGIDO - POMBINHA SEM CORTE */
 .titulo-premium { 
     background: linear-gradient(90deg, #0047AB, #1976D2);
     -webkit-background-clip: text; 
@@ -136,7 +134,7 @@ if "logado" not in st.session_state: st.session_state.logado = False
 if "usuario" not in st.session_state: st.session_state.usuario = None
 if "tem_busca" not in st.session_state: st.session_state.tem_busca = ""
 
-# --- Função auxiliar - INDENTACAO CORRIGIDA ---
+# --- Função auxiliar ---
 def limpar_busca(texto):
     if pd.isna(texto): 
         return ""
@@ -170,7 +168,7 @@ if not st.session_state.logado:
                     st.error(f"❌ Erro ao conectar: {str(e)}")
             else:
                 st.error("❌ Preencha e-mail e senha!")
-    else: # Cadastro
+    else:
         nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
         senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
@@ -182,27 +180,3 @@ if not st.session_state.logado:
                 st.error("❌ Senhas não conferem!")
             else:
                 try:
-                    email_limpo = email.strip().lower()
-                    existe = supabase.table("acessos").select("*").eq("email", email_limpo).execute()
-                    if existe.data and len(existe.data) > 0:
-                        st.error("❌ E-mail já cadastrado!")
-                    else:
-                        supabase.table("acessos").insert({"nome": nome.strip(), "email": email_limpo, "senha": senha}).execute()
-                        st.success("✅ Cadastro realizado! Agora faça login.")
-                except Exception as e:
-                    st.error(f"❌ Erro ao conectar: {str(e)}")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# --- Tela principal - CORRIGIDO ---
-else:
-    st.markdown('<h1 class="titulo-premium">🕊️<br>Guia Espírita</h1>', unsafe_allow_html=True)
-
-    # --- Menu Hamburger Recolhível ---
-    with st.expander("☰ Menu", expanded=False):
-        st.markdown("### Admin")
-        st.markdown("### Cidades")
-
-    # --- Carregar cidades únicas ---
-    try:
-        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-        df.columns
