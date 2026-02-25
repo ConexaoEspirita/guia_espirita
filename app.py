@@ -5,12 +5,23 @@ import urllib.parse
 import unicodedata
 import re
 
-# --- CSS unificado ---
+# --- CSS responsivo ---
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%);}
-.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);-webkit-background-clip: text;-webkit-text-fill-color: transparent;text-shadow: 0 4px 12px rgba(0,71,171,0.3);font-size: 2.5rem !important;font-weight: 800 !important;}
-.card-centro {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 20px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);margin-bottom: 16px;}
+.titulo-premium {background: linear-gradient(90deg, #0047AB, #1976D2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 12px rgba(0,71,171,0.3);
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;}
+.card-centro {background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,71,171,0.1);
+    box-shadow: 0 8px 32px rgba(0,71,171,0.15);
+    margin-bottom: 16px;}
 .nome-grande {color: #1E3A8A !important;font-size: 22px !important;font-weight: 800 !important;}
 .nome-fantasia {color: #3B82F6 !important;font-size: 15px !important;font-weight: 600 !important;font-style: italic;}
 .info-texto {color: #374151 !important;font-size: 13px !important;display: flex;align-items: center;gap: 6px;}
@@ -19,8 +30,20 @@ div.stButton > button {background: linear-gradient(135deg, #0047AB, #1E40AF) !im
 div.stButton > button:hover {box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;transform: translateY(-2px) !important;}
 div.stButton > button:active {transform: translateY(0px) !important;box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;}
 div[data-testid="stTextInputBlock"] > label > div > small {display: none !important;}
-.login-container {background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);padding: 30px;border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);width: 400px;margin:auto;margin-top:60px;}
+
+/* --- Login/Cadastro Responsivo --- */
 .login-title {font-size: 2rem !important;font-weight: 800 !important;color: #1E3A8A !important;text-align: center;margin-bottom: 20px;}
+.login-container {max-width: 450px;margin: 40px auto 20px auto;padding: 30px;background: rgba(255,255,255,0.95);backdrop-filter: blur(10px);border-radius: 20px;border: 1px solid rgba(0,71,171,0.1);box-shadow: 0 8px 32px rgba(0,71,171,0.15);}
+input[type="text"], input[type="password"] {height: 45px !important;font-size: 15px !important;}
+@media (max-width: 768px) {
+    .login-container {width: 90%;padding: 20px;margin: 30px auto;}
+    .login-title {font-size: 1.8rem !important;}
+    div.stButton > button {height: 50px !important;font-size: 15px !important;}
+}
+@media (max-width: 480px) {
+    .login-title {font-size: 1.5rem !important;}
+    div.stButton > button {height: 45px !important;font-size: 14px !important;}
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -35,7 +58,7 @@ if "logado" not in st.session_state:
 if "usuario" not in st.session_state:
     st.session_state.usuario = None
 
-# --- Função auxiliar de limpeza ---
+# --- Função auxiliar ---
 def limpar_busca(texto):
     if pd.isna(texto): return ""
     texto = str(texto).lower().strip()
@@ -49,7 +72,7 @@ if not st.session_state.logado:
     st.markdown('<div class="login-container">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🕊️ Guia Espírita</div>', unsafe_allow_html=True)
 
-    aba = st.radio("Escolha:", ["Login", "Cadastro"], horizontal=True)
+    aba = st.radio("", ["Login", "Cadastro"], horizontal=True)
 
     if aba == "Login":
         email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
@@ -61,7 +84,6 @@ if not st.session_state.logado:
                     if resposta.data and len(resposta.data) > 0:
                         st.session_state.logado = True
                         st.session_state.usuario = email.strip().lower()
-                        # página atualiza automaticamente
                     else:
                         st.error("❌ E-mail ou senha incorretos!")
                 except Exception as e:
@@ -94,11 +116,11 @@ if not st.session_state.logado:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Tela principal do app (logado) ---
+# --- Tela principal do app ---
 else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # --- Código de busca/exibição ORIGINAL (não mexer em nada) ---
+    # --- Código de busca/exibição original ---
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     
     col1, col2 = st.columns(2)
@@ -106,14 +128,13 @@ else:
         if st.button("🔎 PESQUISAR", use_container_width=True):
             if busca.strip():
                 st.session_state.tem_busca = busca.strip()
-                # atualização automática
     with col2:
         if st.button("🗑️ LIMPAR", use_container_width=True):
             st.session_state.tem_busca = ""
     
     termo = st.session_state.get("tem_busca", "").strip()
     resultados = []
-    
+
     if termo:
         try:
             with st.spinner('🔍 Buscando centros espíritas...'):
@@ -146,7 +167,7 @@ else:
             st.error("❌ Arquivo guia.xlsx NÃO ENCONTRADO!")
         except Exception as e:
             st.error(f"❌ ERRO: {str(e)}")
-    
+
     if resultados:
         st.success(f"✨ Encontrados {len(resultados)} centro{'s' if len(resultados) != 1 else ''}!")
         for idx, row in pd.DataFrame(resultados).iterrows():
@@ -182,32 +203,6 @@ else:
             st.divider()
 
     st.markdown("---")
-    
-    st.markdown("""
-    <button id="back-to-top" title="⬆️ Voltar ao topo">⬆️</button>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const btn = document.getElementById('back-to-top');
-        let ticking = false;
-        function toggleButton() {
-            if (window.scrollY > 300) { btn.classList.add('show'); }
-            else { btn.classList.remove('show'); }
-        }
-        window.addEventListener('scroll', function() {
-            if (!ticking) {
-                requestAnimationFrame(toggleButton);
-                ticking = true;
-                setTimeout(() => { ticking = false; }, 100);
-            }
-        });
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
-    </script>
-    """, unsafe_allow_html=True)
-
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
