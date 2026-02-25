@@ -49,9 +49,8 @@ def renderizar_card(row, index):
         link_wa = "#"
     
     # Maps ✅ CONSERTADO
-    endereco_completo = f"{nome} {end}, {cid}, São Paulo, Brasil"
-query_maps = urllib.parse.quote(endereco_completo)
-
+    query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -141,5 +140,6 @@ else:
         if sel != "-- Selecione --":
             for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
                 renderizar_card(row, i)
+
 
 
