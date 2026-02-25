@@ -40,7 +40,7 @@ def limpar_busca(texto):
     texto = re.sub(r'[^a-z0-9\s]', '', texto)
     return texto
 
-# INICIALIZA CONTADORES
+# INICIALIZA SESSION STATE
 if "logado" not in st.session_state:
     st.session_state.logado = False
     st.session_state.usuario = ""
@@ -48,51 +48,50 @@ if "logado" not in st.session_state:
     st.session_state.total_saidas = 0
 
 if not st.session_state.logado:
-    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita - CADASTRO</h1>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns([1,1])
+    # CADASTRO SIMPLES - NOME + EMAIL
+    col1, col2, col_cadastro = st.columns([1,1,1])
     with col1:
-        email = st.text_input("📧 E-mail")
+        nome = st.text_input("👤 Nome")
     with col2:
-        celular = st.text_input("📱 WhatsApp")
-    
-    if st.button("🚀 ENTRAR", use_container_width=True):
-        if not email or not celular:
-            st.error("❌ Preencha **email E celular**!")
-        else:
-            try:
-                # SALVA ACESSO
-                dados = {
-                    "email": email.strip().lower(),
-                    "celular": celular.strip(),
-                    "data_entrada": pd.Timestamp.now().isoformat(),
-                    "status": "ativo"
-                }
-                supabase.table("acessos_simples").upsert(dados).execute()
-                
-                # CONTADOR LOCAL
-                st.session_state.total_entradas += 1
-                st.session_state.logado = True
-                st.session_state.usuario = email.strip()
-                st.success("✅ Bem-vindo ao Guia Espírita!")
-                st.rerun()
-            except:
-                st.error("❌ Erro ao conectar. Tente novamente!")
+        email = st.text_input("📧 E-mail")
+    with col_cadastro:
+        st.text(" ")
+        if st.button("📝 CADASTRO", use_container_width=True):
+            if not nome or not email:
+                st.error("❌ Preencha **nome E email**!")
+            else:
+                try:
+                    # SALVA NO SUPABASE
+                    dados = {
+                        "nome": nome.strip(),
+                        "email": email.strip().lower(),
+                        "data_entrada": pd.Timestamp.now().isoformat(),
+                        "status": "ativo"
+                    }
+                    supabase.table("cadastros").upsert(dados).execute()
+                    
+                    # CONTADOR
+                    st.session_state.total_entradas += 1
+                    st.session_state.logado = True
+                    st.session_state.usuario = nome.strip()
+                    st.success(f"✅ Bem-vindo(a), **{nome.strip()}**!")
+                    st.rerun()
+                except:
+                    st.error("❌ Erro no cadastro. Tente novamente!")
 else:
-    # === CONTADORES (SÓ VOCÊ VE) ===
+    # CONTADORES NO TOPO
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("👥 Total Entradas", st.session_state.total_entradas)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.metric("👥 Total Cadastros", st.session_state.total_entradas)
     with col2:
-        st.markdown('<div class="metric-container">', unsafe_allow_html=True)
-        st.metric("🚪 Total Saídas", st.session_state.total_saidas)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.metric("🚪 Saídas", st.session_state.total_saidas)
     
     st.markdown('<hr style="border: 2px solid #10B981; margin: 20px 0;">', unsafe_allow_html=True)
+    st.markdown('<h2 class="titulo-premium">Bem-vindo(a), {}</h2>'.format(st.session_state.usuario), unsafe_allow_html=True)
     
-    # === BUSCA ===
+    # BUSCA
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     
     col1, col2 = st.columns(2)
@@ -182,7 +181,7 @@ else:
     # ESPAÇO PARA SCROLL
     st.markdown('<div style="height: 100vh;"></div>', unsafe_allow_html=True)
     
-    # BOTÃO VOLTAR AO TOPO - SEMPRE VISÍVEL
+    # BOTÃO VOLTAR AO TOPO
     st.markdown("""
     <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" 
             id="back-to-top-fixed"
@@ -199,7 +198,7 @@ else:
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
         if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.total_saidas += 1  # CONTA SAÍDA
+            st.session_state.total_saidas += 1
             st.session_state.logado = False
             if "tem_busca" in st.session_state:
                 del st.session_state.tem_busca
