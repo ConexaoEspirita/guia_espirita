@@ -43,8 +43,8 @@ if not st.session_state.logado:
     aba = st.radio("Escolha:", ["Login", "Cadastro"], horizontal=True)
     
     if aba == "Login":
-        email = st.text_input("📧 E-mail")
-        senha = st.text_input("🔒 Senha", type="password")
+        email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
+        senha = st.text_input("", placeholder="🔒 Digite sua senha", type="password", label_visibility="collapsed")
         if st.button("🚀 ACESSAR", key="login", use_container_width=True):
             email_limpo = email.strip().lower()
             senha_limpa = senha.strip()
@@ -57,10 +57,10 @@ if not st.session_state.logado:
                 st.error("❌ E-mail ou senha incorretos!")
     
     elif aba == "Cadastro":
-        nome = st.text_input("👤 Nome completo")
-        email = st.text_input("📧 E-mail")
-        senha = st.text_input("🔒 Senha", type="password")
-        senha_conf = st.text_input("🔒 Confirme a senha", type="password")
+        nome = st.text_input("", placeholder="👤 Digite seu nome completo", label_visibility="collapsed")
+        email = st.text_input("", placeholder="📧 Digite seu e-mail", label_visibility="collapsed")
+        senha = st.text_input("", placeholder="🔒 Crie uma senha", type="password", label_visibility="collapsed")
+        senha_conf = st.text_input("", placeholder="🔒 Confirme a senha", type="password", label_visibility="collapsed")
         
         if st.button("📝 CADASTRAR", key="cadastro", use_container_width=True):
             if not nome.strip() or not email.strip() or not senha.strip() or not senha_conf.strip():
