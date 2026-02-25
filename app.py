@@ -41,14 +41,14 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp CORRIGIDO conforme sua instrução
+    # WhatsApp CONSERTADO (Lógica Blindada +55)
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
         whats_num = "+55" + whats_num
         link_wa = f"https://wa.me{whats_num}"
     else: link_wa = "#"
     
-    # Maps CORRIGIDO conforme sua instrução
+    # Maps CONSERTADO (Lógica urllib quote)
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
     link_maps = f"https://www.google.com{query_maps}"
 
@@ -70,12 +70,12 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- NAVEGAÇÃO ---
+# --- SISTEMA ---
 if "logado" not in st.session_state: st.session_state.logado = False
 
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
-    with st.form("login"):
+    with st.form("login_guia"):
         u = st.text_input("E-mail")
         p = st.text_input("Senha", type="password")
         if st.form_submit_button("ACESSAR"):
@@ -89,16 +89,19 @@ else:
             st.session_state.logado = False
             st.rerun()
 
+    # Carregamento dos dados
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
     if opcao == "🏠 Início":
         st.title("🕊️ Bem-vindo ao Guia")
-        st.info("Abra o menu lateral para pesquisar.")
+        st.info("Abra o menu lateral para pesquisar centros espíritas.")
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
         if termo and len(termo) >= 4:
+            palavras_busca = termo.lower().split()
+            
             def normalizar_texto(texto):
                 if pd.isna(texto): return ""
                 texto = str(texto).lower()
@@ -107,20 +110,20 @@ else:
                        .replace('ó','o').replace('ú','u').replace('â','a')
                        .replace('ê','e').replace('ô','o').replace('û','u'))
             
-            def busca_refinada(texto):
-                texto_norm = normalizar_texto(texto)
-                termo_norm = normalizar_texto(termo)
-                if not texto_norm or not termo_norm: return False
-                palavras_texto = texto_norm.split()
-                if termo_norm in texto_norm: return True
-                if any(termo_norm in palavra for palavra in palavras_texto): return True
-                return False
+            def busca_multiplas_palavras(texto_celula):
+                texto_norm = normalizar_texto(texto_celula)
+                if not texto_norm: return False
+                # Deve achar TODAS as palavras da busca na célula
+                for palavra in palavras_busca:
+                    if normalizar_texto(palavra) not in texto_norm:
+                        return False
+                return True
 
-            mask = df.apply(lambda row: row.astype(str).apply(busca_refinada).any(), axis=1)
+            mask = df.apply(lambda row: row.astype(str).apply(busca_multiplas_palavras).any(), axis=1)
             resultados = df[mask]
             
             if len(resultados) == 0:
-                st.warning("❌ Nenhum resultado encontrado. Tente outra palavra!")
+                st.warning("❌ Nenhum resultado encontrado. Tente outra combinação!")
             else:
                 st.success(f"✅ Encontrados {len(resultados)} centro(s)")
                 for i, (_, row) in enumerate(resultados.iterrows(), 1):
@@ -132,5 +135,6 @@ else:
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
         sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
         if sel != "-- Selecione --":
-            for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
+            dados_cid = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
+            for i, (_, row) in enumerate(dados_cid.iterrows(), 1):
                 renderizar_card(row, i)
