@@ -52,7 +52,7 @@ if not st.session_state.logado:
                     if resposta.data and len(resposta.data) > 0:
                         st.session_state.logado = True
                         st.session_state.usuario = email.strip().lower()
-                        st.experimental_rerun()
+                        # sem experimental_rerun: a página atualiza automaticamente
                     else:
                         st.error("❌ E-mail ou senha incorretos!")
                 except Exception as e:
@@ -90,7 +90,7 @@ else:
     st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
     # --- Todo o código de busca e exibição permanece intacto ---
-    
+
     # --- Botão de logout ---
     col_spacer, col_logout = st.columns([5, 1])
     with col_logout:
@@ -99,4 +99,4 @@ else:
             st.session_state.usuario = None
             if "tem_busca" in st.session_state:
                 del st.session_state.tem_busca
-            st.experimental_rerun()
+            # Sem experimental_rerun
