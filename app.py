@@ -1,9 +1,13 @@
+# Instale antes se não tiver
+# pip install streamlit-option-menu
+
 import streamlit as st
 from supabase import create_client
 import pandas as pd
 import urllib.parse
 import unicodedata
 import re
+from streamlit_option_menu import option_menu
 
 # --- CSS Limpo e Responsivo ---
 st.markdown("""
@@ -11,90 +15,29 @@ st.markdown("""
 .block-container { padding-top: 0rem !important; }
 [data-testid="stDecoration"] { display: none !important; }
 .stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
-
-/* Header */
-.titulo-premium-container {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 20px; margin-bottom: 20px;
-}
-.titulo-premium {
-    background: linear-gradient(90deg, #0047AB, #1976D2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 4px 12px rgba(0,71,171,0.3);
-    font-size: 2.5rem !important;
-    font-weight: 800 !important;
-    margin: 0;
-}
-.menu-icon-container {
-    cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; height: 25px; width: 30px;
-}
-.menu-icon-container span {
-    display: block; height: 4px; width: 100%; background-color: #1E3A8A; border-radius: 2px;
-}
-.menu { display: none; position: absolute; top: 60px; right: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 10px; flex-direction: column; }
-.menu a { padding: 10px 20px; text-decoration: none; color: #1E3A8A; font-weight: 700; }
-.menu a:hover { background: rgba(16,185,129,0.15); border-radius: 8px; }
-
-/* Cards */
-.card-centro {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    padding: 20px;
-    border-radius: 20px;
-    border: 1px solid rgba(0,71,171,0.1);
-    box-shadow: 0 8px 32px rgba(0,71,171,0.15);
-    margin-bottom: 16px;
-}
+.titulo-premium { background: linear-gradient(90deg, #0047AB, #1976D2);
+-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+text-shadow: 0 4px 12px rgba(0,71,171,0.3);
+font-size: 2.5rem !important; font-weight: 800 !important; margin: 0; }
+.card-centro { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+padding: 20px; border-radius: 20px; border: 1px solid rgba(0,71,171,0.1);
+box-shadow: 0 8px 32px rgba(0,71,171,0.15); margin-bottom: 16px; }
 .nome-grande { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800 !important; }
 .nome-fantasia { color: #3B82F6 !important; font-size: 15px !important; font-weight: 600 !important; font-style: italic; }
 .info-texto { color: #374151 !important; font-size: 13px !important; display: flex; align-items: center; gap: 6px; }
-.palestras-verde {
-    color: #10B981 !important;
-    font-weight: 700 !important;
-    font-size: 14px !important;
-    background: rgba(16,185,129,0.15) !important;
-    padding: 8px 14px !important;
-    border-radius: 12px !important;
-    border-left: 4px solid #10B981 !important;
-    box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important;
-}
-
-/* Buttons */
-div.stButton > button {
-    background: linear-gradient(135deg, #0047AB, #1E40AF) !important;
-    color: white !important;
-    border-radius: 12px !important;
-    height: 50px !important;
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important;
-    transition: all 0.2s !important;
-}
-div.stButton > button:hover {
-    box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important;
-    transform: translateY(-2px) !important;
-}
-div.stButton > button:active {
-    transform: translateY(0px) !important;
-    box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important;
-}
-
-/* Login/Cadastro */
+.palestras-verde { color: #10B981 !important; font-weight: 700 !important; font-size: 14px !important; background: rgba(16,185,129,0.15) !important;
+padding: 8px 14px !important; border-radius: 12px !important; border-left: 4px solid #10B981 !important; box-shadow: 0 2px 8px rgba(16,185,129,0.2) !important; }
+div.stButton > button { background: linear-gradient(135deg, #0047AB, #1E40AF) !important; color: white !important;
+border-radius: 12px !important; height: 50px !important; font-size: 16px !important; font-weight: 700 !important;
+box-shadow: 0 4px 12px rgba(0,71,171,0.4) !important; transition: all 0.2s !important; }
+div.stButton > button:hover { box-shadow: 0 6px 20px rgba(0,71,171,0.6) !important; transform: translateY(-2px) !important; }
+div.stButton > button:active { transform: translateY(0px) !important; box-shadow: 0 2px 8px rgba(0,71,171,0.3) !important; }
 .login-title { font-size: 2rem !important; font-weight: 800 !important; color: #1E3A8A !important; text-align: center; margin-bottom: 20px; }
-.login-container { max-width: 450px; margin: 20px auto; padding: 30px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0,71,171,0.1); box-shadow: 0 8px 32px rgba(0,71,171,0.15); }
+.login-container { max-width: 450px; margin: 20px auto; padding: 30px; background: rgba(255,255,255,0.95);
+backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(0,71,171,0.1);
+box-shadow: 0 8px 32px rgba(0,71,171,0.15); }
 input[type="text"], input[type="password"] { height: 45px !important; font-size: 15px !important; }
 </style>
-""", unsafe_allow_html=True)
-
-# --- JS do menu ---
-st.markdown("""
-<script>
-function toggleMenu(){
-    const menu = document.getElementById('menu');
-    menu.classList.toggle('show');
-}
-</script>
 """, unsafe_allow_html=True)
 
 # --- Supabase ---
@@ -162,23 +105,36 @@ if not st.session_state.logado:
 
 # --- Tela principal ---
 else:
-    # Header + Hamburger
-    st.markdown("""
-    <div class="titulo-premium-container">
-        <div class="titulo-premium">🕊️ Guia Espírita</div>
-        <div class="menu-icon-container" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </div>
-    <div id="menu" class="menu">
-        <a href="#">Admin</a>
-        <a href="#">Cidades</a>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<h1 class="titulo-premium">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
 
-    # --- Código de busca/exibição de centros continua aqui ---
+    # --- Carregar cidades únicas da planilha ---
+    try:
+        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+        if 'Unnamed: 0' in df.columns: df = df.drop('Unnamed: 0', axis=1)
+        df.columns = df.columns.str.strip()
+        df = df.rename(columns={
+            'CIDADE DO CENTRO ESPIRITA': 'Cidade'
+        })
+        cidades_unicas = sorted(df['Cidade'].dropna().unique())
+    except:
+        cidades_unicas = []
+
+    # --- Menu hamburger funcional ---
+    menu_selecionado = option_menu(
+        menu_title="Menu", 
+        options=["Home", "Admin", "Cidades"], 
+        icons=["house", "gear", "geo-alt"], 
+        menu_icon="list", 
+        default_index=0,
+        orientation="horizontal"
+    )
+
+    if menu_selecionado == "Cidades":
+        st.markdown("### 🌆 Cidades disponíveis")
+        for cidade in cidades_unicas:
+            st.markdown(f"- {cidade}")
+
+    # --- Aqui continua o código de busca e exibição de centros do seu app ---
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     col1, col2 = st.columns(2)
     with col1:
