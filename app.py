@@ -8,16 +8,11 @@ import re
 # --- CSS Limpo e Responsivo ---
 st.markdown("""
 <style>
-/* REMOVE TODO ESPAÇO/BRANCO ACIMA DO TOPO */
 .block-container { padding-top: 0rem !important; }
-
-/* REMOVE FUNDO PADRÃO STREAMLIT */
 [data-testid="stDecoration"] { display: none !important; }
-
-/* Fundo do app */
 .stApp { background: linear-gradient(135deg, #EBF4FA 0%, #D4E8F7 100%); }
 
-/* Header com título e menu */
+/* Header */
 .titulo-premium-container {
     display: flex; justify-content: space-between; align-items: center;
     margin-top: 20px; margin-bottom: 20px;
@@ -102,32 +97,14 @@ function toggleMenu(){
 </script>
 """, unsafe_allow_html=True)
 
-# --- Menu Hamburger dentro do header ---
-def header_hamburger():
-    st.markdown("""
-    <div class="titulo-premium-container">
-        <div class="titulo-premium">🕊️ Guia Espírita</div>
-        <div class="menu-icon-container" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </div>
-    <div id="menu" class="menu">
-        <a href="#">Admin</a>
-    </div>
-    """, unsafe_allow_html=True)
-
 # --- Supabase ---
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 # --- Sessão ---
-if "logado" not in st.session_state:
-    st.session_state.logado = False
-if "usuario" not in st.session_state:
-    st.session_state.usuario = None
+if "logado" not in st.session_state: st.session_state.logado = False
+if "usuario" not in st.session_state: st.session_state.usuario = None
 
 # --- Função auxiliar ---
 def limpar_busca(texto):
@@ -185,9 +162,23 @@ if not st.session_state.logado:
 
 # --- Tela principal ---
 else:
-    header_hamburger()  # título + menu hamburger
+    # Header + Hamburger
+    st.markdown("""
+    <div class="titulo-premium-container">
+        <div class="titulo-premium">🕊️ Guia Espírita</div>
+        <div class="menu-icon-container" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div id="menu" class="menu">
+        <a href="#">Admin</a>
+        <a href="#">Cidades</a>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # --- Código de busca original ---
+    # --- Código de busca/exibição de centros continua aqui ---
     busca = st.text_input("🔍 Digite nome, cidade ou qualquer palavra...", label_visibility="collapsed")
     col1, col2 = st.columns(2)
     with col1:
