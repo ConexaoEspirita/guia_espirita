@@ -14,42 +14,50 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS - BOTÃO FLUTUANTE ADICIONADO
+# CSS COMPLETO - BOTÃO FLUTUANTE CORRIGIDO
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
-/* BOTÃO FLUTUANTE - NOVO */
+/* BOTÃO FLUTUANTE - FINAL (por cima do Streamlit) */
 .botao-fluatante {
     position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    z-index: 9999 !important;
-    width: 55px !important;
-    height: 55px !important;
-    background: linear-gradient(135deg, #4285F4, #34A853) !important;
+    top: 25px !important;
+    right: 25px !important;
+    z-index: 10000 !important;
+    width: 65px !important;
+    height: 65px !important;
+    background: #25D366 !important;
     color: white !important;
     border: none !important;
     border-radius: 50% !important;
-    box-shadow: 0 8px 25px rgba(66,133,244,0.4) !important;
+    box-shadow: 0 8px 25px rgba(37,211,102,0.5) !important;
     cursor: pointer !important;
-    font-size: 22px !important;
+    font-size: 28px !important;
     font-weight: bold !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    transition: all 0.3s ease !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+    line-height: 1 !important;
 }
 .botao-fluatante:hover {
-    transform: scale(1.1) !important;
-    box-shadow: 0 12px 35px rgba(66,133,244,0.6) !important;
+    transform: scale(1.15) !important;
+    background: #128C7E !important;
+    box-shadow: 0 12px 35px rgba(37,211,102,0.7) !important;
 }
 @media (max-width: 768px) {
-    .botao-fluatante { width: 50px !important; height: 50px !important; font-size: 20px !important; }
+    .botao-fluatante { 
+        width: 60px !important; 
+        height: 60px !important; 
+        font-size: 24px !important;
+        top: 20px !important;
+        right: 20px !important;
+    }
 }
 
-/* RESTO DO CSS ORIGINAL */
+/* CSS ORIGINAL DOS CARDS */
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
 .card-centro { 
@@ -86,16 +94,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================
-# BOTÃO FLUTUANTE - HTML + JS
+# BOTÃO FLUTUANTE - HTML
 # =========================
 st.markdown("""
-<button class="botao-fluatante" onclick="if(confirm('Voltar ao menu principal?')){window.location.href='?'}">
+<button class="botao-fluatante" onclick="if(confirm('🏠 Voltar ao menu principal?')){window.location.href='?'}">
     🏠
 </button>
 """, unsafe_allow_html=True)
 
 # =========================
-# FUNÇÕES (mantidas iguais)
+# FUNÇÕES
 # =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
@@ -136,7 +144,7 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN E RESTO DO CÓDIGO (mantidos iguais)
+# LOGIN
 # =========================
 if not st.session_state.get("logado", False):
     st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
@@ -156,7 +164,9 @@ else:
     df = carregar_dados()
     pagina = st.session_state.get("pagina")
 
+    # =========================
     # MENU PRINCIPAL
+    # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -179,7 +189,9 @@ else:
             st.cache_data.clear()
             st.rerun()
 
+    # =========================
     # PÁGINAS INTERNAS
+    # =========================
     else:
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
