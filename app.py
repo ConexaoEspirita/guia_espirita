@@ -11,6 +11,19 @@ st.markdown("""
     /* Remove seta/voltar superior */
     [data-testid="stArrowBack"] { display: none !important; }
     
+    /* SETA AZUL quando existir */
+    [data-testid="stArrowBack"] svg { 
+        fill: #1E3A8A !important; 
+        filter: hue-rotate(0deg) brightness(1.2) !important; 
+    }
+    [data-testid="stArrowBack"]:hover svg { 
+        fill: #3B82F6 !important; 
+    }
+    
+    /* Remove COMPLETAMENTE sidebar */
+    section[data-testid="stSidebar"] > div { display: none !important; }
+    [data-testid="collapsedControl"] { display: none !important; }
+    
     [data-testid="stSidebar"] { padding-top: 20px; }
     div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
     .stApp { background: #f4f7f9; }
@@ -75,7 +88,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- LOGIN / NAVEGAÇÃO ---
+# --- LOGIN ---
 if "logado" not in st.session_state: 
     st.session_state.logado = False
 
@@ -88,41 +101,49 @@ if not st.session_state.logado:
             st.session_state.logado = True
             st.rerun()
 else:
-    with st.sidebar:
-        st.markdown("""
-        <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
-            <div style='text-align: center; color: white;'>
-                <h2 style='margin: 0; font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>
-                    🕊️ GUIA ESPÍRITA
-                </h2>
-                <p style='margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;'>Encontre centros próximos</p>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        opcao = st.radio("Navegação:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases", "🚪 Sair"], label_visibility="collapsed")
-        if opcao == "🚪 Sair":
-            st.session_state.logado = False
-            st.cache_data.clear()
-            st.rerun()
-
     # Carregar dados
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    # PÁGINAS
-    if opcao == "🏠 Início":
-        st.title("🕊️ Bem-vindo ao Guia")
-        
-        # BOTÃO GIGANTE NO MEIO - SIMPLES E DIRETO
-        col1, col2, col3 = st.columns([1, 3, 1])
-        with col2:
-            st.markdown("# **👈 MENU LATERAL AO LADO**")
-            st.info("Clique no ícone ☰ no canto superior direito")
+    # BOTÕES DIRETOS NA PÁGINA PRINCIPAL (SEM SIDEBAR)
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        if st.button("🔎 Pesquisar Geral"):
+            st.session_state.pagina = "pesquisar"
+            st.rerun()
+    
+    with col2:
+        if st.button("📍 Por Cidade"):
+            st.session_state.pagina = "cidade"
+            st.rerun()
+    
+    with col3:
+        if st.button("📊 Admin"):
+            st.session_state.pagina = "admin"
+            st.rerun()
+    
+    with col4:
+        if st.button("🕊️ Frases"):
+            st.session_state.pagina = "frases"
+            st.rerun()
+    
+    with col5:
+        if st.button("🚪 Sair"):
+            st.session_state.logado = False
+            st.cache_data.clear()
+            st.rerun()
 
-    elif opcao == "🔎 Pesquisar Geral":
-        termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
+    # PÁGINAS
+    pagina = st.session_state.get('pagina', 'inicio')
+    
+    if pagina == "inicio":
+        st.title("🕊️ Bem-vindo ao Guia")
+        st.success("👆 Clique nos botões acima para navegar!")
+        
+    elif pagina == "pesquisar":
+        st.title("🔎 Pesquisar Geral")
+        termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
         if termo and len(termo) >= 3:
             palavras = termo.lower().split()
             def normalizar(t): 
@@ -142,7 +163,8 @@ else:
         elif termo: 
             st.warning("⚠️ Mínimo de 3 letras!")
 
-    elif opcao == "📍 Por Cidade":
+    elif pagina == "cidade":
+        st.title("📍 Por Cidade")
         cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
         cidades_com_contagem = []
         for cidade in sorted(cidades):
@@ -152,7 +174,7 @@ else:
                 count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
                 cidades_com_contagem.append(f"{cidade_limpa} ({count})")
         
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem, help="Escolha sua cidade para ver os centros")
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
         if sel != "-- Selecione --":
             cidade_selecionada = sel.split(' (')[0].strip()
             res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
@@ -160,11 +182,11 @@ else:
             for i, (_, row) in enumerate(res.iterrows(), 1):
                 renderizar_card(row, i)
 
-    elif opcao == "📊 Admin":
-        st.markdown('<h2 class="titulo-secundario">📊 Painel Administrativo</h2>', unsafe_allow_html=True)
+    elif pagina == "admin":
+        st.title("📊 Admin")
         st.metric("🏠 Total Centros", len(df))
         st.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
 
-    elif opcao == "🕊️ Frases":
-        st.markdown('<h2 class="titulo-secundario">🕊️ Frases Espíritas</h2>', unsafe_allow_html=True)
-        st.markdown("> Fora da caridade não há salvação. — Allan Kardec")
+    elif pagina == "frases":
+        st.title("🕊️ Frases")
+        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
