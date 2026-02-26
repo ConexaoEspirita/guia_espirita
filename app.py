@@ -1,11 +1,12 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
 # ==============================
-# INICIALIZAÇÃO SEGURA
+# SESSION STATE SEGURO
 # ==============================
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
@@ -13,9 +14,8 @@ if "pagina" not in st.session_state:
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
-
 # ==============================
-# CSS
+# CSS COMPLETO DOS CARDS
 # ==============================
 st.markdown("""
 <style>
@@ -29,37 +29,106 @@ st.markdown("""
 }
 
 .card-centro { 
-    background:white;
-    padding:20px;
-    border-radius:15px;
-    margin-bottom:20px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.1);
-    border-left:8px solid #0047AB;
+    background: white;
+    padding: 25px;
+    border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    margin-bottom: 25px;
+    border-left: 12px solid #0047AB;
+    position: relative;
 }
+
+.numero-badge { 
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: #f0f4f8;
+    color: #7f8c8d;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.nome-centro {
+    color: #1E3A8A;
+    font-size: 22px;
+    font-weight: 800;
+}
+
+.nome-fantasia {
+    color: #3B82F6;
+    font-size: 16px;
+    font-style: italic;
+}
+
+.palestras-verde {
+    color: #065F46;
+    font-weight: 700;
+    background: #D1FAE5;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 12px 0;
+    border: 1px solid #10B981;
+}
+
+.info-linha { margin: 6px 0; }
+
+.btn-row { display:flex; gap:10px; margin-top:15px; }
+
+.btn-link {
+    text-decoration:none;
+    color:white;
+    padding:12px;
+    border-radius:10px;
+    font-weight:700;
+    text-align:center;
+    flex:1;
+}
+
+.bg-wa { background:#25D366; }
+.bg-maps { background:#4285F4; }
 </style>
 """, unsafe_allow_html=True)
-
 
 # ==============================
 # FUNÇÕES
 # ==============================
-def renderizar_card(row, index):
-    nome = str(row.get("NOME", "Centro Espírita"))
-    cidade = str(row.get("CIDADE DO CENTRO ESPIRITA", ""))
-    endereco = str(row.get("ENDERECO", ""))
+def ajustar(txt):
+    return str(txt).strip() if pd.notna(txt) else ""
 
+def renderizar_card(row, index):
+
+    nome = ajustar(row.get('NOME'))
+    fantasia = ajustar(row.get('NOME FANTASIA'))
+    endereco = ajustar(row.get('ENDERECO'))
+    cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
+    palestra = ajustar(row.get('PALESTRA PUBLICA'))
+    responsavel = ajustar(row.get('RESPONSAVEL'))
+
+    # WhatsApp
+    numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
+    link_wa = f"https://wa.me/+55{numero}" if len(numero) >= 10 else "#"
+
+    # Google Maps
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
     st.markdown(f"""
     <div class="card-centro">
-        <b>{index}. {nome}</b><br>
-        📍 {cidade}<br>
-        🏠 {endereco}<br><br>
-        <a href="{link_maps}" target="_blank">Ver no Mapa</a>
+        <div class="numero-badge">#{index}</div>
+        <div class="nome-centro">{nome} 🕊️</div>
+        {"<div class='nome-fantasia'>" + fantasia + "</div>" if fantasia else ""}
+        <div class="palestras-verde">🗣️ PALESTRA: {palestra}</div>
+        <div class="info-linha">🏙️ <b>Cidade:</b> {cidade}</div>
+        <div class="info-linha">📍 <b>Endereço:</b> {endereco}</div>
+        <div class="info-linha">👤 <b>Responsável:</b> {responsavel}</div>
+        <div class="btn-row">
+            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Ver Mapa</a>
+            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WhatsApp</a>
+        </div>
     </div>
     """, unsafe_allow_html=True)
-
 
 # ==============================
 # LOGIN
@@ -85,12 +154,9 @@ else:
         return df
 
     df = carregar()
-
     pagina = st.session_state["pagina"]
 
-    # ==============================
-    # MENU PRINCIPAL
-    # ==============================
+    # MENU
     if pagina is None:
 
         st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
@@ -121,9 +187,7 @@ else:
             st.cache_data.clear()
             st.rerun()
 
-    # ==============================
     # PÁGINAS INTERNAS
-    # ==============================
     else:
 
         col1, col2 = st.columns([1, 10])
@@ -140,11 +204,8 @@ else:
                 "admin": "📊 Painel Administrativo",
                 "frases": "🕊️ Mensagens Espíritas"
             }
-
-            st.markdown(
-                f"<div class='titulo-profissional'>{titulos[pagina]}</div>",
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
+            st.write("")
 
         # BUSCA
         if pagina == "pesquisar":
@@ -152,7 +213,6 @@ else:
             termo = st.text_input("Digite pelo menos 3 letras:")
 
             if termo and len(termo) >= 3:
-
                 termo = termo.lower()
                 resultado = df[df.apply(
                     lambda row: termo in " ".join(row.astype(str)).lower(),
@@ -165,7 +225,7 @@ else:
                 else:
                     st.warning("Nenhum resultado encontrado.")
 
-        # CIDADE (abre limpa)
+        # CIDADE
         elif pagina == "cidade":
 
             cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
