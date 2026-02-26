@@ -14,46 +14,46 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS COMPLETO - BOTÃO FLUTUANTE CORRIGIDO
+# CSS COMPLETO - BOTÃO NO TOPO TOTAL (PASSA POR CIMA)
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
-/* BOTÃO FLUTUANTE - FINAL (por cima do Streamlit) */
+/* BOTÃO FLUTUANTE - TOPO TOTAL (PASSA POR CIMA DO STREAMLIT) */
 .botao-fluatante {
     position: fixed !important;
-    top: 25px !important;
-    right: 25px !important;
-    z-index: 10000 !important;
-    width: 65px !important;
-    height: 65px !important;
+    top: 10px !important;
+    right: 15px !important;
+    z-index: 99999 !important;
+    width: 55px !important;
+    height: 55px !important;
     background: #25D366 !important;
     color: white !important;
     border: none !important;
     border-radius: 50% !important;
-    box-shadow: 0 8px 25px rgba(37,211,102,0.5) !important;
+    box-shadow: 0 6px 20px rgba(37,211,102,0.6) !important;
     cursor: pointer !important;
-    font-size: 28px !important;
+    font-size: 24px !important;
     font-weight: bold !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8) !important;
     line-height: 1 !important;
 }
 .botao-fluatante:hover {
-    transform: scale(1.15) !important;
+    transform: scale(1.2) !important;
     background: #128C7E !important;
-    box-shadow: 0 12px 35px rgba(37,211,102,0.7) !important;
+    box-shadow: 0 10px 30px rgba(37,211,102,0.8) !important;
 }
 @media (max-width: 768px) {
     .botao-fluatante { 
-        width: 60px !important; 
-        height: 60px !important; 
-        font-size: 24px !important;
-        top: 20px !important;
-        right: 20px !important;
+        width: 52px !important; 
+        height: 52px !important; 
+        font-size: 22px !important;
+        top: 8px !important;
+        right: 12px !important;
     }
 }
 
@@ -94,7 +94,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================
-# BOTÃO FLUTUANTE - HTML
+# BOTÃO FLUTUANTE - TOPO TOTAL
 # =========================
 st.markdown("""
 <button class="botao-fluatante" onclick="if(confirm('🏠 Voltar ao menu principal?')){window.location.href='?'}">
