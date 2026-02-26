@@ -80,6 +80,8 @@ def renderizar_card(row, index):
 # --- Inicializar session state ---
 if "menu_aberto" not in st.session_state:
     st.session_state.menu_aberto = False
+if "view_mode" not in st.session_state:
+    st.session_state.view_mode = "principal"
 
 # --- LOGIN ---
 if "logado" not in st.session_state: 
@@ -100,36 +102,40 @@ else:
 
     st.title("🕊️ Bem-vindo ao Guia Espírita")
 
-    # BOTÃO EXPANDIR/CONTRAIR MENU
+    # ✅ BOTÃO PRINCIPAL CORRIGIDO
     if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
+        st.session_state.menu_aberto = False  # SEMPRE fecha primeiro
+        st.session_state.view_mode = "menu_only" if not st.session_state.menu_aberto else "principal"
         st.rerun()
 
-    # MENU EXPANDIDO/CONTRAIDO ✅ CORRIGIDO
+    # ✅ MENU CORRIGIDO
     if st.session_state.menu_aberto:
         st.markdown("---")
-        
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔎 Pesquisar Geral", use_container_width=True):
                 st.session_state.pagina = "pesquisar"
-                st.session_state.menu_aberto = False  # ✅ FECHA MENU
+                st.session_state.menu_aberto = False
+                st.session_state.view_mode = "principal"
                 st.rerun()
             
             if st.button("📍 Por Cidade", use_container_width=True):
                 st.session_state.pagina = "cidade"
-                st.session_state.menu_aberto = False  # ✅ FECHA MENU
+                st.session_state.menu_aberto = False
+                st.session_state.view_mode = "principal"
                 st.rerun()
         
         with col2:
             if st.button("📊 Admin", use_container_width=True):
                 st.session_state.pagina = "admin"
-                st.session_state.menu_aberto = False  # ✅ FECHA MENU
+                st.session_state.menu_aberto = False
+                st.session_state.view_mode = "principal"
                 st.rerun()
             
             if st.button("🕊️ Frases", use_container_width=True):
                 st.session_state.pagina = "frases"
-                st.session_state.menu_aberto = False  # ✅ FECHA MENU
+                st.session_state.menu_aberto = False
+                st.session_state.view_mode = "principal"
                 st.rerun()
         
         if st.button("🚪 Sair", use_container_width=True):
@@ -140,56 +146,57 @@ else:
         
         st.markdown("---")
 
-    # CONTEÚDO DAS PÁGINAS ABAIXO DO MENU
-    pagina = st.session_state.get('pagina', None)
-    
-    if pagina == "pesquisar":
-        st.markdown("### 🔎 Pesquisar Geral")
-        termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
-        if termo and len(termo) >= 3:
-            palavras = termo.lower().split()
-            def normalizar(t): 
-                return "" if pd.isna(t) else " ".join(str(t).lower().split())
+    # ✅ CONTEÚDO SÓ APARECE QUANDO view_mode = principal
+    if st.session_state.view_mode == "principal":
+        pagina = st.session_state.get('pagina', None)
+        
+        if pagina == "pesquisar":
+            st.markdown("### 🔎 Pesquisar Geral")
+            termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
+            if termo and len(termo) >= 3:
+                palavras = termo.lower().split()
+                def normalizar(t): 
+                    return "" if pd.isna(t) else " ".join(str(t).lower().split())
+                
+                def checar(row):
+                    texto_completo = " ".join([normalizar(row[col]) for col in df.columns])
+                    return any(palavra in texto_completo for palavra in palavras)
+                
+                res = df[df.apply(checar, axis=1)]
+                if len(res) > 0:
+                    st.success(f"✅ Encontrados {len(res)} centro(s)")
+                    for i, (_, row) in enumerate(res.iterrows(), 1):
+                        renderizar_card(row, i)
+                else: 
+                    st.warning("❌ Nenhum resultado encontrado.")
+            elif termo: 
+                st.warning("⚠️ Mínimo de 3 letras!")
+
+        elif pagina == "cidade":
+            st.markdown("### 📍 Por Cidade")
+            cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
+            cidades_com_contagem = []
+            for cidade in sorted(cidades):
+                cidade_limpa = str(cidade).strip()
+                if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', '']
+                    and len(cidade_limpa) > 2):
+                    count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
+                    cidades_com_contagem.append(f"{cidade_limpa} ({count})")
             
-            def checar(row):
-                texto_completo = " ".join([normalizar(row[col]) for col in df.columns])
-                return any(palavra in texto_completo for palavra in palavras)
-            
-            res = df[df.apply(checar, axis=1)]
-            if len(res) > 0:
-                st.success(f"✅ Encontrados {len(res)} centro(s)")
+            sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
+            if sel != "-- Selecione --":
+                cidade_selecionada = sel.split(' (')[0].strip()
+                res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
+                st.success(f"✅ Encontrados {len(res)} centro(s) em {cidade_selecionada}")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
-            else: 
-                st.warning("❌ Nenhum resultado encontrado.")
-        elif termo: 
-            st.warning("⚠️ Mínimo de 3 letras!")
-
-    elif pagina == "cidade":
-        st.markdown("### 📍 Por Cidade")
-        cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
-        cidades_com_contagem = []
-        for cidade in sorted(cidades):
-            cidade_limpa = str(cidade).strip()
-            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', '']
-                and len(cidade_limpa) > 2):
-                count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
-                cidades_com_contagem.append(f"{cidade_limpa} ({count})")
         
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
-        if sel != "-- Selecione --":
-            cidade_selecionada = sel.split(' (')[0].strip()
-            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
-            st.success(f"✅ Encontrados {len(res)} centro(s) em {cidade_selecionada}")
-            for i, (_, row) in enumerate(res.iterrows(), 1):
-                renderizar_card(row, i)
-    
-    elif pagina == "admin":
-        st.markdown("### 📊 Admin")
-        col1, col2 = st.columns(2)
-        col1.metric("🏠 Total Centros", len(df))
-        col2.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
-    
-    elif pagina == "frases":
-        st.markdown("### 🕊️ Frases Espíritas")
-        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
+        elif pagina == "admin":
+            st.markdown("### 📊 Admin")
+            col1, col2 = st.columns(2)
+            col1.metric("🏠 Total Centros", len(df))
+            col2.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
+        
+        elif pagina == "frases":
+            st.markdown("### 🕊️ Frases Espíritas")
+            st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
