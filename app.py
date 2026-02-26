@@ -35,16 +35,10 @@ def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def remover_acentos(texto):
-    """Remove acentos para busca flexível"""
     if pd.isna(texto):
         return ""
     texto = str(texto).lower()
-    return re.sub(
-        r'[àáâãäå]', 'a', re.sub(
-        r'[èéêë]', 'e', re.sub(
-        r'[ìíîï]', 'i', re.sub(
-        r'[òóôõö]', 'o', re.sub(
-        r'[ùúûü]', 'u', texto)))))
+    return re.sub(r'[àáâãäå]', 'a', re.sub(r'[èéêë]', 'e', re.sub(r'[ìíîï]', 'i', re.sub(r'[òóôõö]', 'o', re.sub(r'[ùúûü]', 'u', texto)))))
 
 def criar_link_maps(row):
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
@@ -119,8 +113,11 @@ else:
     df = carregar_dados()
     st.title("🕊️ Guia Espírita")
 
+    # CORRIGIDO: Reset página quando menu fecha
     if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
         st.session_state.menu_aberto = not st.session_state.menu_aberto
+        if st.session_state.menu_aberto == False:  # Ao fechar menu
+            st.session_state.pagina = None
         st.rerun()
 
     if st.session_state.menu_aberto:
@@ -206,3 +203,5 @@ else:
         st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
         st.markdown("> **Nascer, sofrer, morrer, abençoados sejam os que assim sofrem!** — Emmanuel")
         st.markdown("> **Onde reina o amor, não há desejos de vingança.** — Chico Xavier")
+        st.markdown("> **Pensa em Deus, refugia-te em Deus, espera por Deus e confia em Deus, porquanto, ainda mesmo quando te suponhas a sós, em meio de tribulações incontáveis, Deus está conosco e com Deus venceremos.Emmanuel.** — Emmanuel")
+
