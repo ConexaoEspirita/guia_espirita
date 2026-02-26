@@ -14,23 +14,13 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS DOS CARDS
+# CSS DOS CARDS E BOTÃO FLUTUANTE
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
-.titulo-grande {
-    font-size: 32px; 
-    font-weight: 800;
-    margin-bottom: 8px;
-}
-
-.subtitulo-normal {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 15px;
-}
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
 .card-centro { 
     background: white;
@@ -38,7 +28,7 @@ st.markdown("""
     border-radius: 20px; 
     margin-bottom: 25px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-    border-left: 12px solid #0047AB;
+    border-left: 12px solid #0060D0;  /* azul mais forte sutil */
     position: relative;
 }
 
@@ -62,6 +52,25 @@ st.markdown("""
 .btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
+
+/* BOTÃO VOLTAR FLUTUANTE */
+#btn-voltar {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: #0047AB;
+    color: white;
+    border-radius: 50%;
+    padding: 8px 12px;
+    font-size: 16px;
+    font-weight: 700;
+    z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+#btn-voltar:hover {
+    background: #0055d4;
+    cursor: pointer;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -109,7 +118,7 @@ def renderizar_card(row, index):
 # =========================
 # LOGIN
 # =========================
-if not st.session_state["logado"]:
+if not st.session_state.get("logado", False):
     st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
     with st.form("login"):
         st.text_input("E-mail")
@@ -125,15 +134,13 @@ else:
         return df
 
     df = carregar_dados()
-    pagina = st.session_state["pagina"]
+    pagina = st.session_state.get("pagina")
 
     # =========================
     # MENU PRINCIPAL
     # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
-        # remove o "Localizar por Cidade" desnecessário
-
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
@@ -155,17 +162,11 @@ else:
             st.rerun()
 
     # =========================
-    # PÁGINAS INTERNAS LIMPO
+    # PÁGINAS INTERNAS
     # =========================
     else:
-        # Botão voltar no canto direito
-        col1, col2 = st.columns([9,1])
-        with col1:
-            pass  # sem título
-        with col2:
-            if st.button("⬅️"):
-                st.session_state["pagina"] = None
-                st.rerun()
+        # BOTÃO VOLTAR FLUTUANTE
+        st.markdown(f'<div id="btn-voltar" onclick="window.location.href=\'?\'">⬅️</div>', unsafe_allow_html=True)
 
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
