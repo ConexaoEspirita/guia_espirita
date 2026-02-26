@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS AZUL CÉU ESCURO ---
+# --- CSS MENU TRAVADO + AZUL CÉU ---
 st.markdown("""
 <style>
     /* Remove seta/voltar superior */
@@ -15,13 +15,25 @@ st.markdown("""
     section[data-testid="stSidebar"] > div { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     
-    /* AZUL CÉU ESCURO PERFEITO */
+    /* MENU TRAVADO NO TOPO */
+    .menu-fixo {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        background: rgba(30, 64, 175, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        border-bottom: 3px solid rgba(59, 130, 246, 0.5) !important;
+        padding: 15px 0 !important;
+        margin: -20px -20px 30px -20px !important;
+    }
+    
+    /* AZUL CÉU ESCURO */
     .stApp { 
         background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%) !important;
         background-attachment: fixed !important;
     }
     
-    /* SUCCESS MENSAGEM BRANCA VISÍVEL */
+    /* SUCCESS VISÍVEL */
     div.stSuccess > div {
         background: rgba(255,255,255,0.95) !important;
         color: #065f46 !important;
@@ -30,7 +42,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    /* CARDS ORIGINAIS EXATOS */
+    /* CARDS ORIGINAIS */
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -60,11 +72,9 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     link_wa = f"https://wa.me/+55{whats_num}" if len(whats_num) >= 10 else "#"
     
-    # Google Maps
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
     if nome_google:
         query_maps = urllib.parse.quote(nome_google)
@@ -142,7 +152,6 @@ if not st.session_state.logado:
                 else:
                     st.error("❌ Senhas não coincidem!")
 else:
-    # Carregar dados SOMENTE quando logado
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
@@ -156,43 +165,48 @@ else:
 
     st.title("🕊️ Guia Espírita Premium")
 
-    # MENU ORIGINAL (EXPANDIR/CONTRAIR)
-    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
-        if not st.session_state.menu_aberto:
-            st.session_state.pagina = None
-        st.rerun()
-
-    if st.session_state.menu_aberto:
-        st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔎 Pesquisar Geral", use_container_width=True):
-                st.session_state.pagina = "pesquisar"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            if st.button("📍 Por Cidade", use_container_width=True):
-                st.session_state.pagina = "cidade"
-                st.session_state.menu_aberto = False
-                st.rerun()
-        with col2:
-            if st.button("📊 Admin", use_container_width=True):
-                st.session_state.pagina = "admin"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            if st.button("🕊️ Frases", use_container_width=True):
-                st.session_state.pagina = "frases"
-                st.session_state.menu_aberto = False
-                st.rerun()
-        if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.logado = False
-            st.session_state.menu_aberto = False
-            st.session_state.pagina = None
-            st.cache_data.clear()
+    # --- MENU TRAVADO NO TOPO ---
+    with st.container():
+        st.markdown('<div class="menu-fixo">', unsafe_allow_html=True)
+        
+        if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
+            st.session_state.menu_aberto = not st.session_state.menu_aberto
+            if not st.session_state.menu_aberto:
+                st.session_state.pagina = None
             st.rerun()
-        st.markdown("---")
+        
+        if st.session_state.menu_aberto:
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔎 Pesquisar Geral", use_container_width=True):
+                    st.session_state.pagina = "pesquisar"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+                if st.button("📍 Por Cidade", use_container_width=True):
+                    st.session_state.pagina = "cidade"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            with col2:
+                if st.button("📊 Admin", use_container_width=True):
+                    st.session_state.pagina = "admin"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+                if st.button("🕊️ Frases", use_container_width=True):
+                    st.session_state.pagina = "frases"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            if st.button("🚪 Sair", use_container_width=True):
+                st.session_state.logado = False
+                st.session_state.menu_aberto = False
+                st.session_state.pagina = None
+                st.cache_data.clear()
+                st.rerun()
+            st.markdown("---")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    # PESQUISA ORIGINAL QUE FUNCIONAVA
+    # CONTEÚDO COM SCROLL (cards sobem por baixo)
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
