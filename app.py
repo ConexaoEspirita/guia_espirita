@@ -3,14 +3,31 @@ import pandas as pd
 import urllib.parse
 import re
 
-st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
+st.set_page_config(
+    page_title="Guia Espírita", 
+    page_icon="🕊️", 
+    layout="wide",
+    initial_sidebar_state="collapsed"  # ← CORRIGE CELULAR
+)
 
-# --- CSS ---
+# --- CSS CORRIGIDO CELULAR ---
 st.markdown("""
 <style>
-    [data-testid="stArrowBack"] { display: none !important; }
-    section[data-testid="stSidebar"] > div { display: none !important; }
-    [data-testid="collapsedControl"] { display: none !important; }
+    /* Remove TODOS botões voltar do celular */
+    [data-testid="stArrowBack"],
+    [data-testid="stHeader"],
+    button[kind="header"],
+    button[aria-label*="voltar"],
+    button[aria-label*="back"],
+    nav button,
+    header button,
+    section[data-testid="stSidebar"] > div,
+    [data-testid="collapsedControl"] {
+        display: none !important;
+    }
+    
+    /* Impede fechamento acidental mobile */
+    * { touch-action: manipulation !important; }
     
     .stApp { background: #f4f7f9; }
     .card-centro { 
@@ -113,10 +130,10 @@ else:
     df = carregar_dados()
     st.title("🕊️ Guia Espírita")
 
-    # CORRIGIDO: Reset página quando menu fecha
+    # Botão Menu CORRIGIDO
     if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
         st.session_state.menu_aberto = not st.session_state.menu_aberto
-        if st.session_state.menu_aberto == False:  # Ao fechar menu
+        if not st.session_state.menu_aberto:  # Fecha página quando fecha menu
             st.session_state.pagina = None
         st.rerun()
 
@@ -203,5 +220,3 @@ else:
         st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
         st.markdown("> **Nascer, sofrer, morrer, abençoados sejam os que assim sofrem!** — Emmanuel")
         st.markdown("> **Onde reina o amor, não há desejos de vingança.** — Chico Xavier")
-        st.markdown("> **Pensa em Deus, refugia-te em Deus, espera por Deus e confia em Deus, porquanto, ainda mesmo quando te suponhas a sós, em meio de tribulações incontáveis, Deus está conosco e com Deus venceremos.Emmanuel.** — Emmanuel")
-
