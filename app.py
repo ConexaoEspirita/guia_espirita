@@ -105,7 +105,7 @@ else:
         st.session_state.menu_aberto = not st.session_state.menu_aberto
         st.rerun()
 
-    # MENU EXPANDIDO/CONTRAIDO
+    # MENU EXPANDIDO/CONTRAIDO ✅ CORRIGIDO
     if st.session_state.menu_aberto:
         st.markdown("---")
         
@@ -113,23 +113,23 @@ else:
         with col1:
             if st.button("🔎 Pesquisar Geral", use_container_width=True):
                 st.session_state.pagina = "pesquisar"
-                st.session_state.menu_aberto = False
+                st.session_state.menu_aberto = False  # ✅ FECHA MENU
                 st.rerun()
             
             if st.button("📍 Por Cidade", use_container_width=True):
                 st.session_state.pagina = "cidade"
-                st.session_state.menu_aberto = False
+                st.session_state.menu_aberto = False  # ✅ FECHA MENU
                 st.rerun()
         
         with col2:
             if st.button("📊 Admin", use_container_width=True):
                 st.session_state.pagina = "admin"
-                st.session_state.menu_aberto = False
+                st.session_state.menu_aberto = False  # ✅ FECHA MENU
                 st.rerun()
             
             if st.button("🕊️ Frases", use_container_width=True):
                 st.session_state.pagina = "frases"
-                st.session_state.menu_aberto = False
+                st.session_state.menu_aberto = False  # ✅ FECHA MENU
                 st.rerun()
         
         if st.button("🚪 Sair", use_container_width=True):
@@ -164,14 +164,14 @@ else:
                 st.warning("❌ Nenhum resultado encontrado.")
         elif termo: 
             st.warning("⚠️ Mínimo de 3 letras!")
-    
+
     elif pagina == "cidade":
         st.markdown("### 📍 Por Cidade")
         cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
         cidades_com_contagem = []
         for cidade in sorted(cidades):
             cidade_limpa = str(cidade).strip()
-            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] 
+            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', '']
                 and len(cidade_limpa) > 2):
                 count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
                 cidades_com_contagem.append(f"{cidade_limpa} ({count})")
