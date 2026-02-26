@@ -103,9 +103,9 @@ else:
 
     st.title("🕊️ Bem-vindo ao Guia Espírita")
 
-    # ✅ BOTÃO PRINCIPAL (toggle normal)
-    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
+    # ✅ BOTÃO SIMPLES - SÓ "ABRIR MENU" (SEM "Fechar Menu")
+    if st.button("📋 ABRIR MENU", use_container_width=True):
+        st.session_state.menu_aberto = True
         st.rerun()
 
     # ✅ MENU COM EXPANDER (RECOLHE AUTOMATICAMENTE)
