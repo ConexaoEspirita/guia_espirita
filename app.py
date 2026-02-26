@@ -14,7 +14,7 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS DOS CARDS E BOTÃO FLUTUANTE
+# CSS DOS CARDS
 # =========================
 st.markdown("""
 <style>
@@ -52,25 +52,6 @@ st.markdown("""
 .btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
-
-/* BOTÃO VOLTAR FLUTUANTE */
-#btn-voltar {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    background: #0047AB;
-    color: white;
-    border-radius: 50%;
-    padding: 8px 12px;
-    font-size: 16px;
-    font-weight: 700;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-#btn-voltar:hover {
-    background: #0055d4;
-    cursor: pointer;
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -165,9 +146,6 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # BOTÃO VOLTAR FLUTUANTE
-        st.markdown(f'<div id="btn-voltar" onclick="window.location.href=\'?\'">⬅️</div>', unsafe_allow_html=True)
-
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
             termo = st.text_input("Digite pelo menos 3 letras:")
@@ -178,6 +156,11 @@ else:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(resultado.iterrows(),1):
                         renderizar_card(row,i)
+                        # Botão Voltar a cada 5 cards
+                        if i % 5 == 0:
+                            if st.button("⬅️ Voltar"):
+                                st.session_state.pagina = None
+                                st.rerun()
                 else:
                     st.warning("Nenhum resultado encontrado.")
             elif termo:
@@ -194,6 +177,11 @@ else:
                 st.success(f"{len(resultado)} centro(s) encontrado(s)")
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
+                    # Botão Voltar a cada 5 cards
+                    if i % 5 == 0:
+                        if st.button("⬅️ Voltar"):
+                            st.session_state.pagina = None
+                            st.rerun()
 
         # ADMIN
         elif pagina == "admin":
