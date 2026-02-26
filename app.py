@@ -128,6 +128,7 @@ else:
 
     elif opcao == "📍 Por Cidade":
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
+        cidades = [c for c in cidades if c != "NOME DA CIDADE DO CENTRO ESPIRITA"]  # Remove o problema
         sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades, help="Escolha sua cidade para ver os centros")
         if sel != "-- Selecione --":
             res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
