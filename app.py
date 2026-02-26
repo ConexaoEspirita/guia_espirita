@@ -40,7 +40,7 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp ✅ CONSERTADO
+    # WhatsApp ✅ FUNCIONANDO
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
         whats_num_com_prefixo = "+55" + whats_num
@@ -48,10 +48,12 @@ def renderizar_card(row, index):
     else:
         link_wa = "#"
     
-    # Maps ✅ CONSERTADO
-    query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
-
+    # MAPS ✅ CORRIGIDO - PIN VERDE EM TODOS OS CASOS
+    if end.strip():
+        link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{end}, {cid}')}"
+    else:
+        link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{nome}, {cid}')}"
+    
     st.markdown(f"""
     <div class="card-centro">
         <div class="numero-badge">#{index}</div>
@@ -131,8 +133,10 @@ else:
                 st.success(f"✅ Encontrados {len(res)} centro(s)")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
-            else: st.warning("❌ Nenhum resultado.")
-        elif termo: st.warning("⚠️ Mínimo de 4 letras!")
+            else: 
+                st.warning("❌ Nenhum resultado.")
+        elif termo: 
+            st.warning("⚠️ Mínimo de 4 letras!")
 
     elif opcao == "📍 Por Cidade":
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
@@ -140,6 +144,3 @@ else:
         if sel != "-- Selecione --":
             for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
                 renderizar_card(row, i)
-
-
-
