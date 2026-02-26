@@ -7,44 +7,47 @@ st.set_page_config(
     page_title="Guia Espírita", 
     page_icon="🕊️", 
     layout="wide",
-    initial_sidebar_state="collapsed"  # ← CORRIGE CELULAR
+    initial_sidebar_state="collapsed"
 )
 
-# --- CSS CORRIGIDO CELULAR ---
+# --- CSS CELULAR CORRIGIDO ---
 st.markdown("""
 <style>
-    /* Remove TODOS botões voltar do celular */
-    [data-testid="stArrowBack"],
-    [data-testid="stHeader"],
-    button[kind="header"],
-    button[aria-label*="voltar"],
-    button[aria-label*="back"],
-    nav button,
-    header button,
-    section[data-testid="stSidebar"] > div,
-    [data-testid="collapsedControl"] {
-        display: none !important;
-    }
-    
-    /* Impede fechamento acidental mobile */
-    * { touch-action: manipulation !important; }
-    
-    .stApp { background: #f4f7f9; }
-    .card-centro { 
-        background: white !important; padding: 25px; border-radius: 20px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-        margin-bottom: 25px; border-left: 12px solid #0047AB; position: relative;
-    }
-    .numero-badge { position: absolute; top: 15px; right: 20px; background: #f0f4f8; color: #7f8c8d; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; }
-    .nome-centro { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800; display: block; }
-    .nome-fantasia { color: #3B82F6 !important; font-size: 16px !important; font-style: italic; font-weight: 500; margin-top: 2px; display: block; }
-    .palestras-verde { color: #065F46 !important; font-weight: 700; background: #D1FAE5; padding: 10px; border-radius: 10px; margin: 12px 0; border: 1px solid #10B981; }
-    .info-linha { margin: 8px 0; font-size: 15px; color: #333 !important; }
-    .label-bold { font-weight: 800; color: #0047AB; text-transform: uppercase; font-size: 13px; }
-    .btn-row { display: flex; gap: 12px; margin-top: 20px; }
-    .btn-link { text-decoration: none !important; color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-align: center; flex: 1; display: inline-block; }
-    .bg-wa { background-color: #25D366; }
-    .bg-maps { background-color: #4285F4; }
+/* Remove TODOS botões voltar celular */
+* { 
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    touch-action: manipulation !important;
+}
+[data-testid="stArrowBack"],
+[data-testid="stHeader"],
+button[kind="header"],
+button[title*="voltar"],
+button[data-testid*="back"],
+button[type="button"]:not([class*="bg-"]),
+section[data-testid="stSidebar"] > div,
+[data-testid="collapsedControl"] {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+.stApp { background: #f4f7f9; }
+.card-centro { 
+    background: white !important; padding: 25px; border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    margin-bottom: 25px; border-left: 12px solid #0047AB; position: relative;
+}
+.numero-badge { position: absolute; top: 15px; right: 20px; background: #f0f4f8; color: #7f8c8d; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+.nome-centro { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800; display: block; }
+.nome-fantasia { color: #3B82F6 !important; font-size: 16px !important; font-style: italic; font-weight: 500; margin-top: 2px; display: block; }
+.palestras-verde { color: #065F46 !important; font-weight: 700; background: #D1FAE5; padding: 10px; border-radius: 10px; margin: 12px 0; border: 1px solid #10B981; }
+.info-linha { margin: 8px 0; font-size: 15px; color: #333 !important; }
+.label-bold { font-weight: 800; color: #0047AB; text-transform: uppercase; font-size: 13px; }
+.btn-row { display: flex; gap: 12px; margin-top: 20px; }
+.btn-link { text-decoration: none !important; color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-align: center; flex: 1; display: inline-block; }
+.bg-wa { background-color: #25D366; }
+.bg-maps { background-color: #4285F4; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,12 +66,21 @@ def criar_link_maps(row):
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     bairro = ajustar_texto(row.get('BAIRRO', ''))
     
-    if nome_google and len(nome_google) > 3:
+    # Tanabi ESPECÍFICO
+    if 'tanabi' in cid.lower():
+        if nome_google and len(nome_google) > 3:
+            return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(nome_google + ', Tanabi SP')}"
+        if end:
+            return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(end + ', Tanabi SP')}"
+        return "https://www.google.com/maps/place/Tanabi+-+SP/@-20.6194,-51.4444,14z"
+    
+    # Geral
+    if nome_google and len(nome_google) > 5:
         return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(nome_google)}"
     
     if end and cid:
         endereco_limpo = re.sub(r'[,\s]+', ', ', end.strip())[:120]
-        query = f"{endereco_limpo}, {bairro}, {cid}, SP" if bairro else f"{endereco_limpo}, {cid}, SP"
+        query = f"{endereco_limpo}, {cid}, SP"
         return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}"
     
     return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(cid or 'São Paulo')}"
@@ -128,14 +140,17 @@ else:
         return df
     
     df = carregar_dados()
-    st.title("🕊️ Guia Espírita")
 
-    # Botão Menu CORRIGIDO
-    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
-        if not st.session_state.menu_aberto:  # Fecha página quando fecha menu
-            st.session_state.pagina = None
-        st.rerun()
+    # BOTÃO MENU SIMPLIFICADO
+    col1, col2 = st.columns([3,1])
+    with col1:
+        st.title("🕊️ Guia Espírita")
+    with col2:
+        if st.button("📋 MENU", use_container_width=True):
+            st.session_state.menu_aberto = not st.session_state.menu_aberto
+            if not st.session_state.menu_aberto:
+                st.session_state.pagina = None
+            st.rerun()
 
     if st.session_state.menu_aberto:
         st.markdown("---")
