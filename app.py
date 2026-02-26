@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS PREMIUM (CARDS ORIGINAIS mantidos) ---
+# --- CSS PREMIUM CORRIGIDO ---
 st.markdown("""
 <style>
     /* Remove seta/voltar superior */
@@ -15,9 +15,9 @@ st.markdown("""
     section[data-testid="stSidebar"] > div { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     
-    /* FUNDO AZUL PREMIUM */
+    /* FUNDO AZUL MAIS CLARO */
     .stApp { 
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e40af 100%) !important;
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%) !important;
         background-attachment: fixed !important;
     }
     
@@ -50,7 +50,7 @@ st.markdown("""
     .stTextInput > div > div > input {
         border-radius: 12px !important;
         border: 2px solid rgba(59,130,246,0.3) !important;
-        background: rgba(255,255,255,0.9) !important;
+        background: rgba(255,255,255,0.95) !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
     }
     
@@ -58,10 +58,20 @@ st.markdown("""
     .stSelectbox > div > div > select {
         border-radius: 12px !important;
         border: 2px solid rgba(59,130,246,0.3) !important;
-        background: rgba(255,255,255,0.9) !important;
+        background: rgba(255,255,255,0.95) !important;
     }
     
-    /* CARDS ORIGINAIS (SEM MUDANÇAS) */
+    /* SUCCESS MENSAGEM BRANCA VISÍVEL */
+    div.stSuccess > div {
+        background: rgba(255,255,255,0.95) !important;
+        color: #065f46 !important;
+        border-radius: 12px !important;
+        border: 2px solid #10b981 !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 15px rgba(16,185,129,0.3) !important;
+    }
+    
+    /* CARDS ORIGINAIS */
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -125,6 +135,8 @@ def renderizar_card(row, index):
 # --- Inicializar session state ---
 if "menu_aberto" not in st.session_state:
     st.session_state.menu_aberto = False
+if "pagina" not in st.session_state:
+    st.session_state.pagina = None
 
 # --- TELA INICIAL COM LOGIN + CADASTRO ---
 if "logado" not in st.session_state: 
@@ -151,9 +163,9 @@ if not st.session_state.logado:
                 email = st.text_input("📧 E-mail")
             senha = st.text_input("🔒 Senha", type="password")
             if st.form_submit_button("🚀 ACESSAR", use_container_width=True):
-                # Simula login (substitua pela sua lógica)
                 st.session_state.logado = True
                 st.session_state.nome_usuario = nome
+                st.session_state.pagina = None  # Reset página
                 st.rerun()
     
     with tab2:
@@ -173,9 +185,12 @@ if not st.session_state.logado:
                 else:
                     st.error("❌ Senhas não coincidem!")
 else:
-    # Carregar dados
-    df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-    df.columns = df.columns.str.strip()
+    # RESETAR PÁGINA QUANDO FECHAR MENU
+    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
+        st.session_state.menu_aberto = not st.session_state.menu_aberto
+        if st.session_state.menu_aberto == False:
+            st.session_state.pagina = None  # LIMPA PÁGINA AO FECHAR
+        st.rerun()
 
     # SAUDAÇÃO COM NOME
     st.markdown(f"""
@@ -186,11 +201,6 @@ else:
     """, unsafe_allow_html=True)
 
     st.title("🕊️ Guia Espírita Premium")
-
-    # BOTÃO EXPANDIR/CONTRAIR MENU PREMIUM
-    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
-        st.rerun()
 
     # MENU EXPANDIDO/CONTRAIDO
     if st.session_state.menu_aberto:
@@ -222,12 +232,13 @@ else:
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.logado = False
             st.session_state.menu_aberto = False
+            st.session_state.pagina = None
             st.cache_data.clear()
             st.rerun()
         
         st.markdown("---")
 
-    # CONTEÚDO DAS PÁGINAS
+    # CONTEÚDO DAS PÁGINAS (SÓ MOSTRA SE TIVER PÁGINA SELECIONADA)
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
