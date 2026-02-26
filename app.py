@@ -156,9 +156,9 @@ else:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(resultado.iterrows(),1):
                         renderizar_card(row,i)
-                        # Botão Voltar a cada 5 cards
+                        # Botão Voltar a cada 5 cards com key única
                         if i % 5 == 0:
-                            if st.button("⬅️ Voltar"):
+                            if st.button("⬅️ Voltar", key=f"voltar_busca_{i}"):
                                 st.session_state.pagina = None
                                 st.rerun()
                 else:
@@ -177,9 +177,9 @@ else:
                 st.success(f"{len(resultado)} centro(s) encontrado(s)")
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
-                    # Botão Voltar a cada 5 cards
+                    # Botão Voltar a cada 5 cards com key única
                     if i % 5 == 0:
-                        if st.button("⬅️ Voltar"):
+                        if st.button("⬅️ Voltar", key=f"voltar_cidade_{i}"):
                             st.session_state.pagina = None
                             st.rerun()
 
