@@ -1,10 +1,17 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+import unicodedata
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# -------- CSS (VISUAL ORIGINAL MANTIDO) --------
+# -------- CONTROLE DE PÁGINA (resolve botão voltar) --------
+if "page" in st.query_params:
+    pagina = st.query_params["page"]
+else:
+    pagina = "🏠 Início"
+
+# -------- CSS ORIGINAL MANTIDO --------
 st.markdown("""
 <style>
     .stApp { background: #f4f7f9; }
@@ -64,43 +71,35 @@ st.markdown("""
 # -------- SIDEBAR --------
 with st.sidebar:
     st.markdown("## 🕊️ Guia Espírita")
-    st.markdown("Sistema de busca de centros espíritas")
 
     pagina = st.radio(
         "Navegação",
-        ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"]
+        ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"],
+        index=["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"].index(pagina)
     )
 
+st.query_params["page"] = pagina
 st.divider()
 
 # -------- CARREGAR DADOS --------
 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
 df.columns = df.columns.str.strip()
 
-def ajustar_texto(txt):
-    return str(txt).strip() if pd.notna(txt) else ""
-
-def normalizar(txt):
+def limpar_texto(txt):
     if pd.isna(txt):
         return ""
-    txt = str(txt).lower()
-    txt = (txt.replace("ç","c")
-              .replace("ã","a")
-              .replace("õ","o")
-              .replace("á","a")
-              .replace("é","e")
-              .replace("í","i")
-              .replace("ó","o")
-              .replace("ú","u"))
+    txt = str(txt).strip().lower()
+    txt = unicodedata.normalize("NFKD", txt)
+    txt = "".join(c for c in txt if not unicodedata.combining(c))
     return txt
 
 def renderizar_card(row, index):
-    nome = ajustar_texto(row.get('NOME', 'Centro Espírita'))
-    fantasia = ajustar_texto(row.get('NOME FANTASIA', ''))
-    end = ajustar_texto(row.get('ENDERECO', ''))
-    cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
-    palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
-    resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
+    nome = str(row.get('NOME', 'Centro Espírita')).strip()
+    fantasia = str(row.get('NOME FANTASIA', '')).strip()
+    end = str(row.get('ENDERECO', '')).strip()
+    cid = str(row.get('CIDADE DO CENTRO ESPIRITA', '')).strip()
+    palestras = str(row.get('PALESTRA PUBLICA', 'Consulte')).strip()
+    resp = str(row.get('RESPONSAVEL', 'N/I')).strip()
 
     # WhatsApp
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
@@ -109,8 +108,8 @@ def renderizar_card(row, index):
     else:
         link_wa = "#"
 
-    # Google Maps (BUSCA POR ENDEREÇO + CIDADE)
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{end}, {cid}')}"
+    # Maps (rota direta)
+    link_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{end}, {cid}')}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -130,22 +129,18 @@ def renderizar_card(row, index):
 # -------- PÁGINAS --------
 
 if pagina == "🏠 Início":
-    st.info("👈 Utilize o menu lateral para navegar pelo sistema.")
+    st.info("👈 Utilize o menu lateral para navegar.")
 
 elif pagina == "🔎 Pesquisar Geral":
     st.header("🔎 Pesquisar Geral")
 
-    termo = st.text_input(
-        "Digite pelo menos 4 letras para buscar:",
-        help="Busca por nome, cidade ou responsável"
-    )
+    termo = st.text_input("Digite pelo menos 4 letras para buscar:")
 
     if termo and len(termo) >= 4:
-
-        termo_norm = normalizar(termo)
+        termo_limpo = limpar_texto(termo)
 
         mask = df.apply(
-            lambda row: termo_norm in normalizar(" ".join(row.astype(str))),
+            lambda row: termo_limpo in limpar_texto(" ".join(row.astype(str))),
             axis=1
         )
 
@@ -168,8 +163,7 @@ elif pagina == "📍 Por Cidade":
 
     sel = st.selectbox(
         "Selecione a cidade:",
-        ["-- Selecione uma cidade --"] + cidades,
-        help="Escolha sua cidade para ver os centros espíritas"
+        ["-- Selecione uma cidade --"] + cidades
     )
 
     if sel != "-- Selecione uma cidade --":
