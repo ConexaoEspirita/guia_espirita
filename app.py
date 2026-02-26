@@ -28,7 +28,7 @@ st.markdown("""
     border-radius: 20px; 
     margin-bottom: 25px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-    border-left: 12px solid #0060D0;  /* azul mais forte sutil */
+    border-left: 12px solid #0060D0;  
     position: relative;
 }
 
@@ -154,13 +154,14 @@ else:
                 resultado = df[df.apply(lambda row: termo_normal in normalize_text(" ".join(row.astype(str))), axis=1)]
                 if not resultado.empty:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
+                    # renderiza todos os cards
                     for i, (_, row) in enumerate(resultado.iterrows(),1):
                         renderizar_card(row,i)
-                        # Botão Voltar a cada 5 cards com key única
-                        if i % 5 == 0:
-                            if st.button("⬅️ Voltar", key=f"voltar_busca_{i}"):
-                                st.session_state.pagina = None
-                                st.rerun()
+                    # botão voltar no final se tiver 5 ou mais cards
+                    if len(resultado) >= 5:
+                        if st.button("⬅️ Voltar"):
+                            st.session_state.pagina = None
+                            st.rerun()
                 else:
                     st.warning("Nenhum resultado encontrado.")
             elif termo:
@@ -177,11 +178,11 @@ else:
                 st.success(f"{len(resultado)} centro(s) encontrado(s)")
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
-                    # Botão Voltar a cada 5 cards com key única
-                    if i % 5 == 0:
-                        if st.button("⬅️ Voltar", key=f"voltar_cidade_{i}"):
-                            st.session_state.pagina = None
-                            st.rerun()
+                # botão voltar no final se tiver 5 ou mais cards
+                if len(resultado) >= 5:
+                    if st.button("⬅️ Voltar"):
+                        st.session_state.pagina = None
+                        st.rerun()
 
         # ADMIN
         elif pagina == "admin":
