@@ -5,9 +5,37 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS ---
+# --- CSS COMPLETO ATUALIZADO ---
 st.markdown("""
 <style>
+    /* Remove seta/voltar superior */
+    [data-testid="stArrowBack"] { display: none !important; }
+    
+    /* Seta flutuante profissional para sidebar */
+    .seta-flutuante {
+        position: fixed !important;
+        top: 90px !important;
+        right: 30px !important;
+        z-index: 1000 !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50% !important;
+        width: 55px !important;
+        height: 55px !important;
+        font-size: 24px !important;
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+        cursor: pointer !important;
+        transition: all 0.3s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .seta-flutuante:hover {
+        transform: scale(1.1) !important;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6) !important;
+    }
+    
     [data-testid="stSidebar"] { padding-top: 20px; }
     div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
     .stApp { background: #f4f7f9; }
@@ -45,13 +73,12 @@ def renderizar_card(row, index):
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     link_wa = f"https://wa.me/+55{whats_num}" if len(whats_num) >= 10 else "#"
     
-    # Google Maps - ENDEREÇO LIMPO (corrige quebra)
+    # Google Maps
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
     if nome_google:
         query_maps = urllib.parse.quote(nome_google)
     else:
-        # Limpa endereço longo que quebra HTML
-        endereco_limpo = re.sub(r'[,\s]+', ', ', end)[:100]
+        endereco_limpo = re.sub(r'[,\\s]+', ', ', end)[:100]
         query_maps = urllib.parse.quote(f"{endereco_limpo}, {cid}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
 
@@ -74,7 +101,8 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # --- LOGIN / NAVEGAÇÃO ---
-if "logado" not in st.session_state: st.session_state.logado = False
+if "logado" not in st.session_state: 
+    st.session_state.logado = False
 
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
@@ -110,8 +138,34 @@ else:
 
     # PÁGINAS
     if opcao == "🏠 Início":
-        st.title("🕊️ Bem-vindo ao Guia")
-        st.info("Utilize o menu lateral para iniciar sua busca.")
+        # Seta flutuante PROFISSIONAL (canto superior direito)
+        st.markdown("""
+        <button class="seta-flutuante" 
+                onclick="setTimeout(() => { 
+                    const sidebar = document.querySelector('[data-testid=\"stSidebar\"]');
+                    if(sidebar) sidebar.style.transform = 'translateX(0)';
+                }, 100)" 
+                title="➤ Abrir Menu Lateral">
+            ➤
+        </button>
+        """, unsafe_allow_html=True)
+        
+        # Conteúdo principal PROFISSIONAL
+        st.markdown("""
+        <div style='text-align: center; padding: 80px 40px; max-width: 900px; margin: 0 auto;'>
+            <div style='font-size: 5rem; color: #1E3A8A; margin-bottom: 30px;'>🕊️</div>
+            <h1 style='color: #1E3A8A; font-size: 3rem; font-weight: 800; margin-bottom: 15px; line-height: 1.2;'>Bem-vindo ao Guia Espírita</h1>
+            <p style='color: #666; font-size: 1.5rem; margin-bottom: 50px;'>Encontre centros espíritas próximos a você</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Tarja inferior ELEGANT
+        st.markdown("""
+        <div style='text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    color: white; border-radius: 25px; margin: 80px 40px 60px 40px; font-size: 1.4rem; font-weight: 600; box-shadow: 0 10px 30px rgba(102,126,234,0.3);'>
+            ✨ **Utilize o menu lateral ➤ para iniciar sua busca**
+        </div>
+        """, unsafe_allow_html=True)
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
