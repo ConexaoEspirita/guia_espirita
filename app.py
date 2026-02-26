@@ -19,14 +19,14 @@ def hash_senha(senha):
     return hashlib.sha256(senha.encode()).hexdigest()
 
 # =========================
-# CRIAR ARQUIVO USUARIOS SE NÃO EXISTIR
+# CRIAR ARQUIVO USUARIOS
 # =========================
 if not os.path.exists("usuarios.csv"):
     df_init = pd.DataFrame(columns=["nome", "email", "senha", "data_cadastro"])
     df_init.to_csv("usuarios.csv", index=False)
 
 # =========================
-# SESSION STATE
+# SESSION
 # =========================
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -40,12 +40,11 @@ if not st.session_state.logado:
 
     st.title("🕊️ Guia Espírita")
 
-    aba = st.radio("Escolha:", ["Login", "Cadastrar", "Esqueci a senha"], horizontal=True)
+    aba = st.radio("", ["Login", "Cadastrar", "Esqueci a senha"], horizontal=True)
 
-    # -------- CADASTRO --------
     if aba == "Cadastrar":
 
-        with st.form("cadastro_form"):
+        with st.form("cadastro"):
             nome = st.text_input("Nome")
             email = st.text_input("Email")
             senha = st.text_input("Senha", type="password")
@@ -53,38 +52,34 @@ if not st.session_state.logado:
             if st.form_submit_button("Cadastrar"):
 
                 if not nome.strip() or not email.strip() or not senha.strip():
-                    st.error("Nome, email e senha são obrigatórios.")
-
+                    st.error("Preencha todos os campos.")
                 elif email.strip().lower() == ADMIN_EMAIL.lower():
-                    st.error("Não permitido usar email do admin.")
-
+                    st.error("Email reservado.")
                 else:
                     df_users = pd.read_csv("usuarios.csv")
 
                     if email.strip().lower() in df_users["email"].str.lower().values:
                         st.warning("Email já cadastrado.")
                     else:
-                        nova = pd.DataFrame([{
+                        novo = pd.DataFrame([{
                             "nome": nome.strip(),
                             "email": email.strip().lower(),
                             "senha": hash_senha(senha),
                             "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                         }])
 
-                        df_users = pd.concat([df_users, nova], ignore_index=True)
+                        df_users = pd.concat([df_users, novo], ignore_index=True)
                         df_users.to_csv("usuarios.csv", index=False)
                         st.success("Cadastro realizado!")
 
-    # -------- LOGIN --------
     elif aba == "Login":
 
-        with st.form("login_form"):
+        with st.form("login"):
             email = st.text_input("Email")
             senha = st.text_input("Senha", type="password")
 
             if st.form_submit_button("Entrar"):
 
-                # LOGIN ADMIN
                 if email.strip().lower() == ADMIN_EMAIL.lower() and hash_senha(senha) == ADMIN_SENHA:
                     st.session_state.logado = True
                     st.session_state.admin = True
@@ -104,12 +99,11 @@ if not st.session_state.logado:
                 else:
                     st.error("Email ou senha incorretos.")
 
-    # -------- RESET SENHA --------
     elif aba == "Esqueci a senha":
 
         df_users = pd.read_csv("usuarios.csv")
 
-        with st.form("reset_form"):
+        with st.form("reset"):
             email_reset = st.text_input("Email cadastrado")
             nova_senha = st.text_input("Nova senha", type="password")
 
@@ -124,21 +118,23 @@ if not st.session_state.logado:
                     ] = hash_senha(nova_senha)
 
                     df_users.to_csv("usuarios.csv", index=False)
-                    st.success("Senha redefinida com sucesso!")
+                    st.success("Senha redefinida!")
 
 # =========================
-# AREA LOGADA COM MENU
+# AREA LOGADA
 # =========================
 else:
 
-    # MENU LATERAL
+    # MENU HORIZONTAL
     if st.session_state.admin:
-        pagina = st.sidebar.radio("Menu", ["Início", "Frases", "Admin", "Sair"])
+        pagina = st.radio("", ["Início", "Frases", "Admin", "Sair"], horizontal=True)
     else:
-        pagina = st.sidebar.radio("Menu", ["Início", "Frases", "Sair"])
+        pagina = st.radio("", ["Início", "Frases", "Sair"], horizontal=True)
+
+    st.markdown("---")
 
     # =========================
-    # PAGINA INICIO
+    # INÍCIO
     # =========================
     if pagina == "Início":
 
@@ -147,38 +143,44 @@ else:
 
         st.title("🕊️ Guia Espírita")
 
+        # Detecta coluna nome
+        col_nome = [c for c in df.columns if "nome" in c.lower()]
+        col_cidade = [c for c in df.columns if "cidade" in c.lower()]
+
+        if not col_nome or not col_cidade:
+            st.error("Colunas 'nome' ou 'cidade' não encontradas na planilha.")
+            st.write("Colunas encontradas:", df.columns)
+            st.stop()
+
+        col_nome = col_nome[0]
+        col_cidade = col_cidade[0]
+
         busca = st.text_input("🔎 Pesquisa geral")
 
-        cidades = sorted(df["cidade"].dropna().unique())
-        cidade_escolhida = st.selectbox("📍 Filtrar por cidade", ["Todas"] + cidades)
+        cidades = sorted(df[col_cidade].dropna().unique())
+        cidade_escolhida = st.selectbox("📍 Filtrar por cidade", ["Todas"] + list(cidades))
 
         df_filtrado = df.copy()
 
         if busca:
             df_filtrado = df_filtrado[
-                df_filtrado.apply(
-                    lambda row: busca.lower() in str(row).lower(),
-                    axis=1
-                )
+                df_filtrado.apply(lambda row: busca.lower() in str(row).lower(), axis=1)
             ]
 
         if cidade_escolhida != "Todas":
-            df_filtrado = df_filtrado[df_filtrado["cidade"] == cidade_escolhida]
+            df_filtrado = df_filtrado[df_filtrado[col_cidade] == cidade_escolhida]
 
         st.markdown(f"### 🔎 Resultados: {len(df_filtrado)} encontrados")
 
-        # CARDS (MESMA LÓGICA)
         for _, row in df_filtrado.iterrows():
             st.markdown(f"""
-            ### {row['nome']}
-            📍 {row['cidade']}  
-            📞 {row.get('telefone', '')}  
-            🌐 {row.get('site', '')}
+            ### {row[col_nome]}
+            📍 {row[col_cidade]}
             ---
             """)
 
     # =========================
-    # PAGINA FRASES
+    # FRASES
     # =========================
     elif pagina == "Frases":
 
@@ -186,7 +188,7 @@ else:
         st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
 
     # =========================
-    # PAGINA ADMIN
+    # ADMIN
     # =========================
     elif pagina == "Admin" and st.session_state.admin:
 
