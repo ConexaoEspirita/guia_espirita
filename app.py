@@ -5,12 +5,11 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS PROFISSIONAL: MENU, BUSCA E CARDS ---
+# --- SEU DESIGN PREMIUM MANTIDO ---
 st.markdown("""
 <style>
-    [data-testid="stSidebar"] { padding-top: 35px; }
-    div[data-testid="stMarkdownContainer"] p { font-size: 20px !important; font-weight: 700 !important; color: #1E3A8A; }
-    .stTextInput input { border-radius: 12px !important; border: 2px solid #D4E8F7 !important; padding: 12px !important; }
+    [data-testid="stSidebar"] { padding-top: 20px; }
+    div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
     .stApp { background: #f4f7f9; }
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
@@ -41,16 +40,17 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp CONSERTADO (Lógica Blindada +55)
+    # WhatsApp ✅ CONSERTADO
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
-        whats_num = "+55" + whats_num
-        link_wa = f"https://wa.me{whats_num}"
-    else: link_wa = "#"
+        whats_num_com_prefixo = "+55" + whats_num
+        link_wa = f"https://wa.me/{whats_num_com_prefixo}"
+    else:
+        link_wa = "#"
     
-    # Maps CONSERTADO (Lógica urllib quote)
+    # Maps ✅ CONSERTADO
     query_maps = urllib.parse.quote(f"{nome}, {end}, {cid}")
-    link_maps = f"https://www.google.com{query_maps}"
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -70,7 +70,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- SISTEMA ---
+# --- LOGIN / NAVEGAÇÃO ---
 if "logado" not in st.session_state: st.session_state.logado = False
 
 if not st.session_state.logado:
@@ -83,58 +83,60 @@ if not st.session_state.logado:
             st.rerun()
 else:
     with st.sidebar:
-        st.markdown("### ☰ MENU")
-        opcao = st.radio("Escolha:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"])
+        # SEU MENU PREMIUM MANTIDO
+        st.markdown("""
+        <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                    border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
+            <div style='text-align: center; color: white;'>
+                <h2 style='margin: 0; font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>
+                    🕊️ GUIA ESPÍRITA
+                </h2>
+                <p style='margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;'>Encontre centros próximos</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        opcao = st.radio("Navegação:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"], label_visibility="collapsed")
+        
         if opcao == "🚪 Sair":
             st.session_state.logado = False
+            st.cache_data.clear()
             st.rerun()
 
-    # Carregamento dos dados
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
     if opcao == "🏠 Início":
         st.title("🕊️ Bem-vindo ao Guia")
-        st.info("Abra o menu lateral para pesquisar centros espíritas.")
+        st.info("Utilize o menu lateral para iniciar sua busca.")
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
             
-            def normalizar_texto(texto):
-                if pd.isna(texto): return ""
-                texto = str(texto).lower()
-                return (texto.replace('ç','c').replace('ã','a').replace('õ','o')
-                       .replace('á','a').replace('é','e').replace('í','i')
-                       .replace('ó','o').replace('ú','u').replace('â','a')
-                       .replace('ê','e').replace('ô','o').replace('û','u'))
+            def normalizar(t):
+                if pd.isna(t): return ""
+                t = str(t).lower()
+                return (t.replace('ç','c').replace('ã','a').replace('õ','o').replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u'))
             
-            def busca_multiplas_palavras(texto_celula):
-                texto_norm = normalizar_texto(texto_celula)
-                if not texto_norm: return False
-                # Deve achar TODAS as palavras da busca na célula
-                for palavra in palavras_busca:
-                    if normalizar_texto(palavra) not in texto_norm:
-                        return False
-                return True
+            def checar_linha(row):
+                texto_linha = normalizar(" ".join(row.astype(str)))
+                return all(normalizar(p) in texto_linha for p in palavras_busca)
 
-            mask = df.apply(lambda row: row.astype(str).apply(busca_multiplas_palavras).any(), axis=1)
-            resultados = df[mask]
+            mask = df.apply(checar_linha, axis=1)
+            res = df[mask]
             
-            if len(resultados) == 0:
-                st.warning("❌ Nenhum resultado encontrado. Tente outra combinação!")
-            else:
-                st.success(f"✅ Encontrados {len(resultados)} centro(s)")
-                for i, (_, row) in enumerate(resultados.iterrows(), 1):
+            if len(res) > 0:
+                st.success(f"✅ Encontrados {len(res)} centro(s)")
+                for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
-        elif termo:
-            st.warning("⚠️ Digite pelo menos 4 letras para buscar!")
+            else: st.warning("❌ Nenhum resultado.")
+        elif termo: st.warning("⚠️ Mínimo de 4 letras!")
 
     elif opcao == "📍 Por Cidade":
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
         sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
         if sel != "-- Selecione --":
-            dados_cid = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            for i, (_, row) in enumerate(dados_cid.iterrows(), 1):
+            for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
                 renderizar_card(row, i)
