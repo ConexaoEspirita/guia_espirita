@@ -5,36 +5,11 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS COMPLETO ATUALIZADO ---
+# --- CSS ---
 st.markdown("""
 <style>
     /* Remove seta/voltar superior */
     [data-testid="stArrowBack"] { display: none !important; }
-    
-    /* Seta flutuante profissional para sidebar */
-    .seta-flutuante {
-        position: fixed !important;
-        top: 90px !important;
-        right: 30px !important;
-        z-index: 1000 !important;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 50% !important;
-        width: 55px !important;
-        height: 55px !important;
-        font-size: 24px !important;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
-        cursor: pointer !important;
-        transition: all 0.3s ease !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    .seta-flutuante:hover {
-        transform: scale(1.1) !important;
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6) !important;
-    }
     
     [data-testid="stSidebar"] { padding-top: 20px; }
     div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
@@ -138,34 +113,18 @@ else:
 
     # PÁGINAS
     if opcao == "🏠 Início":
-        # Seta flutuante PROFISSIONAL (canto superior direito)
-        st.markdown("""
-        <button class="seta-flutuante" 
-                onclick="setTimeout(() => { 
-                    const sidebar = document.querySelector('[data-testid=\"stSidebar\"]');
-                    if(sidebar) sidebar.style.transform = 'translateX(0)';
-                }, 100)" 
-                title="➤ Abrir Menu Lateral">
-            ➤
-        </button>
-        """, unsafe_allow_html=True)
+        st.title("🕊️ Bem-vindo ao Guia")
         
-        # Conteúdo principal PROFISSIONAL
-        st.markdown("""
-        <div style='text-align: center; padding: 80px 40px; max-width: 900px; margin: 0 auto;'>
-            <div style='font-size: 5rem; color: #1E3A8A; margin-bottom: 30px;'>🕊️</div>
-            <h1 style='color: #1E3A8A; font-size: 3rem; font-weight: 800; margin-bottom: 15px; line-height: 1.2;'>Bem-vindo ao Guia Espírita</h1>
-            <p style='color: #666; font-size: 1.5rem; margin-bottom: 50px;'>Encontre centros espíritas próximos a você</p>
-        </div>
-        """, unsafe_allow_html=True)
+        # BOTÃO SETA NO MEIO DA PÁGINA - FÁCIL DE CLICAR
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:  # COLUNA DO MEIO
+            if st.button("➤ MENU LATERAL", use_container_width=True):
+                st.sidebar.success("✅ Menu aberto! Use as opções ao lado.")
+                st.balloons()
         
-        # Tarja inferior ELEGANT
-        st.markdown("""
-        <div style='text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    color: white; border-radius: 25px; margin: 80px 40px 60px 40px; font-size: 1.4rem; font-weight: 600; box-shadow: 0 10px 30px rgba(102,126,234,0.3);'>
-            ✨ **Utilize o menu lateral ➤ para iniciar sua busca**
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("---")
+        st.info("**Utilize o menu lateral para iniciar sua busca**")
+        st.markdown("---")
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
