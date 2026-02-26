@@ -127,18 +127,14 @@ else:
         elif termo: st.warning("⚠️ Mínimo de 4 letras!")
 
     elif opcao == "📍 Por Cidade":
-        cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
-        # Remove TODOS os cabeçalhos e valores inválidos DEFINITIVAMENTE
-        cidades_limpos = sorted([c for c in cidades 
-                               if str(c).strip() not in [
-                                   "NOME DA CIDADE DO CENTRO ESPIRITA", 
-                                   "NOME DA CIDADE DO CENTRO ESPIRITA ",
-                                   "NOME", "NOME ", "CIDADE", "", "nan", 
-                                   "CIDADE DO CENTRO ESPIRITA", "Unnamed: 5",
-                                   "NOME DA CIDADE DO CENTRO ESPIRITA"]
-                               and len(str(c).strip()) > 2 and str(c) != 'nan'])
-        
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_limpos, help="Escolha sua cidade para ver os centros")
+        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
+        # FILTRA APENAS LIXO DO SELECTBOX - NÃO mexe nos dados
+        cidades_validas = [cidade for cidade in cidades 
+                          if str(cidade).strip().lower() not in 
+                          ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 
+                           'nome', 'cidade', '', 'nan'] 
+                          and len(str(cidade).strip()) > 2]
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_validas, help="Escolha sua cidade para ver os centros")
         if sel != "-- Selecione --":
             res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
             st.success(f"✅ Encontrados {len(res)} centro(s) em {sel}")
