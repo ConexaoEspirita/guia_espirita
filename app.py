@@ -72,7 +72,6 @@ def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def normalize_text(text):
-    """Remove acentos e converte para minúscula"""
     if pd.isna(text):
         return ""
     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
@@ -87,11 +86,8 @@ def renderizar_card(row, index):
 
     numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
 
-    # Google Maps
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-
-    # WhatsApp (abre conversa normalmente)
     link_wa = f"https://wa.me/+55{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
@@ -159,20 +155,13 @@ else:
             st.rerun()
 
     # =========================
-    # PÁGINAS INTERNAS
+    # PÁGINAS INTERNAS LIMPO
     # =========================
     else:
-        # Cabeçalho com botão voltar
-        titulos = {
-            "pesquisar": "🔎 Busca Avançada",
-            "cidade": "📍 Por Cidade",
-            "admin": "📊 Admin",
-            "frases": "🕊️ Frases"
-        }
-
+        # Botão voltar no canto direito
         col1, col2 = st.columns([9,1])
         with col1:
-            st.markdown(f"<div class='subtitulo-normal'>{titulos[pagina]}</div>", unsafe_allow_html=True)
+            pass  # sem título, página limpa
         with col2:
             if st.button("⬅️"):
                 st.session_state["pagina"] = None
