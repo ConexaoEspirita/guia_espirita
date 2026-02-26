@@ -4,7 +4,7 @@ import urllib.parse
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# -------- CSS --------
+# -------- CSS (VISUAL ORIGINAL MANTIDO) --------
 st.markdown("""
 <style>
     .stApp { background: #f4f7f9; }
@@ -61,7 +61,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# -------- SIDEBAR PROFISSIONAL --------
+# -------- SIDEBAR --------
 with st.sidebar:
     st.markdown("## 🕊️ Guia Espírita")
     st.markdown("Sistema de busca de centros espíritas")
@@ -80,6 +80,20 @@ df.columns = df.columns.str.strip()
 def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
+def normalizar(txt):
+    if pd.isna(txt):
+        return ""
+    txt = str(txt).lower()
+    txt = (txt.replace("ç","c")
+              .replace("ã","a")
+              .replace("õ","o")
+              .replace("á","a")
+              .replace("é","e")
+              .replace("í","i")
+              .replace("ó","o")
+              .replace("ú","u"))
+    return txt
+
 def renderizar_card(row, index):
     nome = ajustar_texto(row.get('NOME', 'Centro Espírita'))
     fantasia = ajustar_texto(row.get('NOME FANTASIA', ''))
@@ -88,15 +102,15 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
 
-    # WhatsApp melhorado
+    # WhatsApp
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
         link_wa = f"https://wa.me/55{whats_num}?text=Olá,%20vim%20pelo%20Guia%20Espírita"
     else:
         link_wa = "#"
 
-    # Maps melhorado
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{nome}, {end}, {cid}')}"
+    # Google Maps (BUSCA POR ENDEREÇO + CIDADE)
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{end}, {cid}')}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -127,13 +141,15 @@ elif pagina == "🔎 Pesquisar Geral":
     )
 
     if termo and len(termo) >= 4:
-        palavras = termo.lower().split()
 
-        def checar(row):
-            texto = " ".join(row.astype(str)).lower()
-            return all(p in texto for p in palavras)
+        termo_norm = normalizar(termo)
 
-        res = df[df.apply(checar, axis=1)]
+        mask = df.apply(
+            lambda row: termo_norm in normalizar(" ".join(row.astype(str))),
+            axis=1
+        )
+
+        res = df[mask]
 
         if len(res) > 0:
             st.success(f"✅ Encontrados {len(res)} centro(s)")
@@ -141,6 +157,9 @@ elif pagina == "🔎 Pesquisar Geral":
                 renderizar_card(row, i)
         else:
             st.warning("❌ Nenhum resultado encontrado.")
+
+    elif termo:
+        st.warning("⚠️ Digite pelo menos 4 letras.")
 
 elif pagina == "📍 Por Cidade":
     st.header("📍 Buscar por Cidade")
