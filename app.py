@@ -93,19 +93,18 @@ if not st.session_state.logado:
             st.rerun()
 else:
     with st.sidebar:
-        st.markdown("""
-        <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                    border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
+        st.markdown("""<div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 20px; margin-bottom: 20px;'>
             <div style='text-align: center; color: white;'>
-                <h2 style='margin: 0; font-size: 22px;'>🕊️ GUIA ESPÍRITA</h2>
-                <p style='margin: 5px 0 0 0; font-size: 13px;'>Encontre centros próximos</p>
+                <h2 style='margin: 0;'>🕊️ GUIA ESPÍRITA</h2>
+                <p style='margin: 5px 0 0 0;'>Encontre centros próximos</p>
             </div>
-        </div>
-        """, unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
         
         opcao = st.radio("Navegação:", 
                          ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases", "🚪 Sair"], 
-                         label_visibility="collapsed")
+                         label_visibility="collapsed",
+                         help="👆 Navegação principal do sistema")
 
     if opcao == "🚪 Sair":
         st.session_state.logado = False
@@ -123,49 +122,43 @@ else:
 
         with col2:
             with st.popover("☰", help="Menu rápido"):
-                st.markdown("### 🔎 Navegação Rápida")
-
                 if st.button("🔎 Pesquisar Geral", use_container_width=True):
                     st.session_state.opcao = "🔎 Pesquisar Geral"
                     st.rerun()
-
                 if st.button("📍 Por Cidade", use_container_width=True):
                     st.session_state.opcao = "📍 Por Cidade"
                     st.rerun()
-
                 if st.button("📊 Admin", use_container_width=True):
                     st.session_state.opcao = "📊 Admin"
                     st.rerun()
-
                 if st.button("🕊️ Frases", use_container_width=True):
                     st.session_state.opcao = "🕊️ Frases"
                     st.rerun()
 
-        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
+        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", 
+                             placeholder="Ex: Centro, João, São Paulo...",
+                             help="Busca em nome, cidade e responsável")
 
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
-
             def normalizar(t):
                 if pd.isna(t): return ""
                 t = str(t).lower()
                 return (t.replace('ç','c').replace('ã','a').replace('õ','o')
                         .replace('á','a').replace('é','e')
                         .replace('í','i').replace('ó','o').replace('ú','u'))
-
             def checar_linha(row):
                 texto_linha = normalizar(" ".join(row.astype(str)))
                 return all(normalizar(p) in texto_linha for p in palavras_busca)
 
             mask = df.apply(checar_linha, axis=1)
             res = df[mask]
-
+            
             if len(res) > 0:
                 st.success(f"✅ Encontrados {len(res)} centro(s)")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
             else:
                 st.warning("❌ Nenhum resultado encontrado.")
-
         elif termo:
             st.warning("⚠️ Digite pelo menos 4 letras!")
