@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
+import unicodedata
 
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
@@ -19,27 +20,25 @@ st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
-.titulo-profissional {
-    font-size: 20px; 
-    font-weight: 600;
-    margin: 0;
+.titulo-grande {
+    font-size: 32px; 
+    font-weight: 800;
+    margin-bottom: 8px;
 }
 
-.titulo-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    margin-bottom: 10px;
+.subtitulo-normal {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 15px;
 }
 
 .card-centro { 
     background: white;
-    padding: 20px;
-    border-radius: 15px; 
-    margin-bottom: 20px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1); 
-    border-left: 8px solid #0047AB;
+    padding: 25px;
+    border-radius: 20px; 
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    border-left: 12px solid #0047AB;
     position: relative;
 }
 
@@ -49,28 +48,34 @@ st.markdown("""
     right: 15px;
     background: #f0f4f8;
     color: #7f8c8d;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 20px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
 }
 
-.nome-centro { color: #1E3A8A; font-size: 20px; font-weight: 700; }
-.nome-fantasia { color: #3B82F6; font-size: 14px; font-style: italic; }
-.palestras-verde { color:#065F46; font-weight:700; background:#D1FAE5; padding:6px; border-radius:6px; margin:8px 0; border:1px solid #10B981; }
-.info-linha { margin:4px 0; font-size:14px; }
-.btn-row { display:flex; gap:6px; margin-top:8px; }
-.btn-link { text-decoration:none; color:white; padding:6px 10px; border-radius:6px; font-weight:600; text-align:center; font-size:12px; flex:1; }
+.nome-centro { color: #1E3A8A; font-size: 22px; font-weight: 800; }
+.nome-fantasia { color: #3B82F6; font-size: 16px; font-style: italic; }
+.palestras-verde { color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0; border:1px solid #10B981; }
+.info-linha { margin:5px 0; font-size:15px; }
+.btn-row { display:flex; gap:8px; margin-top:10px; }
+.btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================
-# FUNÇÃO CARD
+# FUNÇÕES
 # =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
+
+def normalize_text(text):
+    """Remove acentos e converte para minúscula"""
+    if pd.isna(text):
+        return ""
+    return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
 
 def renderizar_card(row, index):
     nome = ajustar(row.get('NOME', 'Centro Espírita'))
@@ -82,11 +87,11 @@ def renderizar_card(row, index):
 
     numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
 
-    # Link Google Maps
+    # Google Maps
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
-    # Link WhatsApp original: apenas abre conversa
+    # WhatsApp
     link_wa = f"https://wa.me/+55{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
@@ -109,14 +114,13 @@ def renderizar_card(row, index):
 # LOGIN
 # =========================
 if not st.session_state["logado"]:
-    st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+    st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
     with st.form("login"):
         st.text_input("E-mail")
         st.text_input("Senha", type="password")
         if st.form_submit_button("Entrar", use_container_width=True):
             st.session_state["logado"] = True
             st.rerun()
-
 else:
     @st.cache_data
     def carregar_dados():
@@ -131,20 +135,22 @@ else:
     # MENU PRINCIPAL
     # =========================
     if pagina is None:
-        st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+        st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+        st.markdown("<div class='subtitulo-normal'>Localizar por Cidade</div>", unsafe_allow_html=True)
+
         col1, col2 = st.columns(2)
         with col1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
                 st.session_state["pagina"] = "pesquisar"
                 st.rerun()
-            if st.button("📍 Localizar por Cidade", use_container_width=True):
+            if st.button("📍 Por Cidade", use_container_width=True):
                 st.session_state["pagina"] = "cidade"
                 st.rerun()
         with col2:
-            if st.button("📊 Painel Administrativo", use_container_width=True):
+            if st.button("📊 Admin", use_container_width=True):
                 st.session_state["pagina"] = "admin"
                 st.rerun()
-            if st.button("🕊️ Mensagens Espíritas", use_container_width=True):
+            if st.button("🕊️ Frases", use_container_width=True):
                 st.session_state["pagina"] = "frases"
                 st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
@@ -157,17 +163,17 @@ else:
     # =========================
     else:
 
-        # Cabeçalho compacto: título + botão voltar na mesma linha
+        # Cabeçalho com botão voltar
         titulos = {
             "pesquisar": "🔎 Busca Avançada",
-            "cidade": "📍 Localizar por Cidade",
-            "admin": "📊 Painel Administrativo",
-            "frases": "🕊️ Mensagens Espíritas"
+            "cidade": "📍 Por Cidade",
+            "admin": "📊 Admin",
+            "frases": "🕊️ Frases"
         }
 
         col1, col2 = st.columns([9,1])
         with col1:
-            st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='subtitulo-normal'>{titulos[pagina]}</div>", unsafe_allow_html=True)
         with col2:
             if st.button("⬅️"):
                 st.session_state["pagina"] = None
@@ -179,12 +185,12 @@ else:
         if pagina == "pesquisar":
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
-                termo = termo.strip().lower()
-                resultado = df[df.apply(lambda row: termo in " ".join(row.astype(str)).lower(), axis=1)]
+                termo_normal = normalize_text(termo.strip())
+                resultado = df[df.apply(lambda row: termo_normal in normalize_text(" ".join(row.astype(str))), axis=1)]
                 if not resultado.empty:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(resultado.iterrows(), 1):
-                        renderizar_card(row, i)
+                    for i, (_, row) in enumerate(resultado.iterrows(),1):
+                        renderizar_card(row,i)
                 else:
                     st.warning("Nenhum resultado encontrado.")
             elif termo:
