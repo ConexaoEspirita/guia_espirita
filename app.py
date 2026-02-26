@@ -14,50 +14,42 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS COMPLETO - BOTÃO ESQUERDO VERMELHO
+# BOTÃO FIXO - SEMPRE VISÍVEL
+# =========================
+if st.button("🏠 Voltar ao Menu Principal", key="botao_voltar", use_container_width=True):
+    st.session_state["pagina"] = None
+    st.rerun()
+
+# =========================
+# CSS COMPLETO - CONTORNO NA PESQUISA + CARDS
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
-/* BOTÃO FLUTUANTE - LADO ESQUERDO */
-.botao-fluatante {
-    position: fixed !important;
-    top: 15px !important;
-    left: 15px !important;
-    z-index: 1001 !important;
-    width: 52px !important;
-    height: 52px !important;
-    background: #FF6B6B !important;
-    color: white !important;
-    border: 2px solid white !important;
-    border-radius: 50% !important;
-    box-shadow: 0 4px 15px rgba(255,107,107,0.6) !important;
-    cursor: pointer !important;
-    font-size: 22px !important;
-    font-weight: bold !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+
+/* CONTORNO NO CAMPO DE PESQUISA */
+div.stTextInput > div > div > input {
+    border: 3px solid #4285F4 !important;
+    border-radius: 15px !important;
+    padding: 12px 15px !important;
+    box-shadow: 0 4px 12px rgba(66,133,244,0.2) !important;
+    background-color: white !important;
+    font-size: 16px !important;
 }
-.botao-fluatante:hover {
-    background: #FF5252 !important;
-    transform: scale(1.1) !important;
-    box-shadow: 0 6px 20px rgba(255,107,107,0.8) !important;
-}
-@media (max-width: 768px) {
-    .botao-fluatante { 
-        width: 48px !important; 
-        height: 48px !important; 
-        font-size: 20px !important;
-        left: 12px !important;
-        top: 12px !important;
-    }
+div.stTextInput > div > div > input:focus {
+    border-color: #1E40AF !important;
+    box-shadow: 0 0 0 3px rgba(66,133,244,0.3) !important;
 }
 
-/* CSS ORIGINAL DOS CARDS */
-.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+/* SELECTBOX TAMBÉM */
+div.stSelectbox > div > div > select {
+    border: 3px solid #10B981 !important;
+    border-radius: 15px !important;
+    padding: 12px 15px !important;
+    box-shadow: 0 4px 12px rgba(16,185,129,0.2) !important;
+}
 
 .card-centro { 
     background: white;
@@ -90,15 +82,6 @@ st.markdown("""
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
 </style>
-""", unsafe_allow_html=True)
-
-# =========================
-# BOTÃO FLUTUANTE - LADO ESQUERDO
-# =========================
-st.markdown("""
-<button class="botao-fluatante" onclick="window.location.href='?'">
-    🏠
-</button>
 """, unsafe_allow_html=True)
 
 # =========================
