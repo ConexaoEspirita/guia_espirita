@@ -14,61 +14,73 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS NUCLEAR - ESMAGA STREAMLIT
+# CSS COMPLETO - BOTÃO ESQUERDO VERMELHO
 # =========================
 st.markdown("""
 <style>
-/* HACK DEFINITIVO - DESATIVA HEADER DO STREAMLIT */
-#MainMenu {visibility: hidden;}
-header {visibility: hidden;}
-footer {visibility: hidden;}
-.st-emotion-cache-1r6h1kh {display: none !important;}
-.st-emotion-cache-1e90bb7 {display: none !important;}
+.stApp { background: #f4f7f9; }
 
-/* BOTÃO FLUTUANTE INVENCÍVEL */
+/* BOTÃO FLUTUANTE - LADO ESQUERDO */
 .botao-fluatante {
-    all: initial !important;
     position: fixed !important;
-    top: 12px !important;
-    right: 12px !important;
-    z-index: 2147483647 !important; /* MÁXIMO POSSÍVEL */
-    width: 56px !important;
-    height: 56px !important;
-    background: #25D366 !important;
+    top: 15px !important;
+    left: 15px !important;
+    z-index: 1001 !important;
+    width: 52px !important;
+    height: 52px !important;
+    background: #FF6B6B !important;
     color: white !important;
-    border: 3px solid white !important;
+    border: 2px solid white !important;
     border-radius: 50% !important;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.5) !important;
+    box-shadow: 0 4px 15px rgba(255,107,107,0.6) !important;
     cursor: pointer !important;
-    font-size: 26px !important;
+    font-size: 22px !important;
     font-weight: bold !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.8) !important;
-    line-height: 1 !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
 }
 .botao-fluatante:hover {
-    background: #128C7E !important;
-    transform: scale(1.15) !important;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.7) !important;
+    background: #FF5252 !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 20px rgba(255,107,107,0.8) !important;
+}
+@media (max-width: 768px) {
+    .botao-fluatante { 
+        width: 48px !important; 
+        height: 48px !important; 
+        font-size: 20px !important;
+        left: 12px !important;
+        top: 12px !important;
+    }
 }
 
-/* RESTO DO CSS */
-.stApp { background: #f4f7f9; }
+/* CSS ORIGINAL DOS CARDS */
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+
 .card-centro { 
-    background: white; padding: 25px; border-radius: 20px; 
-    margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-    border-left: 12px solid #0060D0; position: relative;
+    background: white;
+    padding: 25px;
+    border-radius: 20px; 
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    border-left: 12px solid #0060D0;  
+    position: relative;
 }
+
 .numero-badge { 
-    position: absolute; top: 12px; right: 15px; background: #f0f4f8;
-    color: #7f8c8d; padding: 3px 10px; border-radius: 20px;
-    font-size: 13px; font-weight: 700;
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    background: #f0f4f8;
+    color: #7f8c8d;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
 }
+
 .nome-centro { color: #1E3A8A; font-size: 22px; font-weight: 800; }
 .nome-fantasia { color: #3B82F6; font-size: 16px; font-style: italic; }
 .palestras-verde { color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0; border:1px solid #10B981; }
@@ -81,18 +93,16 @@ footer {visibility: hidden;}
 """, unsafe_allow_html=True)
 
 # =========================
-# BOTÃO INVENCÍVEL - PRIMEIRA TENTATIVA
+# BOTÃO FLUTUANTE - LADO ESQUERDO
 # =========================
 st.markdown("""
-<div style='position:fixed;top:12px;right:12px;z-index:2147483647'>
-<button class="botao-fluatante" onclick="if(confirm('🏠 Voltar ao menu?')){window.location.href='?'}">
-🏠
+<button class="botao-fluatante" onclick="window.location.href='?'">
+    🏠
 </button>
-</div>
 """, unsafe_allow_html=True)
 
 # =========================
-# FUNÇÕES (igual)
+# FUNÇÕES
 # =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
@@ -133,7 +143,7 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN E RESTO (igual)
+# LOGIN
 # =========================
 if not st.session_state.get("logado", False):
     st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
@@ -153,6 +163,9 @@ else:
     df = carregar_dados()
     pagina = st.session_state.get("pagina")
 
+    # =========================
+    # MENU PRINCIPAL
+    # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -175,7 +188,11 @@ else:
             st.cache_data.clear()
             st.rerun()
 
+    # =========================
+    # PÁGINAS INTERNAS
+    # =========================
     else:
+        # BUSCA AVANÇADA
         if pagina == "pesquisar":
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
@@ -194,6 +211,7 @@ else:
             elif termo:
                 st.warning("Digite pelo menos 3 letras.")
 
+        # POR CIDADE
         elif pagina == "cidade":
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
@@ -209,10 +227,12 @@ else:
                         st.session_state.pagina = None
                         st.rerun()
 
+        # ADMIN
         elif pagina == "admin":
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
+        # FRASES
         elif pagina == "frases":
             st.markdown("""
             > Fora da caridade não há salvação. — Allan Kardec  
