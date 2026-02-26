@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS ---
+# --- CSS PREMIUM (CARDS ORIGINAIS mantidos) ---
 st.markdown("""
 <style>
     /* Remove seta/voltar superior */
@@ -15,8 +15,53 @@ st.markdown("""
     section[data-testid="stSidebar"] > div { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     
-    .stApp { background: #f4f7f9; }
-
+    /* FUNDO AZUL PREMIUM */
+    .stApp { 
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #1e40af 100%) !important;
+        background-attachment: fixed !important;
+    }
+    
+    /* Títulos brancos premium */
+    .main h1 {
+        color: #ffffff !important;
+        text-shadow: 0 4px 15px rgba(255,255,255,0.3) !important;
+        font-weight: 900 !important;
+    }
+    
+    /* Botões PREMIUM */
+    .stButton > button {
+        background: linear-gradient(45deg, #3b82f6, #1d4ed8, #1e40af) !important;
+        border: none !important;
+        border-radius: 15px !important;
+        color: white !important;
+        font-weight: 800 !important;
+        box-shadow: 0 8px 25px rgba(59,130,246,0.4) !important;
+        transition: all 0.3s ease !important;
+        height: 55px !important;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 12px 35px rgba(59,130,246,0.6) !important;
+        background: linear-gradient(45deg, #1d4ed8, #1e40af, #3b82f6) !important;
+    }
+    
+    /* Inputs premium */
+    .stTextInput > div > div > input {
+        border-radius: 12px !important;
+        border: 2px solid rgba(59,130,246,0.3) !important;
+        background: rgba(255,255,255,0.9) !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Selectbox premium */
+    .stSelectbox > div > div > select {
+        border-radius: 12px !important;
+        border: 2px solid rgba(59,130,246,0.3) !important;
+        background: rgba(255,255,255,0.9) !important;
+    }
+    
+    /* CARDS ORIGINAIS (SEM MUDANÇAS) */
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -81,26 +126,68 @@ def renderizar_card(row, index):
 if "menu_aberto" not in st.session_state:
     st.session_state.menu_aberto = False
 
-# --- LOGIN ---
+# --- TELA INICIAL COM LOGIN + CADASTRO ---
 if "logado" not in st.session_state: 
     st.session_state.logado = False
 
 if not st.session_state.logado:
-    st.title("🕊️ Guia Espírita")
-    with st.form("login_guia"):
-        u = st.text_input("E-mail")
-        p = st.text_input("Senha", type="password")
-        if st.form_submit_button("ACESSAR"):
-            st.session_state.logado = True
-            st.rerun()
+    # TELA LOGIN + CADASTRO
+    st.markdown("""
+    <div style='text-align: center; padding: 60px 40px;'>
+        <h1 style='color: white; font-size: 4rem; text-shadow: 0 6px 20px rgba(0,0,0,0.5); margin-bottom: 10px;'>🕊️ Guia Espírita</h1>
+        <p style='color: rgba(255,255,255,0.9); font-size: 1.5rem;'>Sistema Premium de Centros Espíritas</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # ABAS LOGIN / CADASTRO
+    tab1, tab2 = st.tabs(["👤 Login", "✨ Cadastro"])
+    
+    with tab1:
+        with st.form("login_guia"):
+            col1, col2 = st.columns([1,1])
+            with col1:
+                nome = st.text_input("👤 Nome")
+            with col2:
+                email = st.text_input("📧 E-mail")
+            senha = st.text_input("🔒 Senha", type="password")
+            if st.form_submit_button("🚀 ACESSAR", use_container_width=True):
+                # Simula login (substitua pela sua lógica)
+                st.session_state.logado = True
+                st.session_state.nome_usuario = nome
+                st.rerun()
+    
+    with tab2:
+        with st.form("cadastro"):
+            col1, col2 = st.columns([1,1])
+            with col1:
+                nome_cad = st.text_input("👤 Nome Completo")
+            with col2:
+                email_cad = st.text_input("📧 E-mail")
+            senha_cad = st.text_input("🔒 Senha", type="password")
+            conf_senha = st.text_input("🔒 Confirmar Senha", type="password")
+            
+            if st.form_submit_button("✨ CADASTRAR", use_container_width=True):
+                if senha_cad == conf_senha:
+                    st.success("✅ Cadastro realizado com sucesso!")
+                    st.info("Agora faça login com suas credenciais")
+                else:
+                    st.error("❌ Senhas não coincidem!")
 else:
     # Carregar dados
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    st.title("🕊️ Bem-vindo ao Guia Espírita")
+    # SAUDAÇÃO COM NOME
+    st.markdown(f"""
+    <div style='text-align: center; padding: 20px; background: rgba(255,255,255,0.1); 
+                border-radius: 20px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
+        <h2 style='color: white; margin: 0;'>👋 Bem-vindo, {st.session_state.get("nome_usuario", "Usuário")}</h2>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # BOTÃO EXPANDIR/CONTRAIR MENU
+    st.title("🕊️ Guia Espírita Premium")
+
+    # BOTÃO EXPANDIR/CONTRAIR MENU PREMIUM
     if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
         st.session_state.menu_aberto = not st.session_state.menu_aberto
         st.rerun()
@@ -140,7 +227,7 @@ else:
         
         st.markdown("---")
 
-    # CONTEÚDO DAS PÁGINAS ABAIXO DO MENU
+    # CONTEÚDO DAS PÁGINAS
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
@@ -185,11 +272,11 @@ else:
                 renderizar_card(row, i)
     
     elif pagina == "admin":
-        st.markdown("### 📊 Admin")
+        st.markdown("### 📊 Admin Premium")
         col1, col2 = st.columns(2)
         col1.metric("🏠 Total Centros", len(df))
         col2.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
     
     elif pagina == "frases":
-        st.markdown("### 🕊️ Frases Espíritas")
-        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
+        st.markdown("### 🕊️ Frases Espíritas Premium")
+        st.markdown("> **✨ Fora da caridade não há salvação. ✨** — Allan Kardec")
