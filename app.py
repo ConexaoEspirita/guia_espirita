@@ -28,7 +28,7 @@ def criar_arquivo_usuarios():
 criar_arquivo_usuarios()
 
 # =========================
-# CSS ORIGINAL (SEU)
+# CSS ORIGINAL
 # =========================
 st.markdown("""
 <style>
@@ -56,7 +56,7 @@ section[data-testid="stSidebar"] > div { display: none !important; }
 """, unsafe_allow_html=True)
 
 # =========================
-# FUNÇÕES DOS CARDS (SEU ORIGINAL)
+# FUNÇÕES DOS CARDS
 # =========================
 def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
@@ -97,7 +97,7 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN / CADASTRO
+# SESSION STATE
 # =========================
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -105,12 +105,17 @@ if "admin" not in st.session_state:
     st.session_state.admin = False
 if "pagina" not in st.session_state:
     st.session_state.pagina = None
+if "menu_aberto" not in st.session_state:
+    st.session_state.menu_aberto = False
 
+# =========================
+# LOGIN / CADASTRO / RESET
+# =========================
 if not st.session_state.logado:
 
     st.title("🕊️ Guia Espírita")
 
-    aba = st.radio("Escolha:", ["Login", "Cadastrar"])
+    aba = st.radio("Escolha:", ["Login", "Cadastrar", "Esqueci a senha"], horizontal=True)
 
     if aba == "Cadastrar":
         with st.form("cadastro_form"):
@@ -129,12 +134,12 @@ if not st.session_state.logado:
                 else:
                     df_users = pd.read_csv("usuarios.csv")
 
-                    if email in df_users["email"].values:
+                    if email.strip().lower() in df_users["email"].str.lower().values:
                         st.warning("Email já cadastrado.")
                     else:
                         nova_linha = pd.DataFrame([{
                             "nome": nome.strip(),
-                            "email": email.strip(),
+                            "email": email.strip().lower(),
                             "senha": hash_senha(senha),
                             "data_cadastro": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                         }])
@@ -142,21 +147,22 @@ if not st.session_state.logado:
                         df_users.to_csv("usuarios.csv", index=False)
                         st.success("Cadastro realizado com sucesso!")
 
-    else:
+    elif aba == "Login":
         with st.form("login_form"):
             email = st.text_input("Email")
             senha = st.text_input("Senha", type="password")
 
             if st.form_submit_button("Entrar"):
 
-                if email == ADMIN_EMAIL and hash_senha(senha) == ADMIN_SENHA:
+                if email.strip().lower() == ADMIN_EMAIL.lower() and hash_senha(senha) == ADMIN_SENHA:
                     st.session_state.logado = True
                     st.session_state.admin = True
                     st.rerun()
 
                 df_users = pd.read_csv("usuarios.csv")
+
                 usuario = df_users[
-                    (df_users["email"] == email) &
+                    (df_users["email"].str.lower() == email.strip().lower()) &
                     (df_users["senha"] == hash_senha(senha))
                 ]
 
@@ -167,24 +173,32 @@ if not st.session_state.logado:
                 else:
                     st.error("Email ou senha incorretos.")
 
-        st.markdown("---")
-        st.markdown("### 🔑 Esqueci minha senha")
+    elif aba == "Esqueci a senha":
 
-        with st.form("reset_senha_form"):
-            email_reset = st.text_input("Digite seu email")
-            nova_senha = st.text_input("Nova senha", type="password")
+        df_users = pd.read_csv("usuarios.csv")
 
-            if st.form_submit_button("Redefinir senha"):
-                df_users = pd.read_csv("usuarios.csv")
-                if email_reset in df_users["email"].values:
-                    df_users.loc[df_users["email"] == email_reset, "senha"] = hash_senha(nova_senha)
-                    df_users.to_csv("usuarios.csv", index=False)
-                    st.success("Senha redefinida com sucesso!")
-                else:
-                    st.error("Email não encontrado.")
+        if df_users.empty:
+            st.warning("Nenhum usuário cadastrado ainda.")
+        else:
+            with st.form("reset_form"):
+                email_reset = st.text_input("Digite seu email cadastrado")
+                nova_senha = st.text_input("Nova senha", type="password")
+
+                if st.form_submit_button("Redefinir senha"):
+
+                    if email_reset.strip().lower() not in df_users["email"].str.lower().values:
+                        st.error("Email não encontrado.")
+                    else:
+                        df_users.loc[
+                            df_users["email"].str.lower() == email_reset.strip().lower(),
+                            "senha"
+                        ] = hash_senha(nova_senha)
+
+                        df_users.to_csv("usuarios.csv", index=False)
+                        st.success("Senha redefinida com sucesso!")
 
 # =========================
-# SISTEMA ORIGINAL COM MENU
+# SISTEMA PRINCIPAL
 # =========================
 else:
 
@@ -193,12 +207,11 @@ else:
 
     st.title("🕊️ Bem-vindo ao Guia Espírita")
 
-    # MENU
-    if st.button("📋 Abrir Menu", use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.get("menu_aberto", False)
+    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
+        st.session_state.menu_aberto = not st.session_state.menu_aberto
         st.rerun()
 
-    if st.session_state.get("menu_aberto", False):
+    if st.session_state.menu_aberto:
 
         if st.button("🔎 Pesquisar Geral"):
             st.session_state.pagina = "pesquisar"
@@ -220,30 +233,25 @@ else:
 
     pagina = st.session_state.get("pagina")
 
-    # =========================
-    # FRASES
-    # =========================
     if pagina == "frases":
         st.markdown("### 🕊️ Frases Espíritas")
         st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
 
-    # =========================
-    # ADMIN
-    # =========================
     elif pagina == "admin" and st.session_state.admin:
 
         st.markdown("## 📊 Painel Administrativo")
 
         df_users = pd.read_csv("usuarios.csv")
 
-        st.metric("👥 Total de Participantes", len(df_users))
+        total_unicos = df_users["email"].nunique()
+        st.metric("👥 Total de Participantes", total_unicos)
 
         if not df_users.empty:
             df_users["data_convertida"] = pd.to_datetime(
                 df_users["data_cadastro"], format="%d/%m/%Y %H:%M:%S"
             )
             df_users["dia"] = df_users["data_convertida"].dt.date
-            crescimento = df_users.groupby("dia").size()
+            crescimento = df_users.groupby("dia")["email"].nunique()
             st.line_chart(crescimento)
 
         st.markdown("---")
