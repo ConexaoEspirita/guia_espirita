@@ -5,131 +5,127 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS ---
+# ==============================
+# CSS PROFISSIONAL
+# ==============================
 st.markdown("""
 <style>
-    .stApp { background: #f4f7f9; }
+.stApp { background: #f4f7f9; }
 
-    .card-centro { 
-        background: white !important; padding: 25px; border-radius: 20px; 
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-        margin-bottom: 25px; border-left: 12px solid #0047AB; position: relative;
-    }
+.titulo-profissional {
+    color:#1E3A8A;
+    font-weight:700;
+    font-size:26px;
+    margin-top:10px;
+}
 
-    .numero-badge { 
-        position: absolute; top: 15px; right: 20px; 
-        background: #f0f4f8; color: #7f8c8d; 
-        padding: 2px 10px; border-radius: 20px; 
-        font-size: 12px; font-weight: 800; 
-    }
+.card-centro { 
+    background: white !important;
+    padding: 25px;
+    border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    margin-bottom: 25px;
+    border-left: 12px solid #0047AB;
+    position: relative;
+}
 
-    .nome-centro { 
-        color: #1E3A8A !important; 
-        font-size: 22px !important; 
-        font-weight: 800; display: block; 
-    }
+.numero-badge { 
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: #f0f4f8;
+    color: #7f8c8d;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 800;
+}
 
-    .nome-fantasia { 
-        color: #3B82F6 !important; 
-        font-size: 16px !important; 
-        font-style: italic; font-weight: 500; 
-        margin-top: 2px; display: block; 
-    }
+.nome-centro {
+    color: #1E3A8A;
+    font-size: 20px;
+    font-weight: 800;
+}
 
-    .palestras-verde { 
-        color: #065F46 !important; 
-        font-weight: 700; 
-        background: #D1FAE5; 
-        padding: 10px; border-radius: 10px; 
-        margin: 12px 0; border: 1px solid #10B981; 
-    }
+.palestras-verde {
+    color: #065F46;
+    font-weight: 700;
+    background: #D1FAE5;
+    padding: 10px;
+    border-radius: 10px;
+    margin: 12px 0;
+    border: 1px solid #10B981;
+}
 
-    .info-linha { margin: 8px 0; font-size: 15px; color: #333 !important; }
+.btn-row { display:flex; gap:10px; margin-top:15px; }
 
-    .label-bold { 
-        font-weight: 800; 
-        color: #0047AB; 
-        text-transform: uppercase; 
-        font-size: 13px; 
-    }
+.btn-link {
+    text-decoration:none;
+    color:white;
+    padding:12px;
+    border-radius:10px;
+    font-weight:700;
+    text-align:center;
+    flex:1;
+}
 
-    .btn-row { display: flex; gap: 12px; margin-top: 20px; }
-
-    .btn-link { 
-        text-decoration: none !important; 
-        color: white !important; 
-        padding: 14px; border-radius: 12px; 
-        font-weight: 800; text-align: center; 
-        flex: 1; display: inline-block; 
-    }
-
-    .bg-wa { background-color: #25D366; }
-    .bg-maps { background-color: #4285F4; }
+.bg-wa { background:#25D366; }
+.bg-maps { background:#4285F4; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- FUNÇÕES ---
+# ==============================
+# FUNÇÕES
+# ==============================
 def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
-
 def renderizar_card(row, index):
     nome = ajustar_texto(row.get('NOME', 'Centro Espírita'))
-    fantasia = ajustar_texto(row.get('NOME FANTASIA', ''))
     end = ajustar_texto(row.get('ENDERECO', ''))
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
-    resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
 
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     link_wa = f"https://wa.me/+55{whats_num}" if len(whats_num) >= 10 else "#"
 
-    nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
-    if nome_google:
-        query_maps = urllib.parse.quote(nome_google)
-    else:
-        endereco_limpo = re.sub(r'[,\\s]+', ', ', end)[:100]
-        query_maps = urllib.parse.quote(f"{endereco_limpo}, {cid}")
-
+    query_maps = urllib.parse.quote(f"{end}, {cid}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query_maps}"
 
     st.markdown(f"""
     <div class="card-centro">
         <div class="numero-badge">#{index}</div>
-        <div style="border-bottom: 2px solid #f0f2f6; padding-bottom: 12px; margin-bottom: 15px;">
-            <span class="nome-centro">{nome} 🕊️</span>
-            {f'<span class="nome-fantasia">{fantasia}</span>' if fantasia else ''}
-        </div>
+        <div class="nome-centro">{nome} 🕊️</div>
         <div class="palestras-verde">🗣️ PALESTRAS: {palestras}</div>
-        <div class="info-linha"><span class="label-bold">🏙️ Cidade:</span> {cid}</div>
-        <div class="info-linha"><span class="label-bold">📍 Endereço:</span> {end}</div>
-        <div class="info-linha"><span class="label-bold">👤 Responsável:</span> {resp}</div>
+        <div>🏙️ {cid}</div>
+        <div>📍 {end}</div>
         <div class="btn-row">
-            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 VER MAPA</a>
-            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WHATSAPP</a>
+            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Ver Mapa</a>
+            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WhatsApp</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-
-# --- SESSION STATE ---
+# ==============================
+# SESSION STATE
+# ==============================
 if "pagina" not in st.session_state:
     st.session_state.pagina = None
 
 if "logado" not in st.session_state:
     st.session_state.logado = False
 
-
-# --- LOGIN ---
+# ==============================
+# LOGIN
+# ==============================
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
 
-    with st.form("login_guia"):
-        st.text_input("👤 E-mail")
-        st.text_input("🔒 Senha", type="password")
+    with st.form("login"):
+        st.text_input("E-mail")
+        st.text_input("Senha", type="password")
 
-        if st.form_submit_button("🚀 ACESSAR", use_container_width=True):
+        if st.form_submit_button("Entrar", use_container_width=True):
             st.session_state.logado = True
             st.rerun()
 
@@ -145,30 +141,31 @@ else:
 
     pagina = st.session_state.pagina
 
-    # ========================================
-    # MENU PRINCIPAL (TELA LIMPA)
-    # ========================================
+    # ==============================
+    # MENU PRINCIPAL LIMPO
+    # ==============================
     if pagina is None:
 
-        st.title("🕊️ Guia Espírita")
+        st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+        st.write("")
 
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("🔎 Pesquisar Geral", use_container_width=True):
+            if st.button("🔎 Busca Avançada", use_container_width=True):
                 st.session_state.pagina = "pesquisar"
                 st.rerun()
 
-            if st.button("📍 Por Cidade", use_container_width=True):
+            if st.button("📍 Localizar por Cidade", use_container_width=True):
                 st.session_state.pagina = "cidade"
                 st.rerun()
 
         with col2:
-            if st.button("📊 Admin", use_container_width=True):
+            if st.button("📊 Painel Administrativo", use_container_width=True):
                 st.session_state.pagina = "admin"
                 st.rerun()
 
-            if st.button("🕊️ Frases", use_container_width=True):
+            if st.button("🕊️ Mensagens Espíritas", use_container_width=True):
                 st.session_state.pagina = "frases"
                 st.rerun()
 
@@ -177,9 +174,9 @@ else:
             st.cache_data.clear()
             st.rerun()
 
-    # ========================================
+    # ==============================
     # PÁGINAS INTERNAS
-    # ========================================
+    # ==============================
     else:
 
         col1, col2 = st.columns([1, 10])
@@ -191,23 +188,28 @@ else:
 
         with col2:
             titulos = {
-                "pesquisar": "🔎 Pesquisar Geral",
-                "cidade": "📍 Por Cidade",
-                "admin": "📊 Admin",
-                "frases": "🕊️ Frases"
+                "pesquisar": "🔎 Busca Avançada",
+                "cidade": "📍 Localizar por Cidade",
+                "admin": "📊 Painel Administrativo",
+                "frases": "🕊️ Mensagens Espíritas"
             }
-            st.title(titulos.get(pagina, ""))
 
-        # --- PESQUISAR ---
+            st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
+            st.write("")
+
+        # ------------------
+        # BUSCA
+        # ------------------
         if pagina == "pesquisar":
 
             termo = st.text_input("Digite pelo menos 3 letras:")
 
             if termo and len(termo) >= 3:
+
                 palavras = termo.lower().split()
 
                 def normalizar(t):
-                    return "" if pd.isna(t) else " ".join(str(t).lower().split())
+                    return "" if pd.isna(t) else str(t).lower()
 
                 def checar(row):
                     texto = " ".join([normalizar(row[col]) for col in df.columns])
@@ -216,39 +218,49 @@ else:
                 res = df[df.apply(checar, axis=1)]
 
                 if len(res) > 0:
-                    st.success(f"✅ Encontrados {len(res)} centro(s)")
+                    st.success(f"{len(res)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(res.iterrows(), 1):
                         renderizar_card(row, i)
                 else:
-                    st.warning("❌ Nenhum resultado encontrado.")
+                    st.warning("Nenhum resultado encontrado.")
 
-            elif termo:
-                st.warning("⚠️ Mínimo 3 letras!")
-
-        # --- CIDADE ---
+        # ------------------
+        # CIDADE (AGORA ABRE LIMPA)
+        # ------------------
         elif pagina == "cidade":
 
-            cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
-            sel = st.selectbox("🌆 Selecione:", sorted(cidades))
+            cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
 
-            if sel:
+            sel = st.selectbox(
+                "Selecione uma cidade:",
+                ["-- Selecione --"] + list(cidades)
+            )
+
+            if sel != "-- Selecione --":
+
                 res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-                st.success(f"✅ Encontrados {len(res)} centro(s)")
+
+                st.success(f"{len(res)} centro(s) encontrado(s) em {sel}")
+
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
 
-        # --- ADMIN ---
+        # ------------------
+        # ADMIN
+        # ------------------
         elif pagina == "admin":
 
             col1, col2 = st.columns(2)
-            col1.metric("🏠 Total Centros", len(df))
-            col2.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
+            col1.metric("Total de Centros", len(df))
+            col2.metric("Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
 
-        # --- FRASES ---
+        # ------------------
+        # FRASES
+        # ------------------
         elif pagina == "frases":
 
             st.markdown("""
-            > **Fora da caridade não há salvação.** — Allan Kardec  
-            > **Amai-vos uns aos outros.** — Jesus  
-            > **Ninguém é perfeito, mas todos podem melhorar.** — Emmanuel  
+            > Fora da caridade não há salvação. — Allan Kardec  
+            > Amai-vos uns aos outros. — Jesus  
+            > Ninguém é perfeito, mas todos podem melhorar. — Emmanuel  
             """)
