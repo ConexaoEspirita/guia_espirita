@@ -115,16 +115,10 @@ else:
     if opcao == "🏠 Início":
         st.title("🕊️ Bem-vindo ao Guia")
         
-        # BOTÃO SETA NO MEIO DA PÁGINA - FÁCIL DE CLICAR
+        # Texto simples NO MEIO - SEM ESPAÇO
         col1, col2, col3 = st.columns([1, 1, 1])
-        with col2:  # COLUNA DO MEIO
-            if st.button("➤ MENU LATERAL", use_container_width=True):
-                st.sidebar.success("✅ Menu aberto! Use as opções ao lado.")
-                st.balloons()
-        
-        st.markdown("---")
-        st.info("**Utilize o menu lateral para iniciar sua busca**")
-        st.markdown("---")
+        with col2:
+            st.markdown("**👈 Use o menu lateral ao lado**")
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
