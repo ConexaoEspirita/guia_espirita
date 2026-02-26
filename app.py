@@ -91,7 +91,7 @@ def renderizar_card(row, index):
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
-    # WhatsApp
+    # WhatsApp (abre conversa normalmente)
     link_wa = f"https://wa.me/+55{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
@@ -105,7 +105,7 @@ def renderizar_card(row, index):
         <div class="info-linha">👤 <b>Responsável:</b> {responsavel}</div>
         <div class="btn-row">
             <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Maps</a>
-            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">W</a>
+            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">WhatsApp</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -162,7 +162,6 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-
         # Cabeçalho com botão voltar
         titulos = {
             "pesquisar": "🔎 Busca Avançada",
