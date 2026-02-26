@@ -5,12 +5,50 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- SEU DESIGN PREMIUM MANTIDO ---
+# --- DESIGN PREMIUM MELHORADO COM SOMBRA PODEROSA ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 20px; }
     div[data-testid="stSidebar"] .st-emotion-cache-167909c { font-size: 1.2rem !important; font-weight: 600 !important; }
     .stApp { background: #f4f7f9; }
+    
+    /* BARRA DE PESQUISA IMPOSSÍVEL NÃO VER - SOMBRA PODEROSA */
+    .stTextInput > div > div > input {
+        border: 4px solid #3B82F6 !important;
+        border-radius: 18px !important;
+        padding: 18px 25px !important;
+        font-size: 20px !important;
+        font-weight: 700 !important;
+        background-color: white !important;
+        box-shadow: 
+            0 8px 25px rgba(59,130,246,0.4),
+            0 4px 12px rgba(59,130,246,0.25),
+            inset 0 2px 4px rgba(255,255,255,0.8) !important;
+        transition: all 0.3s ease !important;
+    }
+    .stTextInput > div > div > input:focus {
+        box-shadow: 
+            0 12px 35px rgba(59,130,246,0.5),
+            0 6px 20px rgba(59,130,246,0.35),
+            inset 0 2px 6px rgba(255,255,255,0.9) !important;
+        transform: translateY(-2px) !important;
+        border-color: #1D4ED8 !important;
+    }
+    .stTextInput > div:hover input {
+        box-shadow: 
+            0 10px 30px rgba(59,130,246,0.45),
+            0 5px 15px rgba(59,130,246,0.3) !important;
+    }
+    .stTextInput > div > div { margin-bottom: 20px !important; }
+    
+    /* INFO BOX MELHORADO */
+    .stinfo > div > div {
+        border-radius: 15px !important;
+        border-left: 6px solid #10B981 !important;
+        padding: 20px !important;
+        background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%) !important;
+    }
+    
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
         box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -40,7 +78,7 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
-    # WhatsApp ✅ FUNCIONANDO
+    # WhatsApp ✅
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
         whats_num_com_prefixo = "+55" + whats_num
@@ -48,7 +86,7 @@ def renderizar_card(row, index):
     else:
         link_wa = "#"
     
-    # MAPS ✅ CORRIGIDO - PIN VERDE EM TODOS OS CASOS
+    # MAPS ✅
     if end.strip():
         link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{end}, {cid}')}"
     else:
@@ -73,19 +111,19 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # --- LOGIN / NAVEGAÇÃO ---
-if "logado" not in st.session_state: st.session_state.logado = False
+if "logado" not in st.session_state: 
+    st.session_state.logado = False
 
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita")
     with st.form("login_guia"):
         u = st.text_input("E-mail")
         p = st.text_input("Senha", type="password")
-        if st.form_submit_button("ACESSAR"):
+        if st.form_submit_button("🔐 ACESSAR", use_container_width=True):
             st.session_state.logado = True
             st.rerun()
 else:
     with st.sidebar:
-        # SEU MENU PREMIUM MANTIDO
         st.markdown("""
         <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
@@ -109,11 +147,19 @@ else:
     df.columns = df.columns.str.strip()
 
     if opcao == "🏠 Início":
-        st.title("🕊️ Bem-vindo ao Guia")
-        st.info("Utilize o menu lateral para iniciar sua busca.")
+        st.markdown("<h1 style='text-align: center; color: #1E3A8A; margin-bottom: 40px;'>🕊️ Bem-vindo ao Guia</h1>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; padding: 40px; background: linear-gradient(135deg, #E0F2FE 0%, #B3E5FC 100%); 
+                    border-radius: 25px; color: #1E40AF; box-shadow: 0 15px 35px rgba(0,0,0,0.15); margin: 20px 0;'>
+            <h2 style='margin: 0 0 10px 0; font-size: 32px; font-weight: 800;'>👈 Use o menu lateral</h2>
+            <p style='margin: 0; font-size: 20px; font-weight: 700;'>para iniciar sua busca!</p>
+        </div>
+        """, unsafe_allow_html=True)
 
     elif opcao == "🔎 Pesquisar Geral":
-        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
+        st.markdown("<h2 style='color: #1E3A8A; margin-bottom: 25px;'>🔍 Pesquisar Geral</h2>", unsafe_allow_html=True)
+        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", placeholder="Ex: Centro, João, São Paulo...")
+        
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
             
@@ -134,13 +180,17 @@ else:
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
             else: 
-                st.warning("❌ Nenhum resultado.")
+                st.warning("❌ Nenhum resultado encontrado.")
         elif termo: 
-            st.warning("⚠️ Mínimo de 4 letras!")
+            st.warning("⚠️ Digite pelo menos 4 letras!")
 
     elif opcao == "📍 Por Cidade":
+        st.markdown("<h2 style='color: #1E3A8A; margin-bottom: 25px;'>📍 Buscar por Cidade</h2>", unsafe_allow_html=True)
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
-        if sel != "-- Selecione --":
-            for i, (_, row) in enumerate(df[df['CIDADE DO CENTRO ESPIRITA'] == sel].iterrows(), 1):
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione uma cidade --"] + cidades, 
+                          help="Escolha sua cidade para ver os centros espíritas")
+        if sel != "-- Selecione uma cidade --":
+            res_cidade = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
+            st.success(f"✅ Encontrados {len(res_cidade)} centro(s) em {sel}")
+            for i, (_, row) in enumerate(res_cidade.iterrows(), 1):
                 renderizar_card(row, i)
