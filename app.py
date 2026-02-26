@@ -1,50 +1,75 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
-import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# -------- CONTROLE DE PÁGINA --------
-if "pagina" not in st.session_state:
-    st.session_state.pagina = "🏠 Início"
-
-# --- CSS ---
+# -------- CSS --------
 st.markdown("""
 <style>
     .stApp { background: #f4f7f9; }
-    .titulo-principal { font-size: 28px !important; color: #1E3A8A !important; }
-    .titulo-secundario { font-size: 20px !important; color: #1E3A8A !important; }
+
+    .card-centro { 
+        background: white; 
+        padding: 25px; 
+        border-radius: 20px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+        margin-bottom: 25px; 
+        border-left: 10px solid #1E3A8A;
+    }
+
+    .nome-centro {
+        font-size: 22px;
+        font-weight: 800;
+        color: #1E3A8A;
+    }
+
+    .nome-fantasia {
+        font-size: 15px;
+        font-style: italic;
+        color: #3B82F6;
+    }
+
+    .palestras-verde {
+        background: #D1FAE5;
+        padding: 10px;
+        border-radius: 10px;
+        margin: 12px 0;
+        font-weight: 600;
+        color: #065F46;
+    }
+
+    .btn-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    .btn-link {
+        text-decoration: none;
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-align: center;
+        flex: 1;
+        display: inline-block;
+    }
+
+    .bg-wa { background-color: #25D366; }
+    .bg-maps { background-color: #4285F4; }
 </style>
 """, unsafe_allow_html=True)
 
-# -------- MENU SUPERIOR --------
-col1, col2 = st.columns([9,1])
+# -------- SIDEBAR PROFISSIONAL --------
+with st.sidebar:
+    st.markdown("## 🕊️ Guia Espírita")
+    st.markdown("Sistema de busca de centros espíritas")
 
-with col1:
-    st.markdown('<h1 class="titulo-principal">🕊️ Guia Espírita</h1>', unsafe_allow_html=True)
-
-with col2:
-    with st.popover("☰", help="Menu de navegação"):
-        if st.button("🏠 Início", use_container_width=True):
-            st.session_state.pagina = "🏠 Início"
-            st.rerun()
-
-        if st.button("🔎 Pesquisar Geral", use_container_width=True):
-            st.session_state.pagina = "🔎 Pesquisar Geral"
-            st.rerun()
-
-        if st.button("📍 Por Cidade", use_container_width=True):
-            st.session_state.pagina = "📍 Por Cidade"
-            st.rerun()
-
-        if st.button("📊 Admin", use_container_width=True):
-            st.session_state.pagina = "📊 Admin"
-            st.rerun()
-
-        if st.button("🕊️ Frases", use_container_width=True):
-            st.session_state.pagina = "🕊️ Frases"
-            st.rerun()
+    pagina = st.radio(
+        "Navegação",
+        ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"]
+    )
 
 st.divider()
 
@@ -62,24 +87,25 @@ def renderizar_card(row, index):
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
-    
+
+    # WhatsApp melhorado
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     if len(whats_num) >= 10:
-        link_wa = f"https://wa.me/+55{whats_num}"
+        link_wa = f"https://wa.me/55{whats_num}?text=Olá,%20vim%20pelo%20Guia%20Espírita"
     else:
         link_wa = "#"
-    
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{end}, {cid}')}"
-    
+
+    # Maps melhorado
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(f'{nome}, {end}, {cid}')}"
+
     st.markdown(f"""
     <div class="card-centro">
-        <div class="numero-badge">#{index}</div>
-        <span class="nome-centro">{nome} 🕊️</span>
-        {f'<span class="nome-fantasia">{fantasia}</span>' if fantasia else ''}
+        <div class="nome-centro">{nome} 🕊️</div>
+        {f'<div class="nome-fantasia">{fantasia}</div>' if fantasia else ''}
         <div class="palestras-verde">🗣️ PALESTRAS: {palestras}</div>
-        <div class="info-linha"><span class="label-bold">🏙️ Cidade:</span> {cid}</div>
-        <div class="info-linha"><span class="label-bold">📍 Endereço:</span> {end}</div>
-        <div class="info-linha"><span class="label-bold">👤 Responsável:</span> {resp}</div>
+        <div><b>🏙️ Cidade:</b> {cid}</div>
+        <div><b>📍 Endereço:</b> {end}</div>
+        <div><b>👤 Responsável:</b> {resp}</div>
         <div class="btn-row">
             <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 VER MAPA</a>
             <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WHATSAPP</a>
@@ -89,27 +115,22 @@ def renderizar_card(row, index):
 
 # -------- PÁGINAS --------
 
-if st.session_state.pagina == "🏠 Início":
-    st.info("👆 Clique no ☰ para navegar pelo sistema.")
+if pagina == "🏠 Início":
+    st.info("👈 Utilize o menu lateral para navegar pelo sistema.")
 
-elif st.session_state.pagina == "🔎 Pesquisar Geral":
-    st.markdown('<h2 class="titulo-secundario">🔍 Pesquisar Geral</h2>', unsafe_allow_html=True)
+elif pagina == "🔎 Pesquisar Geral":
+    st.header("🔎 Pesquisar Geral")
 
     termo = st.text_input(
-        "🔍 Digite pelo menos 4 letras para buscar:",
-        placeholder="Ex: Centro, João, São Paulo...",
-        help="Busca em nome, cidade e responsável"
+        "Digite pelo menos 4 letras para buscar:",
+        help="Busca por nome, cidade ou responsável"
     )
 
     if termo and len(termo) >= 4:
         palavras = termo.lower().split()
 
-        def normalizar(t):
-            if pd.isna(t): return ""
-            return str(t).lower()
-
         def checar(row):
-            texto = normalizar(" ".join(row.astype(str)))
+            texto = " ".join(row.astype(str)).lower()
             return all(p in texto for p in palavras)
 
         res = df[df.apply(checar, axis=1)]
@@ -121,10 +142,11 @@ elif st.session_state.pagina == "🔎 Pesquisar Geral":
         else:
             st.warning("❌ Nenhum resultado encontrado.")
 
-elif st.session_state.pagina == "📍 Por Cidade":
-    st.markdown('<h2 class="titulo-secundario">Buscar por Cidade</h2>', unsafe_allow_html=True)
+elif pagina == "📍 Por Cidade":
+    st.header("📍 Buscar por Cidade")
 
     cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
+
     sel = st.selectbox(
         "Selecione a cidade:",
         ["-- Selecione uma cidade --"] + cidades,
@@ -137,11 +159,11 @@ elif st.session_state.pagina == "📍 Por Cidade":
         for i, (_, row) in enumerate(res.iterrows(), 1):
             renderizar_card(row, i)
 
-elif st.session_state.pagina == "📊 Admin":
-    st.markdown('<h2 class="titulo-secundario">📊 Painel Administrativo</h2>', unsafe_allow_html=True)
+elif pagina == "📊 Admin":
+    st.header("📊 Painel Administrativo")
     st.metric("🏠 Total Centros", len(df))
     st.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
 
-elif st.session_state.pagina == "🕊️ Frases":
-    st.markdown('<h2 class="titulo-secundario">🕊️ Frases Espíritas</h2>', unsafe_allow_html=True)
+elif pagina == "🕊️ Frases":
+    st.header("🕊️ Frases Espíritas")
     st.markdown("> Fora da caridade não há salvação. — Allan Kardec")
