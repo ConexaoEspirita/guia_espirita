@@ -5,29 +5,30 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS MENU TRAVADO + AZUL CÉU ---
+# --- CSS MENU STICKY SIMPLES ---
 st.markdown("""
 <style>
     /* Remove seta/voltar superior */
     [data-testid="stArrowBack"] { display: none !important; }
     
-    /* Remove COMPLETAMENTE sidebar */
+    /* Remove sidebar */
     section[data-testid="stSidebar"] > div { display: none !important; }
     [data-testid="collapsedControl"] { display: none !important; }
     
-    /* MENU TRAVADO NO TOPO */
-    .menu-fixo {
+    /* MENU STICKY NO TOPO */
+    .menu-container {
         position: sticky !important;
         top: 0 !important;
-        z-index: 1000 !important;
+        z-index: 100 !important;
         background: rgba(30, 64, 175, 0.95) !important;
-        backdrop-filter: blur(20px) !important;
-        border-bottom: 3px solid rgba(59, 130, 246, 0.5) !important;
-        padding: 15px 0 !important;
-        margin: -20px -20px 30px -20px !important;
+        backdrop-filter: blur(15px) !important;
+        padding: 15px 20px !important;
+        margin: -15px -20px 25px -20px !important;
+        border-radius: 0 0 20px 20px !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
     }
     
-    /* AZUL CÉU ESCURO */
+    /* AZUL CÉU */
     .stApp { 
         background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%) !important;
         background-attachment: fixed !important;
@@ -39,7 +40,6 @@ st.markdown("""
         color: #065f46 !important;
         border-radius: 12px !important;
         border: 2px solid #10b981 !important;
-        font-weight: 700 !important;
     }
     
     /* CARDS ORIGINAIS */
@@ -101,20 +101,20 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Inicializar session state ---
+# --- Session state ---
 if "menu_aberto" not in st.session_state:
     st.session_state.menu_aberto = False
 if "pagina" not in st.session_state:
     st.session_state.pagina = None
 
-# --- TELA INICIAL COM LOGIN + CADASTRO ---
+# --- LOGIN ---
 if "logado" not in st.session_state: 
     st.session_state.logado = False
 
 if not st.session_state.logado:
     st.markdown("""
     <div style='text-align: center; padding: 60px 40px;'>
-        <h1 style='color: white; font-size: 4rem; text-shadow: 0 6px 20px rgba(0,0,0,0.5); margin-bottom: 10px;'>🕊️ Guia Espírita</h1>
+        <h1 style='color: white; font-size: 4rem; text-shadow: 0 6px 20px rgba(0,0,0,0.5);'>🕊️ Guia Espírita</h1>
         <p style='color: rgba(255,255,255,0.9); font-size: 1.5rem;'>Sistema Premium de Centros Espíritas</p>
     </div>
     """, unsafe_allow_html=True)
@@ -144,11 +144,9 @@ if not st.session_state.logado:
                 email_cad = st.text_input("📧 E-mail")
             senha_cad = st.text_input("🔒 Senha", type="password")
             conf_senha = st.text_input("🔒 Confirmar Senha", type="password")
-            
             if st.form_submit_button("✨ CADASTRAR", use_container_width=True):
                 if senha_cad == conf_senha:
-                    st.success("✅ Cadastro realizado com sucesso!")
-                    st.info("Agora faça login com suas credenciais")
+                    st.success("✅ Cadastro realizado!")
                 else:
                     st.error("❌ Senhas não coincidem!")
 else:
@@ -158,60 +156,60 @@ else:
     # SAUDAÇÃO
     st.markdown(f"""
     <div style='text-align: center; padding: 20px; background: rgba(255,255,255,0.1); 
-                border-radius: 20px; margin-bottom: 30px; backdrop-filter: blur(10px);'>
+                border-radius: 20px; margin-bottom: 20px; backdrop-filter: blur(10px);'>
         <h2 style='color: white; margin: 0;'>👋 Bem-vindo, {st.session_state.get("nome_usuario", "Usuário")}</h2>
     </div>
     """, unsafe_allow_html=True)
 
     st.title("🕊️ Guia Espírita Premium")
 
-    # --- MENU TRAVADO NO TOPO ---
-    with st.container():
-        st.markdown('<div class="menu-fixo">', unsafe_allow_html=True)
-        
-        if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-            st.session_state.menu_aberto = not st.session_state.menu_aberto
-            if not st.session_state.menu_aberto:
-                st.session_state.pagina = None
-            st.rerun()
-        
-        if st.session_state.menu_aberto:
-            st.markdown("---")
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🔎 Pesquisar Geral", use_container_width=True):
-                    st.session_state.pagina = "pesquisar"
-                    st.session_state.menu_aberto = False
-                    st.rerun()
-                if st.button("📍 Por Cidade", use_container_width=True):
-                    st.session_state.pagina = "cidade"
-                    st.session_state.menu_aberto = False
-                    st.rerun()
-            with col2:
-                if st.button("📊 Admin", use_container_width=True):
-                    st.session_state.pagina = "admin"
-                    st.session_state.menu_aberto = False
-                    st.rerun()
-                if st.button("🕊️ Frases", use_container_width=True):
-                    st.session_state.pagina = "frases"
-                    st.session_state.menu_aberto = False
-                    st.rerun()
-            if st.button("🚪 Sair", use_container_width=True):
-                st.session_state.logado = False
-                st.session_state.menu_aberto = False
-                st.session_state.pagina = None
-                st.cache_data.clear()
-                st.rerun()
-            st.markdown("---")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+    # --- MENU STICKY (SÓ BOTÃO ABRIR/FECHAR TRAVADO) ---
+    st.markdown('<div class="menu-container">', unsafe_allow_html=True)
+    
+    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
+        st.session_state.menu_aberto = not st.session_state.menu_aberto
+        if not st.session_state.menu_aberto:
+            st.session_state.pagina = None
+        st.rerun()
+    
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    # CONTEÚDO COM SCROLL (cards sobem por baixo)
+    # MENU EXPANDIDO (NÃO TRAVADO)
+    if st.session_state.menu_aberto:
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🔎 Pesquisar Geral", use_container_width=True):
+                st.session_state.pagina = "pesquisar"
+                st.session_state.menu_aberto = False
+                st.rerun()
+            if st.button("📍 Por Cidade", use_container_width=True):
+                st.session_state.pagina = "cidade"
+                st.session_state.menu_aberto = False
+                st.rerun()
+        with col2:
+            if st.button("📊 Admin", use_container_width=True):
+                st.session_state.pagina = "admin"
+                st.session_state.menu_aberto = False
+                st.rerun()
+            if st.button("🕊️ Frases", use_container_width=True):
+                st.session_state.pagina = "frases"
+                st.session_state.menu_aberto = False
+                st.rerun()
+        if st.button("🚪 Sair", use_container_width=True):
+            st.session_state.logado = False
+            st.session_state.menu_aberto = False
+            st.session_state.pagina = None
+            st.cache_data.clear()
+            st.rerun()
+        st.markdown("---")
+
+    # PÁGINAS
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
         st.markdown("### 🔎 Pesquisar Geral")
-        termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
+        termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
         if termo and len(termo) >= 3:
             palavras = termo.lower().split()
             def normalizar(t): 
@@ -237,12 +235,11 @@ else:
         cidades_com_contagem = []
         for cidade in sorted(cidades):
             cidade_limpa = str(cidade).strip()
-            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] 
-                and len(cidade_limpa) > 2):
+            if cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] and len(cidade_limpa) > 2:
                 count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
                 cidades_com_contagem.append(f"{cidade_limpa} ({count})")
         
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem, help="Escolha sua cidade para ver os centros")
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
         if sel != "-- Selecione --":
             cidade_selecionada = sel.split(' (')[0].strip()
             res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
@@ -251,11 +248,11 @@ else:
                 renderizar_card(row, i)
 
     elif pagina == "admin":
-        st.markdown("### 📊 Admin Premium")
+        st.markdown("### 📊 Admin")
         col1, col2 = st.columns(2)
         col1.metric("🏠 Total Centros", len(df))
         col2.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
 
     elif pagina == "frases":
-        st.markdown("### 🕊️ Frases Espíritas Premium")
-        st.markdown("> **✨ Fora da caridade não há salvação. ✨** — Allan Kardec")
+        st.markdown("### 🕊️ Frases")
+        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
