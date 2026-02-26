@@ -20,71 +20,49 @@ st.markdown("""
 .stApp { background: #f4f7f9; }
 
 .titulo-profissional {
-    font-size: 26px;
-    font-weight: 700;
-    margin-bottom: 15px;
+    font-size: 20px; 
+    font-weight: 600;
+    margin: 0;
+}
+
+.titulo-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 10px;
 }
 
 .card-centro { 
     background: white;
-    padding: 25px;
-    border-radius: 20px; 
-    margin-bottom: 25px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-    border-left: 12px solid #0047AB;
+    padding: 20px;
+    border-radius: 15px; 
+    margin-bottom: 20px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1); 
+    border-left: 8px solid #0047AB;
     position: relative;
 }
 
 .numero-badge { 
     position: absolute;
-    top: 15px;
-    right: 20px;
+    top: 12px;
+    right: 15px;
     background: #f0f4f8;
     color: #7f8c8d;
-    padding: 2px 10px;
+    padding: 2px 8px;
     border-radius: 20px;
     font-size: 12px;
-    font-weight: 800;
-}
-
-.nome-centro {
-    color: #1E3A8A;
-    font-size: 22px;
-    font-weight: 800;
-}
-
-.nome-fantasia {
-    color: #3B82F6;
-    font-size: 16px;
-    font-style: italic;
-}
-
-.palestras-verde {
-    color: #065F46;
     font-weight: 700;
-    background: #D1FAE5;
-    padding: 10px;
-    border-radius: 10px;
-    margin: 12px 0;
-    border: 1px solid #10B981;
 }
 
-.info-linha { margin: 6px 0; }
-
-.btn-row { display:flex; gap:10px; margin-top:15px; }
-
-.btn-link {
-    text-decoration:none;
-    color:white;
-    padding:12px;
-    border-radius:10px;
-    font-weight:700;
-    text-align:center;
-    flex:1;
-}
-
-.bg-wa { background:#25D366; }
+.nome-centro { color: #1E3A8A; font-size: 20px; font-weight: 700; }
+.nome-fantasia { color: #3B82F6; font-size: 14px; font-style: italic; }
+.palestras-verde { color:#065F46; font-weight:700; background:#D1FAE5; padding:6px; border-radius:6px; margin:8px 0; border:1px solid #10B981; }
+.info-linha { margin:4px 0; font-size:14px; }
+.btn-row { display:flex; gap:6px; margin-top:8px; }
+.btn-link { text-decoration:none; color:white; padding:6px 10px; border-radius:6px; font-weight:600; text-align:center; font-size:12px; flex:1; }
 .bg-maps { background:#4285F4; }
+.bg-wa { background:#25D366; font-size:12px; padding:2px 6px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -102,26 +80,28 @@ def renderizar_card(row, index):
     palestra = ajustar(row.get('PALESTRA PUBLICA'))
     responsavel = ajustar(row.get('RESPONSAVEL'))
 
-    # WhatsApp
     numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
-    link_wa = f"https://wa.me/+55{numero}" if len(numero) >= 10 else "#"
 
-    # Google Maps
+    # Link Google Maps
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
+
+    # Link WhatsApp discreto (mensagem pronta)
+    mensagem = f"{nome} 🕊️\nEndereço: {endereco}, {cidade}\nResponsável: {responsavel}\nPalestra: {palestra}"
+    link_wa = f"https://wa.me/+55{numero}?text={urllib.parse.quote(mensagem)}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
     <div class="card-centro">
         <div class="numero-badge">#{index}</div>
         <div class="nome-centro">{nome} 🕊️</div>
         {"<div class='nome-fantasia'>" + fantasia + "</div>" if fantasia else ""}
-        <div class="palestras-verde">🗣️ PALESTRA: {palestra}</div>
+        <div class="palestras-verde">🗣️ {palestra}</div>
         <div class="info-linha">🏙️ <b>Cidade:</b> {cidade}</div>
         <div class="info-linha">📍 <b>Endereço:</b> {endereco}</div>
         <div class="info-linha">👤 <b>Responsável:</b> {responsavel}</div>
         <div class="btn-row">
-            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Ver Mapa</a>
-            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">💬 WhatsApp</a>
+            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Maps</a>
+            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">W</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -178,15 +158,16 @@ else:
     # =========================
     else:
 
-        # Botão voltar no topo direito
-        col1, col2 = st.columns([10,1])
+        # Cabeçalho compacto: título + botão voltar na mesma linha
+        titulos = {
+            "pesquisar": "🔎 Busca Avançada",
+            "cidade": "📍 Localizar por Cidade",
+            "admin": "📊 Painel Administrativo",
+            "frases": "🕊️ Mensagens Espíritas"
+        }
+
+        col1, col2 = st.columns([9,1])
         with col1:
-            titulos = {
-                "pesquisar": "🔎 Busca Avançada",
-                "cidade": "📍 Localizar por Cidade",
-                "admin": "📊 Painel Administrativo",
-                "frases": "🕊️ Mensagens Espíritas"
-            }
             st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
         with col2:
             if st.button("⬅️"):
