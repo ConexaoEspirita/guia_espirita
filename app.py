@@ -62,7 +62,7 @@ st.markdown("""
 .btn-row { display:flex; gap:6px; margin-top:8px; }
 .btn-link { text-decoration:none; color:white; padding:6px 10px; border-radius:6px; font-weight:600; text-align:center; font-size:12px; flex:1; }
 .bg-maps { background:#4285F4; }
-.bg-wa { background:#25D366; font-size:12px; padding:2px 6px; }
+.bg-wa { background:#25D366; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -86,9 +86,8 @@ def renderizar_card(row, index):
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
-    # Link WhatsApp discreto (mensagem pronta)
-    mensagem = f"{nome} 🕊️\nEndereço: {endereco}, {cidade}\nResponsável: {responsavel}\nPalestra: {palestra}"
-    link_wa = f"https://wa.me/+55{numero}?text={urllib.parse.quote(mensagem)}" if len(numero)>=10 else "#"
+    # Link WhatsApp original: apenas abre conversa
+    link_wa = f"https://wa.me/+55{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
     <div class="card-centro">
