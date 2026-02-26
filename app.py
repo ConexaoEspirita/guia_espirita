@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- DESIGN PROFISSIONAL FINAL ---
+# --- DESIGN PROFISSIONAL FINAL COM TOOLTIP ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 20px; }
@@ -119,7 +119,11 @@ else:
         </div>
         """, unsafe_allow_html=True)
         
-        opcao = st.radio("Navegação:", ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"], label_visibility="collapsed")
+        # ✅ TOOLTIP PROFISSIONAL NO MENU ADICIONADO!
+        opcao = st.radio("Navegação:", 
+                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"], 
+                         label_visibility="collapsed",
+                         help="👆 Clique para navegar: Início | Pesquisar Geral | Por Cidade | Sair")
         
         if opcao == "🚪 Sair":
             st.session_state.logado = False
@@ -141,7 +145,9 @@ else:
 
     elif opcao == "🔎 Pesquisar Geral":
         st.markdown('<h2 class="titulo-secundario">Pesquisar Geral</h2>', unsafe_allow_html=True)
-        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", placeholder="Ex: Centro, João, São Paulo...")
+        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", 
+                             placeholder="Ex: Centro, João, São Paulo...",
+                             help="Busca em nome, cidade e responsável")
         
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
@@ -170,7 +176,8 @@ else:
     elif opcao == "📍 Por Cidade":
         st.markdown('<h2 class="titulo-secundario">Buscar por Cidade</h2>', unsafe_allow_html=True)
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione uma cidade --"] + cidades, 
+        sel = st.selectbox("Selecione a cidade:", 
+                          ["-- Selecione uma cidade --"] + cidades, 
                           help="Escolha sua cidade para ver os centros espíritas")
         if sel != "-- Selecione uma cidade --":
             res_cidade = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
