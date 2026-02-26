@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- DESIGN PROFISSIONAL FINAL COM TOOLTIP ---
+# --- DESIGN PROFISSIONAL COM MENU HAMBURGER ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 20px; }
@@ -33,6 +33,22 @@ st.markdown("""
     /* TÍTULOS PROFISSIONAIS */
     .titulo-principal { font-size: 28px !important; color: #1E3A8A !important; margin-bottom: 10px !important; }
     .titulo-secundario { font-size: 20px !important; color: #1E3A8A !important; margin-bottom: 20px !important; }
+    
+    /* MENU HAMBURGER TOPO */
+    .menu-hamb-topo {
+        background: white; padding: 20px; border-radius: 15px; 
+        box-shadow: 0 8px 25px rgba(59,130,246,0.15); 
+        border: 2px solid #3B82F6; margin-bottom: 25px;
+    }
+    
+    .hamb-icon { font-size: 28px; cursor: pointer; color: #3B82F6; }
+    .tooltip-menu { 
+        position: absolute; top: 70px; right: 25px; 
+        background: #3B82F6; color: white; padding: 20px; 
+        border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.3); 
+        min-width: 220px; z-index: 1000; display: none;
+        font-size: 14px; line-height: 1.6;
+    }
     
     .card-centro { 
         background: white !important; padding: 25px; border-radius: 20px; 
@@ -119,11 +135,10 @@ else:
         </div>
         """, unsafe_allow_html=True)
         
-        # ✅ TOOLTIP PROFISSIONAL NO MENU ADICIONADO!
         opcao = st.radio("Navegação:", 
-                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🚪 Sair"], 
+                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🚪 Sair"], 
                          label_visibility="collapsed",
-                         help="👆 Clique para navegar: Início | Pesquisar Geral | Por Cidade | Sair")
+                         help="👆 Navegação principal do sistema")
         
         if opcao == "🚪 Sair":
             st.session_state.logado = False
@@ -144,7 +159,26 @@ else:
         """, unsafe_allow_html=True)
 
     elif opcao == "🔎 Pesquisar Geral":
-        st.markdown('<h2 class="titulo-secundario">Pesquisar Geral</h2>', unsafe_allow_html=True)
+        # 🔥 MENU HAMBURGER FIXO NO TOPO!
+        st.markdown("""
+        <div class="menu-hamb-topo">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; color: #1E3A8A; font-size: 22px;">🔍 Pesquisar Geral</h3>
+                <div class="hamb-icon" 
+                     title="Opções Rápidas" 
+                     onclick="this.nextElementSibling.style.display='block'; setTimeout(() => this.nextElementSibling.style.display='none', 4000)">
+                    ☰
+                </div>
+            </div>
+            <div class="tooltip-menu">
+                📋 <strong>Opções Rápidas:</strong><br>
+                🔎 Pesquisar Geral<br>
+                📍 Lista de Cidades<br>
+                📊 Admin (Estatísticas)
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
         termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", 
                              placeholder="Ex: Centro, João, São Paulo...",
                              help="Busca em nome, cidade e responsável")
@@ -184,3 +218,7 @@ else:
             st.success(f"✅ Encontrados {len(res_cidade)} centro(s) em {sel}")
             for i, (_, row) in enumerate(res_cidade.iterrows(), 1):
                 renderizar_card(row, i)
+
+    elif opcao == "📊 Admin":
+        st.markdown('<h1 class="titulo-principal">📊 Painel Administrativo</h1>', unsafe_allow_html=True)
+        st.info("🔧 **Em desenvolvimento** - Estatísticas de uso do app\n\n📈 Total de centros: **" + str(len(df)) + "**")
