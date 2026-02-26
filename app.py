@@ -103,40 +103,43 @@ else:
 
     st.title("🕊️ Bem-vindo ao Guia Espírita")
 
-    # BOTÃO PRINCIPAL
+    # ✅ BOTÃO PRINCIPAL (toggle normal)
     if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
         st.session_state.menu_aberto = not st.session_state.menu_aberto
         st.rerun()
 
-    # MENU
+    # ✅ MENU COM EXPANDER (RECOLHE AUTOMATICAMENTE)
     if st.session_state.menu_aberto:
-        st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🔎 Pesquisar Geral", use_container_width=True):
-                st.session_state.pagina = "pesquisar"
+        with st.expander("📋 MENU PRINCIPAL", expanded=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔎 Pesquisar Geral", use_container_width=True):
+                    st.session_state.pagina = "pesquisar"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+                
+                if st.button("📍 Por Cidade", use_container_width=True):
+                    st.session_state.pagina = "cidade"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            
+            with col2:
+                if st.button("📊 Admin", use_container_width=True):
+                    st.session_state.pagina = "admin"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+                
+                if st.button("🕊️ Frases", use_container_width=True):
+                    st.session_state.pagina = "frases"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            
+            if st.button("🚪 Sair", use_container_width=True):
+                st.session_state.logado = False
                 st.session_state.menu_aberto = False
+                st.session_state.pagina = None
+                st.cache_data.clear()
                 st.rerun()
-            if st.button("📍 Por Cidade", use_container_width=True):
-                st.session_state.pagina = "cidade"
-                st.session_state.menu_aberto = False
-                st.rerun()
-        with col2:
-            if st.button("📊 Admin", use_container_width=True):
-                st.session_state.pagina = "admin"
-                st.session_state.menu_aberto = False
-                st.rerun()
-            if st.button("🕊️ Frases", use_container_width=True):
-                st.session_state.pagina = "frases"
-                st.session_state.menu_aberto = False
-                st.rerun()
-        if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.logado = False
-            st.session_state.menu_aberto = False
-            st.session_state.pagina = None
-            st.cache_data.clear()
-            st.rerun()
-        st.markdown("---")
 
     # ✅ CONTEÚDO SÓ QUANDO MENU FECHADO
     if not st.session_state.menu_aberto:
