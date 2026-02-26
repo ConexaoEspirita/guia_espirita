@@ -34,6 +34,18 @@ st.markdown("""
 def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
+def remover_acentos(texto):
+    """Remove acentos para busca flexível"""
+    if pd.isna(texto):
+        return ""
+    texto = str(texto).lower()
+    return re.sub(
+        r'[àáâãäå]', 'a', re.sub(
+        r'[èéêë]', 'e', re.sub(
+        r'[ìíîï]', 'i', re.sub(
+        r'[òóôõö]', 'o', re.sub(
+        r'[ùúûü]', 'u', texto)))))
+
 def criar_link_maps(row):
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
     end = ajustar_texto(row.get('ENDERECO', ''))
@@ -142,27 +154,43 @@ else:
     
     if pagina == "pesquisar":
         st.markdown("### 🔎 Pesquisar Geral")
-        termo = st.text_input("Digite pelo menos 3 letras:", placeholder="Meimei, Euripedes, Catanduva...")
+        termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
+        
         if termo and len(termo) >= 3:
-            palavras = termo.lower().split()
-            mask = df.apply(lambda row: any(palavra in " ".join(row.astype(str).str.lower()) for palavra in palavras), axis=1)
-            res = df[mask]
+            termo_sem_acento = remover_acentos(termo)
+            palavras = termo.lower().split() + [termo_sem_acento]
+            
+            def checar(row):
+                texto_completo = " ".join([str(row[col]).lower() for col in df.columns if pd.notna(row[col])])
+                texto_sem_acento = remover_acentos(texto_completo)
+                return any(palavra in texto_completo or palavra in texto_sem_acento for palavra in palavras)
+            
+            res = df[df.apply(checar, axis=1)]
             if len(res) > 0:
-                st.success(f"✅ {len(res)} centro(s) encontrado(s)")
+                st.success(f"✅ Encontrados {len(res)} centro(s)")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
-            else:
-                st.warning("❌ Nenhum resultado.")
-        elif termo:
-            st.warning("⚠️ Mínimo 3 letras!")
-
+            else: 
+                st.warning("❌ Nenhum resultado encontrado.")
+        elif termo: 
+            st.warning("⚠️ Mínimo de 3 letras!")
+    
     elif pagina == "cidade":
         st.markdown("### 📍 Por Cidade")
-        cidades_validas = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().str.strip()[lambda x: x.str.len() > 2].unique())
-        cidade_sel = st.selectbox("Escolha a cidade:", ["-- Todas --"] + cidades_validas)
-        if cidade_sel != "-- Todas --":
-            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_sel]
-            st.success(f"✅ {len(res)} centro(s) em **{cidade_sel}**")
+        cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
+        cidades_com_contagem = []
+        for cidade in sorted(cidades):
+            cidade_limpa = str(cidade).strip()
+            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] 
+                and len(cidade_limpa) > 2):
+                count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
+                cidades_com_contagem.append(f"{cidade_limpa} ({count})")
+        
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
+        if sel != "-- Selecione --":
+            cidade_selecionada = sel.split(' (')[0].strip()
+            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
+            st.success(f"✅ Encontrados {len(res)} centro(s) em {cidade_selecionada}")
             for i, (_, row) in enumerate(res.iterrows(), 1):
                 renderizar_card(row, i)
 
