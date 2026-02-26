@@ -5,7 +5,7 @@ import re
 
 st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
 
-# --- CSS PROFISSIONAL ---
+# --- CSS ---
 st.markdown("""
 <style>
     [data-testid="stSidebar"] { padding-top: 20px; }
@@ -35,9 +35,6 @@ st.markdown("""
     .btn-link { text-decoration: none !important; color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-align: center; flex: 1; display: inline-block; }
     .bg-wa { background-color: #25D366; }
     .bg-maps { background-color: #4285F4; }
-    
-    /* BOTÃO 3 PONTOS */
-    .btn-pontos { font-size: 24px; padding: 8px 12px !important; border-radius: 8px !important; background: #3B82F6 !important; color: white !important; border: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -99,7 +96,7 @@ else:
         st.markdown("""
         <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
-            <div style='text-align: center; color: azul;'>
+            <div style='text-align: center; color: white;'>
                 <h2 style='margin: 0; font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>
                     🕊️ GUIA ESPÍRITA
                 </h2>
@@ -109,7 +106,7 @@ else:
         """, unsafe_allow_html=True)
         
         opcao = st.radio("Navegação:", 
-                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "🕊️ Frases Espíritas", "📊 Admin", "🚪 Sair"], 
+                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🚪 Sair"], 
                          label_visibility="collapsed",
                          help="👆 Navegação principal do sistema")
         
@@ -121,24 +118,42 @@ else:
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    if opcao == "🏠 Início":
-        st.markdown('<h1 class="titulo-principal">🕊️ Bem-vindo ao Guia</h1>', unsafe_allow_html=True)
-        st.markdown("""
-        <div style='text-align: center; padding: 25px; background: white; border-radius: 15px; 
-                    border: 2px solid #3B82F6; box-shadow: 0 8px 25px rgba(59,130,246,0.15); margin: 30px 0;'>
-            <div style='font-size: 36px; margin: 15px 0; color: #3B82F6;'>👈 Menu Lateral</div>
-            <p style='margin: 0; font-size: 16px; color: #1E3A8A; font-weight: 500;'>Selecione "Pesquisar Geral" ou "Por Cidade"</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # --- MENU HAMBURGER 3 TRACINHOS ---
+    if "menu_aberto" not in st.session_state:
+        st.session_state.menu_aberto = False
 
-    elif opcao == "🔎 Pesquisar Geral":
-        # 🔥 MENU 3 PONTOS QUE FUNCIONA!
-        col1, col2 = st.columns([8, 1])
+    if opcao == "🔎 Pesquisar Geral":
+        col1, col2 = st.columns([8,1])
         with col1:
             st.markdown('<h2 class="titulo-secundario">🔍 Pesquisar Geral</h2>', unsafe_allow_html=True)
         with col2:
-            if st.button("⋮⋮⋮", key="menu_pontos", help="☰ Opções Rápidas"):
-                st.info("**Opções Disponíveis:**\n• 🔎 **Pesquisar Geral**\n• 📍 **Por Cidade**\n• 🕊️ **Frases Espíritas**\n• 📊 **Admin**")
+            if st.button("☰", key="hamb_menu", help="Abrir menu de opções"):
+                st.session_state.menu_aberto = not st.session_state.menu_aberto
+        
+        # TOOLTIP ABAIXO DOS 3 TRACINHOS ☰
+        if st.session_state.menu_aberto:
+            st.markdown("---")
+            col_menu1, col_menu2, col_menu3, col_menu4 = st.columns(4)
+            with col_menu1:
+                if st.button("🔎 Pesq. Geral", key="menu1"):
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            with col_menu2:
+                if st.button("📍 Cidade", key="menu2"):
+                    st.session_state.opcao = "📍 Por Cidade" 
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            with col_menu3:
+                if st.button("📊 Admin", key="menu3"):
+                    st.session_state.opcao = "📊 Admin"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            with col_menu4:
+                if st.button("🕊️ Frases", key="menu4"):
+                    st.session_state.opcao = "Frases"
+                    st.session_state.menu_aberto = False
+                    st.rerun()
+            st.markdown("---")
         
         termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", 
                              placeholder="Ex: Centro, João, São Paulo...",
@@ -166,6 +181,16 @@ else:
         elif termo: 
             st.warning("⚠️ Digite pelo menos 4 letras!")
 
+    elif opcao == "🏠 Início":
+        st.markdown('<h1 class="titulo-principal">🕊️ Bem-vindo ao Guia</h1>', unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; padding: 25px; background: white; border-radius: 15px; 
+                    border: 2px solid #3B82F6; box-shadow: 0 8px 25px rgba(59,130,246,0.15); margin: 30px 0;'>
+            <div style='font-size: 36px; margin: 15px 0; color: #3B82F6;'>👈 Menu Lateral</div>
+            <p style='margin: 0; font-size: 16px; color: #1E3A8A; font-weight: 500;'>Selecione "Pesquisar Geral" ou "Por Cidade"</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     elif opcao == "📍 Por Cidade":
         st.markdown('<h2 class="titulo-secundario">Buscar por Cidade</h2>', unsafe_allow_html=True)
         cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
@@ -177,15 +202,6 @@ else:
             st.success(f"✅ Encontrados {len(res_cidade)} centro(s) em {sel}")
             for i, (_, row) in enumerate(res_cidade.iterrows(), 1):
                 renderizar_card(row, i)
-
-    elif opcao == "🕊️ Frases Espíritas":
-        st.markdown('<h1 class="titulo-principal">🕊️ Frases Espíritas</h1>', unsafe_allow_html=True)
-        st.info("🌟 **Em desenvolvimento** - Frases inspiradoras do espiritismo")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.success("✨ 'Amai os vossos inimigos.' - Jesus")
-        with col2:
-            st.success("🙏 'Fora da caridade não há salvação.' - Allan Kardec")
 
     elif opcao == "📊 Admin":
         st.markdown('<h1 class="titulo-principal">📊 Painel Administrativo</h1>', unsafe_allow_html=True)
