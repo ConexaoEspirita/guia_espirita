@@ -11,30 +11,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS COMPLETO (CORRIGIDO PARA O LOGIN APARECER) ---
+# --- CSS COMPLETO (PROTEÇÃO MOBILE + LOGIN VISÍVEL) ---
 st.markdown("""
 <style>
-/* ESCONDE O HEADER E SIDEBAR NATIVOS (IMPEDE O 'VOLTAR' DO STREAMLIT) */
 header[data-testid="stHeader"], [data-testid="stSidebar"] {
     display: none !important;
 }
+.block-container { padding-top: 1rem !important; }
+* { -webkit-touch-callout: none !important; }
 
-/* TIRA O ESPAÇAMENTO DO TOPO QUE O HEADER DEIXA */
-.block-container {
-    padding-top: 1rem !important;
-}
-
-/* ANTI-TOUCH MOBILE */
-* {
-    -webkit-touch-callout: none !important;
-}
-
-/* FUNDO AZUL CLARINHO */
 .stApp { 
     background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important; 
 }
 
-/* ESTILOS DOS CARDS */
 .card-centro { 
     background: white !important; padding: 25px; border-radius: 20px; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -137,9 +126,10 @@ if not st.session_state.logado:
 else:
     @st.cache_data
     def carregar_dados():
-        # Certifique-se que o arquivo guia.xlsx está na mesma pasta
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
+        # Limpeza básica das cidades para evitar nomes vazios
+        df['CIDADE DO CENTRO ESPIRITA'] = df['CIDADE DO CENTRO ESPIRITA'].fillna("Não Informada").str.strip()
         return df
     
     df = carregar_dados()
@@ -192,14 +182,23 @@ else:
                 texto = " ".join([str(v) for v in row.values]).lower()
                 return termo.lower() in texto or termo_limpo in remover_acentos(texto)
             res = df[df.apply(checar, axis=1)]
+            st.info(f"Encontrados {len(res)} resultados")
             for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
     
     elif pagina == "cidade":
         st.markdown("### 📍 Por Cidade")
-        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + list(cidades))
-        if sel != "-- Selecione --":
-            res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
+        
+        # --- LÓGICA DE CONTAGEM POR CIDADE ---
+        contagem_cidades = df['CIDADE DO CENTRO ESPIRITA'].value_count().to_dict()
+        lista_cidades_formatada = [f"{cid} ({qtd})" for cid, qtd in sorted(contagem_cidades.items())]
+        
+        sel_formatado = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + lista_cidades_formatada)
+        
+        if sel_formatado != "-- Selecione --":
+            # Extrair apenas o nome da cidade removendo o (59)
+            cidade_real = re.sub(r'\s\(\d+\)$', '', sel_formatado)
+            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_real]
+            st.success(f"✅ {len(res)} centro(s) em {cidade_real}")
             for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
     elif pagina == "admin":
