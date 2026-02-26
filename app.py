@@ -165,7 +165,7 @@ if not st.session_state.logado:
             if st.form_submit_button("🚀 ACESSAR", use_container_width=True):
                 st.session_state.logado = True
                 st.session_state.nome_usuario = nome
-                st.session_state.pagina = None  # Reset página
+                st.session_state.pagina = None
                 st.rerun()
     
     with tab2:
@@ -185,12 +185,14 @@ if not st.session_state.logado:
                 else:
                     st.error("❌ Senhas não coincidem!")
 else:
-    # RESETAR PÁGINA QUANDO FECHAR MENU
-    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
-        st.session_state.menu_aberto = not st.session_state.menu_aberto
-        if st.session_state.menu_aberto == False:
-            st.session_state.pagina = None  # LIMPA PÁGINA AO FECHAR
-        st.rerun()
+    # Carregar dados PRIMEIRO
+    @st.cache_data
+    def carregar_dados():
+        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+        df.columns = df.columns.str.strip()
+        return df
+    
+    df = carregar_dados()
 
     # SAUDAÇÃO COM NOME
     st.markdown(f"""
@@ -202,7 +204,14 @@ else:
 
     st.title("🕊️ Guia Espírita Premium")
 
-    # MENU EXPANDIDO/CONTRAIDO
+    # BOTÃO EXPANDIR/CONTRAIR MENU (POSIÇÃO ORIGINAL)
+    if st.button("📋 " + ("Fechar Menu" if st.session_state.menu_aberto else "Abrir Menu"), use_container_width=True):
+        st.session_state.menu_aberto = not st.session_state.menu_aberto
+        if not st.session_state.menu_aberto:
+            st.session_state.pagina = None
+        st.rerun()
+
+    # MENU EXPANDIDO/CONTRAIDO (MESMA POSIÇÃO)
     if st.session_state.menu_aberto:
         st.markdown("---")
         
@@ -238,7 +247,7 @@ else:
         
         st.markdown("---")
 
-    # CONTEÚDO DAS PÁGINAS (SÓ MOSTRA SE TIVER PÁGINA SELECIONADA)
+    # CONTEÚDO DAS PÁGINAS
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
@@ -246,6 +255,7 @@ else:
         termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
         if termo and len(termo) >= 3:
             palavras = termo.lower().split()
+            
             def normalizar(t): 
                 return "" if pd.isna(t) else " ".join(str(t).lower().split())
             
