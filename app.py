@@ -7,8 +7,7 @@ st.set_page_config(
     page_title="Guia Espírita", 
     page_icon="🕊️", 
     layout="wide",
-    initial_sidebar_state="collapsed",
-    disable_touch_scrollbars=True
+    initial_sidebar_state="collapsed"
 )
 
 # --- CSS COMPLETO COM FUNDO AZUL CLARINHO ---
