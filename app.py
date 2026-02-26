@@ -119,7 +119,8 @@ if "logado" not in st.session_state:
 # LOGIN
 # ==============================
 if not st.session_state.logado:
-    st.title("🕊️ Guia Espírita")
+
+    st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
 
     with st.form("login"):
         st.text_input("E-mail")
@@ -138,11 +139,10 @@ else:
         return df
 
     df = carregar_dados()
-
     pagina = st.session_state.pagina
 
     # ==============================
-    # MENU PRINCIPAL LIMPO
+    # MENU PRINCIPAL
     # ==============================
     if pagina is None:
 
@@ -170,7 +170,7 @@ else:
                 st.rerun()
 
         if st.button("🚪 Sair", use_container_width=True):
-            st.session_state = {"logado": False}
+            st.session_state.clear()
             st.cache_data.clear()
             st.rerun()
 
@@ -197,9 +197,7 @@ else:
             st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
             st.write("")
 
-        # ------------------
         # BUSCA
-        # ------------------
         if pagina == "pesquisar":
 
             termo = st.text_input("Digite pelo menos 3 letras:")
@@ -224,9 +222,7 @@ else:
                 else:
                     st.warning("Nenhum resultado encontrado.")
 
-        # ------------------
-        # CIDADE (AGORA ABRE LIMPA)
-        # ------------------
+        # CIDADE (abre limpa)
         elif pagina == "cidade":
 
             cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
@@ -245,18 +241,14 @@ else:
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
 
-        # ------------------
         # ADMIN
-        # ------------------
         elif pagina == "admin":
 
             col1, col2 = st.columns(2)
             col1.metric("Total de Centros", len(df))
             col2.metric("Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
 
-        # ------------------
         # FRASES
-        # ------------------
         elif pagina == "frases":
 
             st.markdown("""
