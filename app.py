@@ -3,6 +3,7 @@ import pandas as pd
 import urllib.parse
 import re
 
+# --- CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(
     page_title="Guia Espírita", 
     page_icon="🕊️", 
@@ -10,34 +11,30 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS COMPLETO COM FUNDO AZUL CLARINHO ---
+# --- CSS COMPLETO (CORRIGIDO PARA O LOGIN APARECER) ---
 st.markdown("""
 <style>
-/* CSS ANTICELULAR 1000% */
+/* ESCONDE O HEADER E SIDEBAR NATIVOS (IMPEDE O 'VOLTAR' DO STREAMLIT) */
+header[data-testid="stHeader"], [data-testid="stSidebar"] {
+    display: none !important;
+}
+
+/* TIRA O ESPAÇAMENTO DO TOPO QUE O HEADER DEIXA */
+.block-container {
+    padding-top: 1rem !important;
+}
+
+/* ANTI-TOUCH MOBILE */
 * {
     -webkit-touch-callout: none !important;
-    -webkit-user-select: none !important;
-    touch-action: manipulation !important;
-    overscroll-behavior: none !important;
 }
-
-button, [data-testid*="back"], [data-testid*="header"], 
-button[kind="header"], button[aria-label*="voltar"],
-button[title*="voltar"], button[type="button"] {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    height: 0 !important;
-    width: 0 !important;
-}
-
-section[data-testid="stSidebar"] { display: none !important; }
 
 /* FUNDO AZUL CLARINHO */
 .stApp { 
     background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important; 
 }
 
+/* ESTILOS DOS CARDS */
 .card-centro { 
     background: white !important; padding: 25px; border-radius: 20px; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
@@ -74,12 +71,12 @@ section[data-testid="stSidebar"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
+# --- FUNÇÕES AUXILIARES ---
 def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def remover_acentos(texto):
-    if pd.isna(texto):
-        return ""
+    if pd.isna(texto): return ""
     texto = str(texto).lower()
     return re.sub(r'[àáâãäå]', 'a', re.sub(r'[èéêë]', 'e', re.sub(r'[ìíîï]', 'i', re.sub(r'[òóôõö]', 'o', re.sub(r'[ùúûü]', 'u', texto)))))
 
@@ -87,26 +84,12 @@ def criar_link_maps(row):
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
     end = ajustar_texto(row.get('ENDERECO', ''))
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
-    bairro = ajustar_texto(row.get('BAIRRO', ''))
-    
-    # Tanabi ESPECÍFICO - 4 centros funcionando
-    if 'tanabi' in cid.lower():
-        if nome_google and len(nome_google) > 3:
-            return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(nome_google + ', Tanabi SP')}"
-        if end:
-            return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(end + ', Tanabi SP')}"
-        return "https://www.google.com/maps/place/Tanabi+-+SP/@-20.6194,-51.4444,14z"
-    
-    # Geral
     if nome_google and len(nome_google) > 5:
-        return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(nome_google)}"
-    
+        return f"https://www.google.com{urllib.parse.quote(nome_google)}"
     if end and cid:
-        endereco_limpo = re.sub(r'[,\s]+', ', ', end.strip())[:120]
-        query = f"{endereco_limpo}, {cid}, SP"
-        return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(query)}"
-    
-    return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(cid or 'São Paulo')}"
+        query = f"{end}, {cid}, SP"
+        return f"https://www.google.com{urllib.parse.quote(query)}"
+    return f"https://www.google.com{urllib.parse.quote(cid or 'São Paulo')}"
 
 def renderizar_card(row, index):
     nome = ajustar_texto(row.get('NOME', 'Centro Espírita'))
@@ -115,9 +98,8 @@ def renderizar_card(row, index):
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
-    
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
-    link_wa = f"https://wa.me/55{whats_num}" if len(whats_num) >= 10 else "#"
+    link_wa = f"https://wa.me{whats_num}" if len(whats_num) >= 10 else "#"
     link_maps = criar_link_maps(row)
 
     st.markdown(f"""
@@ -138,15 +120,12 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- Session state ---
-if "logado" not in st.session_state: 
-    st.session_state.logado = False
-if "menu_aberto" not in st.session_state:
-    st.session_state.menu_aberto = False
-if "pagina" not in st.session_state:
-    st.session_state.pagina = None
+# --- LÓGICA DE ESTADO ---
+if "logado" not in st.session_state: st.session_state.logado = False
+if "menu_aberto" not in st.session_state: st.session_state.menu_aberto = False
+if "pagina" not in st.session_state: st.session_state.pagina = None
 
-# --- LOGIN ---
+# --- FLUXO DE LOGIN ---
 if not st.session_state.logado:
     st.title("🕊️ Guia Espírita - Login")
     with st.form("login_guia"):
@@ -158,27 +137,27 @@ if not st.session_state.logado:
 else:
     @st.cache_data
     def carregar_dados():
+        # Certifique-se que o arquivo guia.xlsx está na mesma pasta
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         return df
     
     df = carregar_dados()
 
-    # BOTÃO MENU SIMPLIFICADO
+    # TOPO COM BOTÃO MENU
     col1, col2 = st.columns([3,1])
     with col1:
         st.title("🕊️ Guia Espírita")
     with col2:
         if st.button("📋 MENU", use_container_width=True):
             st.session_state.menu_aberto = not st.session_state.menu_aberto
-            if not st.session_state.menu_aberto:
-                st.session_state.pagina = None
             st.rerun()
 
+    # MENU EXPANSÍVEL
     if st.session_state.menu_aberto:
         st.markdown("---")
-        col1, col2 = st.columns(2)
-        with col1:
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
             if st.button("🔎 Pesquisar Geral", use_container_width=True): 
                 st.session_state.pagina = "pesquisar"
                 st.session_state.menu_aberto = False
@@ -187,7 +166,7 @@ else:
                 st.session_state.pagina = "cidade"
                 st.session_state.menu_aberto = False
                 st.rerun()
-        with col2:
+        with col_m2:
             if st.button("📊 Admin", use_container_width=True):
                 st.session_state.pagina = "admin"
                 st.session_state.menu_aberto = False
@@ -197,64 +176,36 @@ else:
                 st.session_state.menu_aberto = False
                 st.rerun()
         if st.button("🚪 Sair", type="secondary", use_container_width=True):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+            for key in list(st.session_state.keys()): del st.session_state[key]
             st.rerun()
         st.markdown("---")
 
+    # CONTEÚDO DAS PÁGINAS
     pagina = st.session_state.get('pagina', None)
     
     if pagina == "pesquisar":
         st.markdown("### 🔎 Pesquisar Geral")
-        termo = st.text_input("Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...")
-        
+        termo = st.text_input("Digite para buscar:", placeholder="Ex: Meimei, Catanduva...")
         if termo and len(termo) >= 3:
-            termo_sem_acento = remover_acentos(termo)
-            palavras = termo.lower().split() + [termo_sem_acento]
-            
+            termo_limpo = remover_acentos(termo)
             def checar(row):
-                texto_completo = " ".join([str(row[col]).lower() for col in df.columns if pd.notna(row[col])])
-                texto_sem_acento = remover_acentos(texto_completo)
-                return any(palavra in texto_completo or palavra in texto_sem_acento for palavra in palavras)
-            
+                texto = " ".join([str(v) for v in row.values]).lower()
+                return termo.lower() in texto or termo_limpo in remover_acentos(texto)
             res = df[df.apply(checar, axis=1)]
-            if len(res) > 0:
-                st.success(f"✅ Encontrados {len(res)} centro(s)")
-                for i, (_, row) in enumerate(res.iterrows(), 1):
-                    renderizar_card(row, i)
-            else: 
-                st.warning("❌ Nenhum resultado encontrado.")
-        elif termo: 
-            st.warning("⚠️ Mínimo de 3 letras!")
+            for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
     
     elif pagina == "cidade":
         st.markdown("### 📍 Por Cidade")
-        cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
-        cidades_com_contagem = []
-        for cidade in sorted(cidades):
-            cidade_limpa = str(cidade).strip()
-            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] 
-                and len(cidade_limpa) > 2):
-                count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
-                cidades_com_contagem.append(f"{cidade_limpa} ({count})")
-        
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem)
+        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + list(cidades))
         if sel != "-- Selecione --":
-            cidade_selecionada = sel.split(' (')[0].strip()
-            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
-            st.success(f"✅ Encontrados {len(res)} centro(s) em {cidade_selecionada}")
-            for i, (_, row) in enumerate(res.iterrows(), 1):
-                renderizar_card(row, i)
+            res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
+            for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
     elif pagina == "admin":
-        st.markdown("### 📊 Dashboard Admin")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("🏠 Total Centros", len(df))
-        col2.metric("📍 Cidades", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
-        col3.metric("📱 Com WhatsApp", len(df[df['CELULAR'].notna()]))
+        st.markdown("### 📊 Dashboard")
+        st.metric("🏠 Total Centros", len(df))
 
     elif pagina == "frases":
-        st.markdown("### 🕊️ Frases Espíritas")
-        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
-        st.markdown("> **Nascer, sofrer, morrer, abençoados sejam os que assim sofrem!** — Emmanuel")
-        st.markdown("> **Onde reina o amor, não há desejos de vingança.** — Chico Xavier")
+        st.markdown("### 🕊️ Frases")
+        st.info("Fora da caridade não há salvação. — Allan Kardec")
