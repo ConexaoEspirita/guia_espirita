@@ -1,41 +1,34 @@
 import streamlit as st
 import pandas as pd
 import urllib.parse
-import re
 
-st.set_page_config(page_title="Guia Espírita", page_icon="🕊️", layout="wide")
+st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# ==============================
-# SESSION STATE SEGURO
-# ==============================
+# =========================
+# SESSION STATE
+# =========================
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
-
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
-# ==============================
-# CSS COMPLETO DOS CARDS
-# ==============================
+# =========================
+# CSS PROFISSIONAL
+# =========================
 st.markdown("""
 <style>
-.stApp { background: #f4f7f9; }
-
 .titulo-profissional {
-    color:#1E3A8A;
-    font-weight:700;
-    font-size:26px;
-    margin-top:10px;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 15px;
 }
 
 .card-centro { 
     background: white;
-    padding: 25px;
-    border-radius: 20px; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-    margin-bottom: 25px;
-    border-left: 12px solid #0047AB;
-    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .numero-badge { 
@@ -52,14 +45,14 @@ st.markdown("""
 
 .nome-centro {
     color: #1E3A8A;
-    font-size: 22px;
-    font-weight: 800;
+    font-size: 20px;
+    font-weight: 700;
 }
 
 .nome-fantasia {
     color: #3B82F6;
-    font-size: 16px;
     font-style: italic;
+    font-size: 16px;
 }
 
 .palestras-verde {
@@ -68,19 +61,19 @@ st.markdown("""
     background: #D1FAE5;
     padding: 10px;
     border-radius: 10px;
-    margin: 12px 0;
+    margin: 10px 0;
     border: 1px solid #10B981;
 }
 
 .info-linha { margin: 6px 0; }
 
-.btn-row { display:flex; gap:10px; margin-top:15px; }
+.btn-row { display:flex; gap:10px; margin-top:10px; }
 
 .btn-link {
     text-decoration:none;
     color:white;
-    padding:12px;
-    border-radius:10px;
+    padding:10px;
+    border-radius:8px;
     font-weight:700;
     text-align:center;
     flex:1;
@@ -91,15 +84,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==============================
-# FUNÇÕES
-# ==============================
+# =========================
+# FUNÇÃO CARD
+# =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def renderizar_card(row, index):
-
-    nome = ajustar(row.get('NOME'))
+    nome = ajustar(row.get('NOME', 'Centro Espírita'))
     fantasia = ajustar(row.get('NOME FANTASIA'))
     endereco = ajustar(row.get('ENDERECO'))
     cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
@@ -130,11 +122,10 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# ==============================
-# LOGIN
-# ==============================
+# =========================
+# LOGIN SIMPLES
+# =========================
 if not st.session_state["logado"]:
-
     st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
 
     with st.form("login"):
@@ -148,36 +139,32 @@ if not st.session_state["logado"]:
 else:
 
     @st.cache_data
-    def carregar():
+    def carregar_dados():
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         return df
 
-    df = carregar()
+    df = carregar_dados()
     pagina = st.session_state["pagina"]
 
-    # MENU
+    # =========================
+    # MENU PRINCIPAL
+    # =========================
     if pagina is None:
-
         st.markdown("<div class='titulo-profissional'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
-        st.write("")
 
         col1, col2 = st.columns(2)
-
         with col1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
                 st.session_state["pagina"] = "pesquisar"
                 st.rerun()
-
             if st.button("📍 Localizar por Cidade", use_container_width=True):
                 st.session_state["pagina"] = "cidade"
                 st.rerun()
-
         with col2:
             if st.button("📊 Painel Administrativo", use_container_width=True):
                 st.session_state["pagina"] = "admin"
                 st.rerun()
-
             if st.button("🕊️ Mensagens Espíritas", use_container_width=True):
                 st.session_state["pagina"] = "frases"
                 st.rerun()
@@ -187,17 +174,13 @@ else:
             st.cache_data.clear()
             st.rerun()
 
+    # =========================
     # PÁGINAS INTERNAS
+    # =========================
     else:
 
-        col1, col2 = st.columns([1, 10])
-
+        col1, col2 = st.columns([10,1])
         with col1:
-            if st.button("⬅️"):
-                st.session_state["pagina"] = None
-                st.rerun()
-
-        with col2:
             titulos = {
                 "pesquisar": "🔎 Busca Avançada",
                 "cidade": "📍 Localizar por Cidade",
@@ -205,52 +188,55 @@ else:
                 "frases": "🕊️ Mensagens Espíritas"
             }
             st.markdown(f"<div class='titulo-profissional'>{titulos[pagina]}</div>", unsafe_allow_html=True)
-            st.write("")
+        with col2:
+            if st.button("⬅️"):
+                st.session_state["pagina"] = None
+                st.rerun()
 
-        # BUSCA
+        st.divider()
+
+        # =========================
+        # BUSCA AVANÇADA
+        # =========================
         if pagina == "pesquisar":
-
             termo = st.text_input("Digite pelo menos 3 letras:")
-
-            if termo and len(termo) >= 3:
-                termo = termo.lower()
-                resultado = df[df.apply(
-                    lambda row: termo in " ".join(row.astype(str)).lower(),
-                    axis=1
-                )]
-
+            if termo and len(termo.strip()) >= 3:
+                termo = termo.strip().lower()
+                resultado = df[df.apply(lambda row: termo in " ".join(row.astype(str)).lower(), axis=1)]
                 if not resultado.empty:
+                    st.success(f"{len(resultado)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(resultado.iterrows(), 1):
                         renderizar_card(row, i)
                 else:
                     st.warning("Nenhum resultado encontrado.")
+            elif termo:
+                st.warning("Digite pelo menos 3 letras.")
 
-        # CIDADE
+        # =========================
+        # CIDADES COM CONTAGEM
+        # =========================
         elif pagina == "cidade":
-
-            cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-
-            escolha = st.selectbox(
-                "Selecione uma cidade:",
-                ["-- Selecione --"] + list(cidades)
-            )
-
+            cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
+            lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
+            escolha = st.selectbox("Selecione uma cidade:", lista_cidades)
             if escolha != "-- Selecione --":
+                cidade_selecionada = escolha.split(" (")[0]
+                resultado = df[df["CIDADE DO CENTRO ESPIRITA"]==cidade_selecionada]
+                st.success(f"{len(resultado)} centro(s) encontrado(s)")
+                for i, (_, row) in enumerate(resultado.iterrows(),1):
+                    renderizar_card(row,i)
 
-                resultado = df[df["CIDADE DO CENTRO ESPIRITA"] == escolha]
-
-                for i, (_, row) in enumerate(resultado.iterrows(), 1):
-                    renderizar_card(row, i)
-
+        # =========================
         # ADMIN
+        # =========================
         elif pagina == "admin":
-
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
-        # FRASES
+        # =========================
+        # FRASES ESPÍRITAS
+        # =========================
         elif pagina == "frases":
-
             st.markdown("""
             > Fora da caridade não há salvação. — Allan Kardec  
             > Amai-vos uns aos outros. — Jesus  
