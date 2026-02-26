@@ -115,16 +115,11 @@ else:
     if opcao == "🏠 Início":
         st.title("🕊️ Bem-vindo ao Guia")
         
-        # BOTÃO ENORME QUE OCUPA A TELA INTEIRA
-        col1, col2, col3 = st.columns([0.1, 8, 0.1])
+        # BOTÃO GIGANTE NO MEIO - SIMPLES E DIRETO
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
-            if st.button("➤ ABRIR MENU LATERAL ➤", use_container_width=True, key="menu_lateral"):
-                st.session_state.mostra_menu = True
-                st.rerun()
-        
-        # Sidebar sempre visível após clique
-        if st.session_state.get('mostra_menu', False):
-            st.sidebar.success("✅ MENU ABERTO - Use as opções!")
+            st.markdown("# **👈 MENU LATERAL AO LADO**")
+            st.info("Clique no ícone ☰ no canto superior direito")
 
     elif opcao == "🔎 Pesquisar Geral":
         termo = st.text_input("🔍 Digite pelo menos 3 letras para buscar:", placeholder="Ex: Meimei, Euripedes, Catanduva...", help="Busca em nome, cidade e responsável")
