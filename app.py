@@ -97,18 +97,15 @@ else:
         <div style='padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     border-radius: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);'>
             <div style='text-align: center; color: white;'>
-                <h2 style='margin: 0; font-size: 22px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);'>
-                    🕊️ GUIA ESPÍRITA
-                </h2>
-                <p style='margin: 5px 0 0 0; font-size: 13px; opacity: 0.9;'>Encontre centros próximos</p>
+                <h2 style='margin: 0; font-size: 22px;'>🕊️ GUIA ESPÍRITA</h2>
+                <p style='margin: 5px 0 0 0; font-size: 13px;'>Encontre centros próximos</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
         opcao = st.radio("Navegação:", 
                          ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases", "🚪 Sair"], 
-                         label_visibility="collapsed",
-                         help="👆 Navegação principal do sistema")
+                         label_visibility="collapsed")
 
     if opcao == "🚪 Sair":
         st.session_state.logado = False
@@ -118,114 +115,57 @@ else:
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    # --- MENU HAMBURGER CORRIGIDO ☰ ---
-    if "menu_aberto" not in st.session_state:
-        st.session_state.menu_aberto = False
-
+    # -------- MENU POPOVER --------
     if opcao == "🔎 Pesquisar Geral":
         col1, col2 = st.columns([8,1])
         with col1:
             st.markdown('<h2 class="titulo-secundario">🔍 Pesquisar Geral</h2>', unsafe_allow_html=True)
+
         with col2:
-            if st.button("☰", key="hamb_menu", help="Menu rápido"):
-                st.session_state.menu_aberto = True  # ✅ CORRIGIDO: SEMPRE ABRE
-        
-        # TOOLTIP QUE SUMI AO CLICAR
-        if st.session_state.menu_aberto:
-            st.markdown("---")
-            col_menu1, col_menu2, col_menu3, col_menu4 = st.columns(4)
-            with col_menu1:
-                if st.button("🔎 Pesq. Geral", key="menu1"):
+            with st.popover("☰", help="Menu rápido"):
+                st.markdown("### 🔎 Navegação Rápida")
+
+                if st.button("🔎 Pesquisar Geral", use_container_width=True):
                     st.session_state.opcao = "🔎 Pesquisar Geral"
-                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
-            with col_menu2:
-                if st.button("📍 Cidade", key="menu2"):
-                    st.session_state.opcao = "📍 Por Cidade" 
-                    st.session_state.menu_aberto = False  # ✅ FECHA
+
+                if st.button("📍 Por Cidade", use_container_width=True):
+                    st.session_state.opcao = "📍 Por Cidade"
                     st.rerun()
-            with col_menu3:
-                if st.button("📊 Admin", key="menu3"):
+
+                if st.button("📊 Admin", use_container_width=True):
                     st.session_state.opcao = "📊 Admin"
-                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
-            with col_menu4:
-                if st.button("🕊️ Frases", key="menu4"):
+
+                if st.button("🕊️ Frases", use_container_width=True):
                     st.session_state.opcao = "🕊️ Frases"
-                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
-            st.markdown("---")
-        
-        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:", 
-                             placeholder="Ex: Centro, João, São Paulo...",
-                             help="Busca em nome, cidade e responsável")
-        
+
+        termo = st.text_input("🔍 Digite pelo menos 4 letras para buscar:")
+
         if termo and len(termo) >= 4:
             palavras_busca = termo.lower().split()
+
             def normalizar(t):
                 if pd.isna(t): return ""
                 t = str(t).lower()
-                return (t.replace('ç','c').replace('ã','a').replace('õ','o').replace('á','a').replace('é','e').replace('í','i').replace('ó','o').replace('ú','u'))
+                return (t.replace('ç','c').replace('ã','a').replace('õ','o')
+                        .replace('á','a').replace('é','e')
+                        .replace('í','i').replace('ó','o').replace('ú','u'))
+
             def checar_linha(row):
                 texto_linha = normalizar(" ".join(row.astype(str)))
                 return all(normalizar(p) in texto_linha for p in palavras_busca)
 
             mask = df.apply(checar_linha, axis=1)
             res = df[mask]
-            
+
             if len(res) > 0:
                 st.success(f"✅ Encontrados {len(res)} centro(s)")
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
-            else: 
+            else:
                 st.warning("❌ Nenhum resultado encontrado.")
-        elif termo: 
+
+        elif termo:
             st.warning("⚠️ Digite pelo menos 4 letras!")
-
-    elif opcao == "🏠 Início":
-        st.markdown('<h1 class="titulo-principal">🕊️ Bem-vindo ao Guia</h1>', unsafe_allow_html=True)
-        st.markdown("""
-        <div style='text-align: center; padding: 25px; background: white; border-radius: 15px; 
-                    border: 2px solid #3B82F6; box-shadow: 0 8px 25px rgba(59,130,246,0.15); margin: 30px 0;'>
-            <div style='font-size: 36px; margin: 15px 0; color: #3B82F6;'>👈 Menu Lateral</div>
-            <p style='margin: 0; font-size: 16px; color: #1E3A8A; font-weight: 500;'>Selecione "Pesquisar Geral" ou "Por Cidade"</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    elif opcao == "📍 Por Cidade":
-        st.markdown('<h2 class="titulo-secundario">Buscar por Cidade</h2>', unsafe_allow_html=True)
-        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        sel = st.selectbox("Selecione a cidade:", 
-                          ["-- Selecione uma cidade --"] + cidades, 
-                          help="Escolha sua cidade para ver os centros espíritas")
-        if sel != "-- Selecione uma cidade --":
-            res_cidade = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            st.success(f"✅ Encontrados {len(res_cidade)} centro(s) em {sel}")
-            for i, (_, row) in enumerate(res_cidade.iterrows(), 1):
-                renderizar_card(row, i)
-
-    elif opcao == "📊 Admin":
-        st.markdown('<h1 class="titulo-principal">📊 Painel Administrativo</h1>', unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("🏠 Total Centros", len(df))
-        with col2:
-            st.metric("📍 Cidades Únicas", len(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()))
-        with col3:
-            st.metric("👥 Visitas Hoje", "127")
-        st.info("🔧 **Painel Admin** - Estatísticas em tempo real")
-
-    elif opcao == "🕊️ Frases":
-        st.markdown('<h1 class="titulo-principal">🕊️ Frases Espíritas</h1>', unsafe_allow_html=True)
-        st.info("📖 **Em desenvolvimento** - Frases inspiradoras do espiritismo")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("""
-            > "Fora da caridade não há salvação."  
-            **Allan Kardec**
-            """)
-        with col2:
-            st.markdown("""
-            > "Amai-vos uns aos outros."  
-            **Jesus**
-            """)
