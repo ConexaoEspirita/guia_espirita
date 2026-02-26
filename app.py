@@ -14,12 +14,42 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# CSS DOS CARDS
+# CSS - BOTÃO FLUTUANTE ADICIONADO
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 
+/* BOTÃO FLUTUANTE - NOVO */
+.botao-fluatante {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    width: 55px !important;
+    height: 55px !important;
+    background: linear-gradient(135deg, #4285F4, #34A853) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    box-shadow: 0 8px 25px rgba(66,133,244,0.4) !important;
+    cursor: pointer !important;
+    font-size: 22px !important;
+    font-weight: bold !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.3s ease !important;
+}
+.botao-fluatante:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 12px 35px rgba(66,133,244,0.6) !important;
+}
+@media (max-width: 768px) {
+    .botao-fluatante { width: 50px !important; height: 50px !important; font-size: 20px !important; }
+}
+
+/* RESTO DO CSS ORIGINAL */
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
 .card-centro { 
@@ -56,7 +86,16 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================
-# FUNÇÕES
+# BOTÃO FLUTUANTE - HTML + JS
+# =========================
+st.markdown("""
+<button class="botao-fluatante" onclick="if(confirm('Voltar ao menu principal?')){window.location.href='?'}">
+    🏠
+</button>
+""", unsafe_allow_html=True)
+
+# =========================
+# FUNÇÕES (mantidas iguais)
 # =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
@@ -97,7 +136,7 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN
+# LOGIN E RESTO DO CÓDIGO (mantidos iguais)
 # =========================
 if not st.session_state.get("logado", False):
     st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
@@ -117,9 +156,7 @@ else:
     df = carregar_dados()
     pagina = st.session_state.get("pagina")
 
-    # =========================
     # MENU PRINCIPAL
-    # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -142,9 +179,7 @@ else:
             st.cache_data.clear()
             st.rerun()
 
-    # =========================
     # PÁGINAS INTERNAS
-    # =========================
     else:
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
@@ -154,10 +189,8 @@ else:
                 resultado = df[df.apply(lambda row: termo_normal in normalize_text(" ".join(row.astype(str))), axis=1)]
                 if not resultado.empty:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
-                    # renderiza todos os cards
                     for i, (_, row) in enumerate(resultado.iterrows(),1):
                         renderizar_card(row,i)
-                    # botão voltar no final se tiver 5 ou mais cards
                     if len(resultado) >= 5:
                         if st.button("⬅️ Voltar"):
                             st.session_state.pagina = None
@@ -178,7 +211,6 @@ else:
                 st.success(f"{len(resultado)} centro(s) encontrado(s)")
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
-                # botão voltar no final se tiver 5 ou mais cards
                 if len(resultado) >= 5:
                     if st.button("⬅️ Voltar"):
                         st.session_state.pagina = None
