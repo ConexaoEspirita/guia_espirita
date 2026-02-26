@@ -19,14 +19,14 @@ def hash_senha(senha):
     return hashlib.sha256(senha.encode()).hexdigest()
 
 # =========================
-# CRIAR ARQUIVO USUARIOS
+# CRIAR ARQUIVO USUARIOS SE NÃO EXISTIR
 # =========================
 if not os.path.exists("usuarios.csv"):
     df_init = pd.DataFrame(columns=["nome", "email", "senha", "data_cadastro"])
     df_init.to_csv("usuarios.csv", index=False)
 
 # =========================
-# SESSION
+# SESSION STATE
 # =========================
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -84,7 +84,7 @@ if not st.session_state.logado:
 
             if st.form_submit_button("Entrar"):
 
-                # ADMIN
+                # LOGIN ADMIN
                 if email.strip().lower() == ADMIN_EMAIL.lower() and hash_senha(senha) == ADMIN_SENHA:
                     st.session_state.logado = True
                     st.session_state.admin = True
@@ -104,7 +104,7 @@ if not st.session_state.logado:
                 else:
                     st.error("Email ou senha incorretos.")
 
-    # -------- RESET --------
+    # -------- RESET SENHA --------
     elif aba == "Esqueci a senha":
 
         df_users = pd.read_csv("usuarios.csv")
@@ -127,47 +127,28 @@ if not st.session_state.logado:
                     st.success("Senha redefinida com sucesso!")
 
 # =========================
-# AREA LOGADA
+# AREA LOGADA COM MENU
 # =========================
 else:
 
-    # -------- ADMIN --------
+    # MENU LATERAL
     if st.session_state.admin:
-
-        st.title("🔒 Área do Administrador")
-
-        df_users = pd.read_csv("usuarios.csv")
-
-        st.subheader("👥 Total de Participantes")
-        st.metric("Usuários cadastrados", len(df_users))
-
-        if st.button("Ver usuários cadastrados"):
-            st.dataframe(df_users)
-
-        st.markdown("---")
-
-        if st.button("🚪 Sair"):
-            st.session_state.logado = False
-            st.session_state.admin = False
-            st.rerun()
-
-    # -------- USUARIO NORMAL --------
+        pagina = st.sidebar.radio("Menu", ["Início", "Frases", "Admin", "Sair"])
     else:
+        pagina = st.sidebar.radio("Menu", ["Início", "Frases", "Sair"])
+
+    # =========================
+    # PAGINA INICIO
+    # =========================
+    if pagina == "Início":
 
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
 
         st.title("🕊️ Guia Espírita")
 
-        # FRASE KARDEC
-        st.markdown("### 🕊️ Frase Espírita")
-        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
-        st.markdown("---")
-
-        # PESQUISA GERAL
         busca = st.text_input("🔎 Pesquisa geral")
 
-        # FILTRO POR CIDADE
         cidades = sorted(df["cidade"].dropna().unique())
         cidade_escolhida = st.selectbox("📍 Filtrar por cidade", ["Todas"] + cidades)
 
@@ -186,7 +167,7 @@ else:
 
         st.markdown(f"### 🔎 Resultados: {len(df_filtrado)} encontrados")
 
-        # NÃO MEXE NA LÓGICA DOS CARDS
+        # CARDS (MESMA LÓGICA)
         for _, row in df_filtrado.iterrows():
             st.markdown(f"""
             ### {row['nome']}
@@ -196,6 +177,32 @@ else:
             ---
             """)
 
-        if st.button("🚪 Sair"):
-            st.session_state.logado = False
-            st.rerun()
+    # =========================
+    # PAGINA FRASES
+    # =========================
+    elif pagina == "Frases":
+
+        st.title("🕊️ Frase Espírita")
+        st.markdown("> **Fora da caridade não há salvação.** — Allan Kardec")
+
+    # =========================
+    # PAGINA ADMIN
+    # =========================
+    elif pagina == "Admin" and st.session_state.admin:
+
+        st.title("🔒 Área do Administrador")
+
+        df_users = pd.read_csv("usuarios.csv")
+
+        st.metric("👥 Usuários cadastrados", len(df_users))
+
+        if st.button("Ver usuários cadastrados"):
+            st.dataframe(df_users)
+
+    # =========================
+    # SAIR
+    # =========================
+    elif pagina == "Sair":
+        st.session_state.logado = False
+        st.session_state.admin = False
+        st.rerun()
