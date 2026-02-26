@@ -11,7 +11,7 @@ if "page" in st.query_params:
 else:
     pagina = "🏠 Início"
 
-# -------- CSS ORIGINAL MANTIDO --------
+# -------- CSS --------
 st.markdown("""
 <style>
     .stApp { background: #f4f7f9; }
@@ -72,11 +72,9 @@ st.markdown("""
 with st.sidebar:
     st.markdown("## 🕊️ Guia Espírita")
 
-    pagina = st.radio(
-        "Navegação",
-        ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"],
-        index=["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"].index(pagina)
-    )
+    paginas = ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases"]
+
+    pagina = st.radio("Navegação", paginas, index=paginas.index(pagina))
 
 st.query_params["page"] = pagina
 st.divider()
@@ -85,6 +83,7 @@ st.divider()
 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
 df.columns = df.columns.str.strip()
 
+# -------- FUNÇÃO LIMPAR TEXTO (resolve AMEL / acentos) --------
 def limpar_texto(txt):
     if pd.isna(txt):
         return ""
@@ -93,7 +92,8 @@ def limpar_texto(txt):
     txt = "".join(c for c in txt if not unicodedata.combining(c))
     return txt
 
-def renderizar_card(row, index):
+# -------- FUNÇÃO CARD --------
+def renderizar_card(row):
     nome = str(row.get('NOME', 'Centro Espírita')).strip()
     fantasia = str(row.get('NOME FANTASIA', '')).strip()
     end = str(row.get('ENDERECO', '')).strip()
@@ -108,8 +108,9 @@ def renderizar_card(row, index):
     else:
         link_wa = "#"
 
-    # Maps (rota direta)
-    link_maps = f"https://www.google.com/maps/dir/?api=1&destination={urllib.parse.quote(f'{end}, {cid}')}"
+    # MAPS COM GRAMPO (PIN)
+    endereco_completo = f"{end}, {cid}"
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(endereco_completo)}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -148,8 +149,8 @@ elif pagina == "🔎 Pesquisar Geral":
 
         if len(res) > 0:
             st.success(f"✅ Encontrados {len(res)} centro(s)")
-            for i, (_, row) in enumerate(res.iterrows(), 1):
-                renderizar_card(row, i)
+            for _, row in res.iterrows():
+                renderizar_card(row)
         else:
             st.warning("❌ Nenhum resultado encontrado.")
 
@@ -161,16 +162,13 @@ elif pagina == "📍 Por Cidade":
 
     cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
 
-    sel = st.selectbox(
-        "Selecione a cidade:",
-        ["-- Selecione uma cidade --"] + cidades
-    )
+    sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades)
 
-    if sel != "-- Selecione uma cidade --":
+    if sel != "-- Selecione --":
         res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
         st.success(f"✅ Encontrados {len(res)} centro(s) em {sel}")
-        for i, (_, row) in enumerate(res.iterrows(), 1):
-            renderizar_card(row, i)
+        for _, row in res.iterrows():
+            renderizar_card(row)
 
 elif pagina == "📊 Admin":
     st.header("📊 Painel Administrativo")
