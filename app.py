@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- CSS: APENAS O AJUSTE PARA O BOTÃO DE LOGIN APARECER ---
+# --- CSS: APENAS LIBERANDO O BOTÃO DE LOGIN ---
 st.markdown("""
 <style>
 * {
@@ -20,7 +20,7 @@ st.markdown("""
     overscroll-behavior: none !important;
 }
 
-/* REMOVIDO 'button' DAQUI PARA O LOGIN FUNCIONAR */
+/* REMOVIDO 'button' DAQUI PARA O LOGIN APARECER */
 [data-testid*="back"], [data-testid*="header"], 
 button[kind="header"], button[aria-label*="voltar"],
 button[title*="voltar"] {
@@ -77,17 +77,16 @@ def ajustar_texto(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def remover_acentos(texto):
-    if pd.isna(texto):
-        return ""
+    if pd.isna(texto): return ""
     texto = str(texto).lower()
     return re.sub(r'[àáâãäå]', 'a', re.sub(r'[èéêë]', 'e', re.sub(r'[ìíîï]', 'i', re.sub(r'[òóôõö]', 'o', re.sub(r'[ùúûü]', 'u', texto)))))
 
+# --- SUA FUNÇÃO DE MAPA ORIGINAL (RESTAURADA) ---
 def criar_link_maps(row):
     nome_google = ajustar_texto(row.get('NOME_GOOGLE_MAPS', ''))
     end = ajustar_texto(row.get('ENDERECO', ''))
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     
-    # Tanabi ESPECÍFICO
     if 'tanabi' in cid.lower():
         if nome_google and len(nome_google) > 3:
             return f"https://www.google.com{urllib.parse.quote(nome_google + ', Tanabi SP')}"
@@ -112,6 +111,7 @@ def renderizar_card(row, index):
     palestras = ajustar_texto(row.get('PALESTRA PUBLICA', 'Consulte'))
     resp = ajustar_texto(row.get('RESPONSAVEL', 'N/I'))
     
+    # --- SEU WHATSAPP ORIGINAL ---
     whats_num = "".join(filter(str.isdigit, str(row.get('CELULAR', ''))))
     link_wa = f"https://wa.me{whats_num}" if len(whats_num) >= 10 else "#"
     link_maps = criar_link_maps(row)
@@ -134,7 +134,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# --- SESSÃO E LOGIN ---
+# --- LOGIN E MENU ---
 if "logado" not in st.session_state: st.session_state.logado = False
 if "menu_aberto" not in st.session_state: st.session_state.menu_aberto = False
 if "pagina" not in st.session_state: st.session_state.pagina = None
@@ -151,9 +151,9 @@ else:
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    col1, col2 = st.columns([3,1])
-    with col1: st.title("🕊️ Guia Espírita")
-    with col2:
+    c1, c2 = st.columns([3,1])
+    with c1: st.title("🕊️ Guia Espírita")
+    with c2:
         if st.button("📋 MENU", use_container_width=True):
             st.session_state.menu_aberto = not st.session_state.menu_aberto
             if not st.session_state.menu_aberto: st.session_state.pagina = None
@@ -161,13 +161,13 @@ else:
 
     if st.session_state.menu_aberto:
         st.markdown("---")
-        c1, c2 = st.columns(2)
-        with c1:
+        m1, m2 = st.columns(2)
+        with m1:
             if st.button("🔎 Pesquisar", use_container_width=True): 
                 st.session_state.pagina = "pesquisar"; st.session_state.menu_aberto = False; st.rerun()
             if st.button("📍 Cidade", use_container_width=True): 
                 st.session_state.pagina = "cidade"; st.session_state.menu_aberto = False; st.rerun()
-        with c2:
+        with m2:
             if st.button("🕊️ Frases", use_container_width=True): 
                 st.session_state.pagina = "frases"; st.session_state.menu_aberto = False; st.rerun()
             if st.button("🚪 Sair", use_container_width=True): 
@@ -176,12 +176,13 @@ else:
 
     p = st.session_state.pagina
     if p == "pesquisar":
-        t = st.text_input("Busca:")
+        t = st.text_input("Buscar:")
         if len(t) >= 3:
             res = df[df.apply(lambda r: t.lower() in str(r.values).lower(), axis=1)]
             for i, (_, r) in enumerate(res.iterrows(), 1): renderizar_card(r, i)
 
     elif p == "cidade":
+        # Contagem corrigida para value_counts()
         counts = df['CIDADE DO CENTRO ESPIRITA'].value_counts().to_dict()
         ops = [f"{c} ({q})" for c, q in sorted(counts.items())]
         sel = st.selectbox("Cidade:", ["-- Selecione --"] + ops)
