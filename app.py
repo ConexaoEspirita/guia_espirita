@@ -106,19 +106,19 @@ else:
         """, unsafe_allow_html=True)
         
         opcao = st.radio("Navegação:", 
-                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🚪 Sair"], 
+                         ["🏠 Início", "🔎 Pesquisar Geral", "📍 Por Cidade", "📊 Admin", "🕊️ Frases", "🚪 Sair"], 
                          label_visibility="collapsed",
                          help="👆 Navegação principal do sistema")
-        
-        if opcao == "🚪 Sair":
-            st.session_state.logado = False
-            st.cache_data.clear()
-            st.rerun()
+
+    if opcao == "🚪 Sair":
+        st.session_state.logado = False
+        st.cache_data.clear()
+        st.rerun()
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
 
-    # --- MENU HAMBURGER 3 TRACINHOS ---
+    # --- MENU HAMBURGER CORRIGIDO ☰ ---
     if "menu_aberto" not in st.session_state:
         st.session_state.menu_aberto = False
 
@@ -127,31 +127,32 @@ else:
         with col1:
             st.markdown('<h2 class="titulo-secundario">🔍 Pesquisar Geral</h2>', unsafe_allow_html=True)
         with col2:
-            if st.button("☰", key="hamb_menu", help="Abrir menu de opções"):
-                st.session_state.menu_aberto = not st.session_state.menu_aberto
+            if st.button("☰", key="hamb_menu", help="Menu rápido"):
+                st.session_state.menu_aberto = True  # ✅ CORRIGIDO: SEMPRE ABRE
         
-        # TOOLTIP ABAIXO DOS 3 TRACINHOS ☰
+        # TOOLTIP QUE SUMI AO CLICAR
         if st.session_state.menu_aberto:
             st.markdown("---")
             col_menu1, col_menu2, col_menu3, col_menu4 = st.columns(4)
             with col_menu1:
                 if st.button("🔎 Pesq. Geral", key="menu1"):
-                    st.session_state.menu_aberto = False
+                    st.session_state.opcao = "🔎 Pesquisar Geral"
+                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
             with col_menu2:
                 if st.button("📍 Cidade", key="menu2"):
                     st.session_state.opcao = "📍 Por Cidade" 
-                    st.session_state.menu_aberto = False
+                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
             with col_menu3:
                 if st.button("📊 Admin", key="menu3"):
                     st.session_state.opcao = "📊 Admin"
-                    st.session_state.menu_aberto = False
+                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
             with col_menu4:
                 if st.button("🕊️ Frases", key="menu4"):
-                    st.session_state.opcao = "Frases"
-                    st.session_state.menu_aberto = False
+                    st.session_state.opcao = "🕊️ Frases"
+                    st.session_state.menu_aberto = False  # ✅ FECHA
                     st.rerun()
             st.markdown("---")
         
@@ -213,3 +214,18 @@ else:
         with col3:
             st.metric("👥 Visitas Hoje", "127")
         st.info("🔧 **Painel Admin** - Estatísticas em tempo real")
+
+    elif opcao == "🕊️ Frases":
+        st.markdown('<h1 class="titulo-principal">🕊️ Frases Espíritas</h1>', unsafe_allow_html=True)
+        st.info("📖 **Em desenvolvimento** - Frases inspiradoras do espiritismo")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            > "Fora da caridade não há salvação."  
+            **Allan Kardec**
+            """)
+        with col2:
+            st.markdown("""
+            > "Amai-vos uns aos outros."  
+            **Jesus**
+            """)
