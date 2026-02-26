@@ -167,9 +167,9 @@ else:
                 st.session_state["pagina"] = None
                 st.rerun()
 
-        st.divider()
-
-        # BUSCA AVANÇADA
+        # =========================
+        # BUSCA AVANÇADA - topo
+        # =========================
         if pagina == "pesquisar":
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
@@ -184,7 +184,9 @@ else:
             elif termo:
                 st.warning("Digite pelo menos 3 letras.")
 
-        # POR CIDADE
+        # =========================
+        # POR CIDADE - topo
+        # =========================
         elif pagina == "cidade":
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
@@ -196,12 +198,16 @@ else:
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
 
+        # =========================
         # ADMIN
+        # =========================
         elif pagina == "admin":
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
+        # =========================
         # FRASES
+        # =========================
         elif pagina == "frases":
             st.markdown("""
             > Fora da caridade não há salvação. — Allan Kardec  
