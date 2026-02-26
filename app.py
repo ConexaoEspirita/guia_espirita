@@ -95,7 +95,7 @@ def renderizar_card(row, index):
         <div class="numero-badge">#{index}</div>
         <div class="nome-centro">{nome} 🕊️</div>
         {"<div class='nome-fantasia'>" + fantasia + "</div>" if fantasia else ""}
-        <div class="palestras-verde">🗣️ {palestra}</div>
+        <div class="palestras-verde">🗣️ PALESTRA: {palestra}</div>
         <div class="info-linha">🏙️ <b>Cidade:</b> {cidade}</div>
         <div class="info-linha">📍 <b>Endereço:</b> {endereco}</div>
         <div class="info-linha">👤 <b>Responsável:</b> {responsavel}</div>
@@ -132,7 +132,7 @@ else:
     # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
-        st.markdown("<div class='subtitulo-normal'>Localizar por Cidade</div>", unsafe_allow_html=True)
+        # remove o "Localizar por Cidade" desnecessário
 
         col1, col2 = st.columns(2)
         with col1:
@@ -161,15 +161,13 @@ else:
         # Botão voltar no canto direito
         col1, col2 = st.columns([9,1])
         with col1:
-            pass  # sem título, página limpa
+            pass  # sem título
         with col2:
             if st.button("⬅️"):
                 st.session_state["pagina"] = None
                 st.rerun()
 
-        # =========================
-        # BUSCA AVANÇADA - topo
-        # =========================
+        # BUSCA AVANÇADA
         if pagina == "pesquisar":
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
@@ -184,9 +182,7 @@ else:
             elif termo:
                 st.warning("Digite pelo menos 3 letras.")
 
-        # =========================
-        # POR CIDADE - topo
-        # =========================
+        # POR CIDADE
         elif pagina == "cidade":
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
@@ -198,16 +194,12 @@ else:
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
 
-        # =========================
         # ADMIN
-        # =========================
         elif pagina == "admin":
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
-        # =========================
         # FRASES
-        # =========================
         elif pagina == "frases":
             st.markdown("""
             > Fora da caridade não há salvação. — Allan Kardec  
