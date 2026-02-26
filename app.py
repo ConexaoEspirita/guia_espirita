@@ -7,45 +7,69 @@ st.set_page_config(
     page_title="Guia Espírita", 
     page_icon="🕊️", 
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    disable_touch_scrollbars=True
 )
 
-# --- CSS CELULAR CORRIGIDO ---
+# --- CSS COMPLETO COM FUNDO AZUL CLARINHO ---
 st.markdown("""
 <style>
-/* Remove TODOS botões voltar celular */
-* { 
+/* CSS ANTICELULAR 1000% */
+* {
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
     touch-action: manipulation !important;
+    overscroll-behavior: none !important;
 }
-[data-testid="stArrowBack"],
-[data-testid="stHeader"],
-button[kind="header"],
-button[title*="voltar"],
-button[data-testid*="back"],
-button[type="button"]:not([class*="bg-"]),
-section[data-testid="stSidebar"] > div,
-[data-testid="collapsedControl"] {
+
+button, [data-testid*="back"], [data-testid*="header"], 
+button[kind="header"], button[aria-label*="voltar"],
+button[title*="voltar"], button[type="button"] {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
+    height: 0 !important;
+    width: 0 !important;
 }
 
-.stApp { background: #f4f7f9; }
+section[data-testid="stSidebar"] { display: none !important; }
+
+/* FUNDO AZUL CLARINHO */
+.stApp { 
+    background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%) !important; 
+}
+
 .card-centro { 
     background: white !important; padding: 25px; border-radius: 20px; 
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
     margin-bottom: 25px; border-left: 12px solid #0047AB; position: relative;
 }
-.numero-badge { position: absolute; top: 15px; right: 20px; background: #f0f4f8; color: #7f8c8d; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 800; }
-.nome-centro { color: #1E3A8A !important; font-size: 22px !important; font-weight: 800; display: block; }
-.nome-fantasia { color: #3B82F6 !important; font-size: 16px !important; font-style: italic; font-weight: 500; margin-top: 2px; display: block; }
-.palestras-verde { color: #065F46 !important; font-weight: 700; background: #D1FAE5; padding: 10px; border-radius: 10px; margin: 12px 0; border: 1px solid #10B981; }
+.numero-badge { 
+    position: absolute; top: 15px; right: 20px; background: #f0f4f8; 
+    color: #7f8c8d; padding: 2px 10px; border-radius: 20px; 
+    font-size: 12px; font-weight: 800; 
+}
+.nome-centro { 
+    color: #1E3A8A !important; font-size: 22px !important; 
+    font-weight: 800; display: block; 
+}
+.nome-fantasia { 
+    color: #3B82F6 !important; font-size: 16px !important; 
+    font-style: italic; font-weight: 500; margin-top: 2px; display: block; 
+}
+.palestras-verde { 
+    color: #065F46 !important; font-weight: 700; 
+    background: #D1FAE5; padding: 10px; border-radius: 10px; 
+    margin: 12px 0; border: 1px solid #10B981; 
+}
 .info-linha { margin: 8px 0; font-size: 15px; color: #333 !important; }
 .label-bold { font-weight: 800; color: #0047AB; text-transform: uppercase; font-size: 13px; }
 .btn-row { display: flex; gap: 12px; margin-top: 20px; }
-.btn-link { text-decoration: none !important; color: white !important; padding: 14px; border-radius: 12px; font-weight: 800; text-align: center; flex: 1; display: inline-block; }
+.btn-link { 
+    text-decoration: none !important; color: white !important; 
+    padding: 14px; border-radius: 12px; font-weight: 800; 
+    text-align: center; flex: 1; display: inline-block; 
+}
 .bg-wa { background-color: #25D366; }
 .bg-maps { background-color: #4285F4; }
 </style>
@@ -66,7 +90,7 @@ def criar_link_maps(row):
     cid = ajustar_texto(row.get('CIDADE DO CENTRO ESPIRITA', ''))
     bairro = ajustar_texto(row.get('BAIRRO', ''))
     
-    # Tanabi ESPECÍFICO
+    # Tanabi ESPECÍFICO - 4 centros funcionando
     if 'tanabi' in cid.lower():
         if nome_google and len(nome_google) > 3:
             return f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(nome_google + ', Tanabi SP')}"
