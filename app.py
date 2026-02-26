@@ -127,17 +127,22 @@ else:
         elif termo: st.warning("⚠️ Mínimo de 4 letras!")
 
     elif opcao == "📍 Por Cidade":
-        cidades = sorted(df['CIDADE DO CENTRO ESPIRITA'].dropna().unique())
-        # FILTRA APENAS LIXO DO SELECTBOX - NÃO mexe nos dados
-        cidades_validas = [cidade for cidade in cidades 
-                          if str(cidade).strip().lower() not in 
-                          ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 
-                           'nome', 'cidade', '', 'nan'] 
-                          and len(str(cidade).strip()) > 2]
-        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_validas, help="Escolha sua cidade para ver os centros")
+        cidades = df['CIDADE DO CENTRO ESPIRITA'].dropna().unique()
+        # Cria lista com "Cidade (número de centros)"
+        cidades_com_contagem = []
+        for cidade in sorted(cidades):
+            cidade_limpa = str(cidade).strip()
+            if (cidade_limpa.lower() not in ['nome da cidade do centro espirit a', 'nome da cidade do centro espírita', 'nome', 'cidade', ''] 
+                and len(cidade_limpa) > 2):
+                count = len(df[df['CIDADE DO CENTRO ESPIRITA'] == cidade])
+                cidades_com_contagem.append(f"{cidade_limpa} ({count})")
+        
+        sel = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + cidades_com_contagem, help="Escolha sua cidade para ver os centros")
         if sel != "-- Selecione --":
-            res = df[df['CIDADE DO CENTRO ESPIRITA'] == sel]
-            st.success(f"✅ Encontrados {len(res)} centro(s) em {sel}")
+            # Extrai só o nome da cidade (remove "(16)")
+            cidade_selecionada = sel.split(' (')[0].strip()
+            res = df[df['CIDADE DO CENTRO ESPIRITA'] == cidade_selecionada]
+            st.success(f"✅ Encontrados {len(res)} centro(s) em {cidade_selecionada}")
             for i, (_, row) in enumerate(res.iterrows(), 1):
                 renderizar_card(row, i)
 
