@@ -168,28 +168,20 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # BUSCA AVANÇADA - BOTÃO DIVIDIDO
+        # BUSCA AVANÇADA - BOTÕES NATIVOS QUE FUNCIONAM
         if pagina == "pesquisar":
-            # BOTÃO DIVIDIDO 50/50 - LIMPAR + VOLTAR
-            st.markdown("""
-            <div style='display: flex; gap: 0; margin-bottom: 20px;'>
-                <button onclick='streamlit.rerun()' style='
-                    width: 50%; padding: 12px; background: #10B981; color: white; 
-                    border: none; border-radius: 12px 0 0 12px; font-size: 16px; 
-                    font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.3);
-                ' onmouseover='this.style.background="#059669"' onmouseout='this.style.background="#10B981"'>
-                    🔄 LIMPAR
-                </button>
-                <button onclick='window.location.href="?"' style='
-                    width: 50%; padding: 12px; background: #EF4444; color: white; 
-                    border: none; border-radius: 0 12px 12px 0; font-size: 16px; 
-                    font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(239,68,68,0.3);
-                ' onmouseover='this.style.background="#DC2626"' onmouseout='this.style.background="#EF4444"'>
-                    ⬅️ VOLTAR
-                </button>
-            </div>
-            """, unsafe_allow_html=True)
-
+            # 2 BOTÕES LADO A LADO - 100% FUNCIONAIS
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🔄 LIMPAR", key="limpar_ok"):
+                    st.rerun()  # Limpa campo e mantém na página
+            
+            with col2:
+                if st.button("⬅️ VOLTAR", key="voltar_ok"):
+                    st.session_state["pagina"] = None
+                    st.rerun()
+            
+            # Campo de pesquisa
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
                 termo_normal = normalize_text(termo.strip())
