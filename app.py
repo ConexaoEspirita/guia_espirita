@@ -21,7 +21,6 @@ if "termo_pesquisa" not in st.session_state:
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
-
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
 /* CONTORNO NO CAMPO DE PESQUISA */
@@ -76,23 +75,6 @@ div.stSelectbox > div > div > select {
 .btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
-
-/* BOTÕES VOLTAR / LIMPAR MESMA LINHA */
-.botao-linha {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-.botao-linha button {
-    padding: 8px 16px;
-    font-weight: bold;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    color: white;
-}
-.botao-voltar { background-color:#1E40AF; }
-.botao-limpar { background-color:#065F46; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,33 +169,24 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # Função que mostra os botões Voltar/Limpar na mesma linha
-        def botoes_html():
-            st.markdown(f"""
-            <div class="botao-linha">
-                <form method="post">
-                    <button class="botao-voltar" name="voltar">⬅️ VOLTAR</button>
-                </form>
-                <form method="post">
-                    <button class="botao-limpar" name="limpar">🔄 LIMPAR</button>
-                </form>
-            </div>
-            """, unsafe_allow_html=True)
 
-            # Captura clique via session_state
-            if st.session_state.get("voltar_click", False):
-                st.session_state["pagina"] = None
-                st.session_state["termo_pesquisa"] = ""
-                st.session_state["voltar_click"] = False
-                st.rerun()
-            if st.session_state.get("limpar_click", False):
-                st.session_state["termo_pesquisa"] = ""
-                st.session_state["limpar_click"] = False
-                st.rerun()
+        # Função que mostra Voltar/Limpar lado a lado horizontal
+        def botoes_lado_a_lado():
+            col1, col2 = st.columns([1,1])
+            with col1:
+                if st.button("⬅️ VOLTAR"):
+                    st.session_state["pagina"] = None
+                    st.session_state["termo_pesquisa"] = ""
+                    st.rerun()
+            with col2:
+                if st.button("🔄 LIMPAR"):
+                    st.session_state["termo_pesquisa"] = ""
+                    st.rerun()
 
+        # =========================
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
-            botoes_html()
+            botoes_lado_a_lado()
             termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
                 st.session_state["termo_pesquisa"] = termo
@@ -228,9 +201,10 @@ else:
             elif termo:
                 st.warning("Digite pelo menos 3 letras.")
 
+        # =========================
         # POR CIDADE
         elif pagina == "cidade":
-            botoes_html()
+            botoes_lado_a_lado()
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
             escolha = st.selectbox("Selecione uma cidade:", lista_cidades)
@@ -241,11 +215,13 @@ else:
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
 
+        # =========================
         # ADMIN
         elif pagina == "admin":
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
+        # =========================
         # FRASES
         elif pagina == "frases":
             st.markdown("""
