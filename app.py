@@ -12,6 +12,8 @@ if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
+if "termo_pesquisa" not in st.session_state:
+    st.session_state["termo_pesquisa"] = ""
 
 # =========================
 # CSS COMPLETO
@@ -168,21 +170,25 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # BUSCA AVANÇADA
-        if pagina == "pesquisar":
-            # 2 BOTÕES LADO A LADO - MESMA LINHA
-            col1, col2 = st.columns([1,1])  # mesmo tamanho
+        # BOTÕES LADO A LADO EM TODAS PESQUISAS
+        def botoes_voltar_limpar():
+            col1, col2 = st.columns([1,1])
             with col1:
                 if st.button("⬅️ VOLTAR", key="voltar_ok"):
                     st.session_state["pagina"] = None
+                    st.session_state["termo_pesquisa"] = ""
                     st.rerun()
             with col2:
                 if st.button("🔄 LIMPAR", key="limpar_ok"):
-                    st.rerun()  # limpa campos e mantém na página
+                    st.session_state["termo_pesquisa"] = ""
+                    st.rerun()
 
-            # Campo de pesquisa
-            termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa")
+        # BUSCA AVANÇADA
+        if pagina == "pesquisar":
+            botoes_voltar_limpar()
+            termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
+                st.session_state["termo_pesquisa"] = termo
                 termo_normal = normalize_text(termo.strip())
                 resultado = df[df.apply(lambda row: termo_normal in normalize_text(" ".join(row.astype(str))), axis=1)]
                 if not resultado.empty:
@@ -196,6 +202,7 @@ else:
 
         # POR CIDADE
         elif pagina == "cidade":
+            botoes_voltar_limpar()
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
             escolha = st.selectbox("Selecione uma cidade:", lista_cidades)
@@ -205,10 +212,6 @@ else:
                 st.success(f"{len(resultado)} centro(s) encontrado(s)")
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
-                if len(resultado) >= 5:
-                    if st.button("⬅️ Voltar"):
-                        st.session_state.pagina = None
-                        st.rerun()
 
         # ADMIN
         elif pagina == "admin":
