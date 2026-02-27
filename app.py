@@ -3,6 +3,7 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 
+# 1. CONFIGURAÇÃO DA PÁGINA (Deve ser sempre o primeiro comando)
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 # =========================
@@ -14,16 +15,19 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
-if "voltar_click" not in st.session_state:
-    st.session_state["voltar_click"] = False
-if "limpar_click" not in st.session_state:
-    st.session_state["limpar_click"] = False
 
 # =========================
-# CSS PROFISSIONAL
+# CSS PROFISSIONAL + LIMPEZA DE INTERFACE
 # =========================
 st.markdown("""
 <style>
+/* REMOVE MENU, RODAPÉ E BARRA SUPERIOR DO STREAMLIT */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+#stDecoration {display:none;}
+
+/* ESTILIZAÇÃO DO APP */
 .stApp { background: #f4f7f9; }
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
@@ -34,10 +38,6 @@ div.stTextInput > div > div > input {
     box-shadow: 0 4px 12px rgba(66,133,244,0.2) !important;
     background-color: white !important;
     font-size: 16px !important;
-}
-div.stTextInput > div > div > input:focus {
-    border-color: #1E40AF !important;
-    box-shadow: 0 0 0 3px rgba(66,133,244,0.3) !important;
 }
 
 div.stSelectbox > div > div > select {
@@ -74,24 +74,10 @@ div.stSelectbox > div > div > select {
 .palestras-verde { color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0; border:1px solid #10B981; }
 .info-linha { margin:5px 0; font-size:15px; }
 .btn-row { display:flex; gap:8px; margin-top:10px; }
-.btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
+.btn-link { text-decoration:none; color:white !padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
 
-.botao-linha { display:flex; gap:10px; margin-bottom:15px; }
-.botao-linha button {
-    padding: 8px 16px;
-    font-weight: bold;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    color: white;
-    transition: all 0.3s;
-}
-.botao-voltar { background-color:#1E40AF; }
-.botao-voltar:hover { background-color:#1B3A99; }
-.botao-limpar { background-color:#065F46; }
-.botao-limpar:hover { background-color:#054D3D; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -117,7 +103,7 @@ def renderizar_card(row, index):
 
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-    link_wa = f"https://wa.me/+55{numero}" if len(numero)>=10 else "#"
+    link_wa = f"https://wa.me/55{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -129,14 +115,14 @@ def renderizar_card(row, index):
         <div class="info-linha">📍 <b>Endereço:</b> {endereco}</div>
         <div class="info-linha">👤 <b>Responsável:</b> {responsavel}</div>
         <div class="btn-row">
-            <a href="{link_maps}" target="_blank" class="btn-link bg-maps">📍 Maps</a>
-            <a href="{link_wa}" target="_blank" class="btn-link bg-wa">WhatsApp</a>
+            <a href="{link_maps}" target="_blank" class="btn-link bg-maps" style="color:white; background:#4285F4; padding:10px; border-radius:10px;">📍 Maps</a>
+            <a href="{link_wa}" target="_blank" class="btn-link bg-wa" style="color:white; background:#25D366; padding:10px; border-radius:10px;">WhatsApp</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN
+# LÓGICA DE LOGIN / CONTEÚDO
 # =========================
 if not st.session_state.get("logado", False):
     st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
@@ -149,16 +135,20 @@ if not st.session_state.get("logado", False):
 else:
     @st.cache_data
     def carregar_dados():
+        # Certifique-se de que o nome do arquivo no GitHub é exatamente guia.xlsx
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         return df
 
-    df = carregar_dados()
+    try:
+        df = carregar_dados()
+    except Exception as e:
+        st.error(f"Erro ao carregar guia.xlsx: {e}")
+        st.stop()
+
     pagina = st.session_state.get("pagina")
 
-    # =========================
     # MENU PRINCIPAL
-    # =========================
     if pagina is None:
         st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -176,32 +166,28 @@ else:
             if st.button("🕊️ Frases", use_container_width=True):
                 st.session_state["pagina"] = "frases"
                 st.rerun()
+        
+        st.write("---")
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.clear()
             st.cache_data.clear()
             st.rerun()
 
-    # =========================
     # PÁGINAS INTERNAS
-    # =========================
     else:
-
-        # Função: BOTÕES PROFISSIONAIS LADO A LADO usando session_state
         col1, col2 = st.columns([1,1])
         with col1:
-            if st.button("⬅️ VOLTAR"):
+            if st.button("⬅️ VOLTAR", use_container_width=True):
                 st.session_state["pagina"] = None
                 st.session_state["termo_pesquisa"] = ""
                 st.rerun()
         with col2:
-            if st.button("🔄 LIMPAR"):
+            if st.button("🔄 LIMPAR", use_container_width=True):
                 st.session_state["termo_pesquisa"] = ""
                 st.rerun()
 
-        # =========================
-        # BUSCA AVANÇADA
         if pagina == "pesquisar":
-            termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa", value=st.session_state["termo_pesquisa"])
+            termo = st.text_input("Digite pelo menos 3 letras:", key="input_busca", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
                 st.session_state["termo_pesquisa"] = termo
                 termo_normal = normalize_text(termo.strip())
@@ -212,11 +198,7 @@ else:
                         renderizar_card(row,i)
                 else:
                     st.warning("Nenhum resultado encontrado.")
-            elif termo:
-                st.warning("Digite pelo menos 3 letras.")
 
-        # =========================
-        # POR CIDADE
         elif pagina == "cidade":
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
@@ -228,14 +210,10 @@ else:
                 for i, (_, row) in enumerate(resultado.iterrows(),1):
                     renderizar_card(row,i)
 
-        # =========================
-        # ADMIN
         elif pagina == "admin":
             st.metric("Total de Centros", len(df))
             st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
-        # =========================
-        # FRASES
         elif pagina == "frases":
             st.markdown("""
             > Fora da caridade não há salvação. — Allan Kardec  
