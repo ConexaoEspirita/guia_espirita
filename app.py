@@ -16,14 +16,14 @@ if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
 
 # =========================
-# CSS COMPLETO
+# CSS PROFISSIONAL
 # =========================
 st.markdown("""
 <style>
 .stApp { background: #f4f7f9; }
 .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
-/* CONTORNO NO CAMPO DE PESQUISA */
+/* INPUT */
 div.stTextInput > div > div > input {
     border: 3px solid #4285F4 !important;
     border-radius: 15px !important;
@@ -45,6 +45,7 @@ div.stSelectbox > div > div > select {
     box-shadow: 0 4px 12px rgba(16,185,129,0.2) !important;
 }
 
+/* CARD */
 .card-centro { 
     background: white;
     padding: 25px;
@@ -75,6 +76,22 @@ div.stSelectbox > div > div > select {
 .btn-link { text-decoration:none; color:white; padding:8px 12px; border-radius:8px; font-weight:700; text-align:center; font-size:13px; flex:1; }
 .bg-maps { background:#4285F4; }
 .bg-wa { background:#25D366; }
+
+/* BOTÕES PROFISSIONAIS VOLTAR/LIMPAR */
+.botao-linha { display:flex; gap:10px; margin-bottom:15px; }
+.botao-linha button {
+    padding: 8px 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    color: white;
+    transition: all 0.3s;
+}
+.botao-voltar { background-color:#1E40AF; }
+.botao-voltar:hover { background-color:#1B3A99; }
+.botao-limpar { background-color:#065F46; }
+.botao-limpar:hover { background-color:#054D3D; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -96,7 +113,6 @@ def renderizar_card(row, index):
     cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
     palestra = ajustar(row.get('PALESTRA PUBLICA'))
     responsavel = ajustar(row.get('RESPONSAVEL'))
-
     numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
 
     query = urllib.parse.quote(f"{endereco}, {cidade}")
@@ -170,23 +186,32 @@ else:
     # =========================
     else:
 
-        # Função que mostra Voltar/Limpar lado a lado horizontal
-        def botoes_lado_a_lado():
-            col1, col2 = st.columns([1,1])
-            with col1:
-                if st.button("⬅️ VOLTAR"):
-                    st.session_state["pagina"] = None
-                    st.session_state["termo_pesquisa"] = ""
-                    st.rerun()
-            with col2:
-                if st.button("🔄 LIMPAR"):
-                    st.session_state["termo_pesquisa"] = ""
-                    st.rerun()
+        # Função: BOTÕES PROFISSIONAIS LADO A LADO
+        def botoes_profissionais():
+            st.markdown("""
+            <div class="botao-linha">
+                <button class="botao-voltar" onclick="window.location.href='?voltar=1'">⬅️ VOLTAR</button>
+                <button class="botao-limpar" onclick="window.location.href='?limpar=1'">🔄 LIMPAR</button>
+            </div>
+            """, unsafe_allow_html=True)
+
+        botoes_profissionais()
+
+        # Captura clique
+        query_params = st.experimental_get_query_params()
+        if "voltar" in query_params:
+            st.session_state["pagina"] = None
+            st.session_state["termo_pesquisa"] = ""
+            st.experimental_set_query_params()
+            st.rerun()
+        if "limpar" in query_params:
+            st.session_state["termo_pesquisa"] = ""
+            st.experimental_set_query_params()
+            st.rerun()
 
         # =========================
         # BUSCA AVANÇADA
         if pagina == "pesquisar":
-            botoes_lado_a_lado()
             termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
                 st.session_state["termo_pesquisa"] = termo
@@ -204,7 +229,6 @@ else:
         # =========================
         # POR CIDADE
         elif pagina == "cidade":
-            botoes_lado_a_lado()
             cidades = df["CIDADE DO CENTRO ESPIRITA"].dropna().value_counts().sort_index()
             lista_cidades = ["-- Selecione --"] + [f"{c} ({q})" for c,q in cidades.items()]
             escolha = st.selectbox("Selecione uma cidade:", lista_cidades)
