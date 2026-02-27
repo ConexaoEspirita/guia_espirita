@@ -14,14 +14,7 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 # =========================
-# BOTÃO FIXO - SEMPRE VISÍVEL
-# =========================
-if st.button("🏠 Voltar ao Menu Principal", key="botao_voltar", use_container_width=True):
-    st.session_state["pagina"] = None
-    st.rerun()
-
-# =========================
-# CSS COMPLETO - CONTORNO NA PESQUISA + CARDS
+# CSS COMPLETO
 # =========================
 st.markdown("""
 <style>
@@ -43,7 +36,7 @@ div.stTextInput > div > div > input:focus {
     box-shadow: 0 0 0 3px rgba(66,133,244,0.3) !important;
 }
 
-/* SELECTBOX TAMBÉM */
+/* SELECTBOX */
 div.stSelectbox > div > div > select {
     border: 3px solid #10B981 !important;
     border-radius: 15px !important;
@@ -175,8 +168,28 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # BUSCA AVANÇADA
+        # BUSCA AVANÇADA - BOTÃO DIVIDIDO
         if pagina == "pesquisar":
+            # BOTÃO DIVIDIDO 50/50 - LIMPAR + VOLTAR
+            st.markdown("""
+            <div style='display: flex; gap: 0; margin-bottom: 20px;'>
+                <button onclick='streamlit.rerun()' style='
+                    width: 50%; padding: 12px; background: #10B981; color: white; 
+                    border: none; border-radius: 12px 0 0 12px; font-size: 16px; 
+                    font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+                ' onmouseover='this.style.background="#059669"' onmouseout='this.style.background="#10B981"'>
+                    🔄 LIMPAR
+                </button>
+                <button onclick='window.location.href="?"' style='
+                    width: 50%; padding: 12px; background: #EF4444; color: white; 
+                    border: none; border-radius: 0 12px 12px 0; font-size: 16px; 
+                    font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+                ' onmouseover='this.style.background="#DC2626"' onmouseout='this.style.background="#EF4444"'>
+                    ⬅️ VOLTAR
+                </button>
+            </div>
+            """, unsafe_allow_html=True)
+
             termo = st.text_input("Digite pelo menos 3 letras:")
             if termo and len(termo.strip()) >= 3:
                 termo_normal = normalize_text(termo.strip())
