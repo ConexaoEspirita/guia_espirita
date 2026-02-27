@@ -168,21 +168,20 @@ else:
     # PÁGINAS INTERNAS
     # =========================
     else:
-        # BUSCA AVANÇADA - BOTÕES NATIVOS QUE FUNCIONAM
+        # BUSCA AVANÇADA
         if pagina == "pesquisar":
-            # 2 BOTÕES LADO A LADO - 100% FUNCIONAIS
-            col1, col2 = st.columns(2)
+            # 2 BOTÕES LADO A LADO - MESMA LINHA
+            col1, col2 = st.columns([1,1])  # mesmo tamanho
             with col1:
-                if st.button("🔄 LIMPAR", key="limpar_ok"):
-                    st.rerun()  # Limpa campo e mantém na página
-            
-            with col2:
                 if st.button("⬅️ VOLTAR", key="voltar_ok"):
                     st.session_state["pagina"] = None
                     st.rerun()
-            
+            with col2:
+                if st.button("🔄 LIMPAR", key="limpar_ok"):
+                    st.rerun()  # limpa campos e mantém na página
+
             # Campo de pesquisa
-            termo = st.text_input("Digite pelo menos 3 letras:")
+            termo = st.text_input("Digite pelo menos 3 letras:", key="termo_pesquisa")
             if termo and len(termo.strip()) >= 3:
                 termo_normal = normalize_text(termo.strip())
                 resultado = df[df.apply(lambda row: termo_normal in normalize_text(" ".join(row.astype(str))), axis=1)]
@@ -190,10 +189,6 @@ else:
                     st.success(f"{len(resultado)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(resultado.iterrows(),1):
                         renderizar_card(row,i)
-                    if len(resultado) >= 5:
-                        if st.button("⬅️ Voltar"):
-                            st.session_state.pagina = None
-                            st.rerun()
                 else:
                     st.warning("Nenhum resultado encontrado.")
             elif termo:
