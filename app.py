@@ -105,14 +105,22 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<div class='titulo-grande' style='color: #60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-    with st.form("login"):
-        st.text_input("Nome")
-        st.text_input("E-mail")
-        st.text_input("Senha", type="password")
-        if st.form_submit_button("Entrar / Cadastrar", use_container_width=True):
-            st.session_state["logado"] = True
-            st.rerun()
+    st.markdown("<h1 style='text-align: center; color: #60A5FA; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</h1>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        with st.form("login"):
+            nome = st.text_input("Nome")
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            col_btn1, col_btn2 = st.columns(2)
+            with col_btn1:
+                if st.form_submit_button("🚪 Entrar", use_container_width=True):
+                    st.session_state["logado"] = True
+                    st.rerun()
+            with col_btn2:
+                if st.form_submit_button("✨ Cadastrar", use_container_width=True):
+                    st.session_state["logado"] = True
+                    st.rerun()
 else:
     @st.cache_data
     def carregar_dados():
@@ -130,7 +138,7 @@ else:
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
-        st.markdown("<div class='titulo-grande' style='color: #60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+        st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
@@ -168,7 +176,7 @@ else:
             
             escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
             if escolha != "-- Selecione --":
-                cidade_real = escolha.split(" (")[0]  # Remove "(2)" e pega só "Bady Bassit"
+                cidade_real = escolha.split(" (")[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
