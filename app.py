@@ -105,11 +105,12 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+    st.markdown("<div class='titulo-grande' style='color: #60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     with st.form("login"):
+        st.text_input("Nome")
         st.text_input("E-mail")
         st.text_input("Senha", type="password")
-        if st.form_submit_button("Entrar", use_container_width=True):
+        if st.form_submit_button("Entrar / Cadastrar", use_container_width=True):
             st.session_state["logado"] = True
             st.rerun()
 else:
@@ -129,7 +130,7 @@ else:
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
-        st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+        st.markdown("<div class='titulo-grande' style='color: #60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
