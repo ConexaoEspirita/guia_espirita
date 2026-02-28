@@ -160,10 +160,15 @@ else:
                     st.warning("Nada encontrado.")
 
         elif pagina == "cidade":
-            cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades)
+            cidades_com_contagem = []
+            for cidade in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique()):
+                qtd = len(df[df["CIDADE DO CENTRO ESPIRITA"] == cidade])
+                cidades_com_contagem.append(f"{cidade} ({qtd})")
+            
+            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
             if escolha != "-- Selecione --":
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == escolha]
+                cidade_real = escolha.split(" (")[0]  # Remove "(2)" e pega só "Bady Bassit"
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pagina == "admin":
