@@ -87,9 +87,11 @@ def renderizar_card(row, index):
 
     st.markdown(f"""
     <div class="card-centro">
+        <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280; background:rgba(255,255,255,0.8); padding:2px 6px; border-radius:12px; font-weight:500;">#{index}</div>
         <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
         {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
         <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
+        <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
