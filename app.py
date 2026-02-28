@@ -105,22 +105,26 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<h1 style='text-align: center; color: #60A5FA; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</h1>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
+    
+    with tab1:
         with st.form("login"):
-            nome = st.text_input("Nome")
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
-            col_btn1, col_btn2 = st.columns(2)
-            with col_btn1:
-                if st.form_submit_button("🚪 Entrar", use_container_width=True):
-                    st.session_state["logado"] = True
-                    st.rerun()
-            with col_btn2:
-                if st.form_submit_button("✨ Cadastrar", use_container_width=True):
-                    st.session_state["logado"] = True
-                    st.rerun()
+            if st.form_submit_button("Entrar", use_container_width=True):
+                st.session_state["logado"] = True
+                st.rerun()
+    
+    with tab2:
+        with st.form("cadastro"):
+            nome = st.text_input("Nome Completo")
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            if st.form_submit_button("Cadastrar", use_container_width=True):
+                st.session_state["logado"] = True
+                st.rerun()
+                st.success("✅ Cadastrado com sucesso!")
 else:
     @st.cache_data
     def carregar_dados():
