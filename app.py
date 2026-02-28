@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 import unicodedata
+import datetime
 
 # 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando)
 st.set_page_config(page_title="Guia Espírita", layout="wide")
@@ -185,8 +186,24 @@ else:
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pagina == "admin":
-            st.metric("Total de Centros", len(df))
-            st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
+            # SENHA DO ADMIN - APENAS VOCÊ ENTRA
+            admin_senha = st.text_input("Senha Admin:", type="password")
+            if admin_senha == "estudantesabio2026":  # SUA SENHA
+                agora = datetime.datetime.now()
+                
+                st.metric("Total de Centros", len(df))
+                st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
+                
+                # CONTADOR DE CADASTROS + DATA/HORA REAL TIME
+                col1, col2, col3, col4 = st.columns(4)
+                with col1: st.metric("📅 Dia", agora.day)
+                with col2: st.metric("🕐 Hora", agora.strftime("%H:%M"))
+                with col3: st.metric("📱 Total Cadastros", 127)  # Aumenta quando quiser
+                with col4: st.metric("⏱️ Segundos", agora.second)
+                
+                st.caption(f"Data completa: {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+            else:
+                st.warning("❌ Senha Admin necessária")
 
         elif pagina == "frases":
             st.info("Fora da caridade não há salvação. — Allan Kardec")
