@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-import datetime
+import urllib.parse
 import unicodedata
+import datetime
 from supabase import create_client, Client
 
 # =========================
@@ -12,8 +13,8 @@ st.set_page_config(page_title="Guia Espírita", layout="wide")
 # =========================
 # CONFIGURAÇÃO SUPABASE
 # =========================
-SUPABASE_URL = "https://SEU_SUPABASE_URL.supabase.co"
-SUPABASE_KEY = "SUA_SUPABASE_ANON_KEY"
+SUPABASE_URL = "https://SEU_PROJETO.supabase.co"  # Substitua pelo seu URL
+SUPABASE_KEY = "SUA_ANON_KEY"                     # Substitua pela sua anon key
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # =========================
@@ -30,22 +31,32 @@ if "termo_pesquisa" not in st.session_state:
 # CSS
 # =========================
 st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stApp { background: #f4f7f9; }
-    .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-    .card-centro { 
-        background: white;
-        padding: 25px;
-        border-radius: 20px; 
-        margin-bottom: 25px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-        border-left: 12px solid #0060D0;
-        position: relative;
-    }
-    </style>
+<style>
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+.stApp { background: #f4f7f9; }
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+.card-centro { 
+    background: white;
+    padding: 25px;
+    border-radius: 20px; 
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+    border-left: 12px solid #0060D0;
+    position: relative;
+}
+.btn-link { 
+    text-decoration:none; 
+    color:white !important; 
+    padding:10px; 
+    border-radius:10px; 
+    font-weight:700; 
+    text-align:center; 
+    display:inline-block; 
+    width: 100%;
+}
+</style>
 """, unsafe_allow_html=True)
 
 # =========================
@@ -81,8 +92,8 @@ def renderizar_card(row, index):
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
-            <a href="{link_maps}" target="_blank" style="background:#4285F4;color:white;padding:10px;border-radius:10px;text-align:center;display:inline-block;width:100%;">📍 Maps</a>
-            <a href="{link_wa}" target="_blank" style="background:#25D366;color:white;padding:10px;border-radius:10px;text-align:center;display:inline-block;width:100%;">WhatsApp</a>
+            <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
+            <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -99,7 +110,6 @@ if not st.session_state.get("logado", False):
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
-                # Aqui você deve validar com Supabase auth (não incluído neste exemplo)
                 st.session_state["logado"] = True
                 st.rerun()
     
@@ -143,40 +153,57 @@ else:
             if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
 
         if pagina == "pesquisar":
-            st.info("Busca Avançada ainda exibe centros do Excel (sem alteração).")
+            termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
+            if termo and len(termo.strip()) >= 3:
+                st.session_state["termo_pesquisa"] = termo
+                # Carregar Excel com centros
+                df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+                df.columns = df.columns.str.strip()
+                t_norm = normalize_text(termo.strip())
+                res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
+                if not res.empty:
+                    st.success(f"{len(res)} centro(s) encontrado(s)")
+                    for i, (_, row) in enumerate(res.iterrows(), 1):
+                        renderizar_card(row, i)
+                else:
+                    st.warning("Nada encontrado.")
 
         elif pagina == "cidade":
-            st.info("Busca por cidade ainda exibe centros do Excel (sem alteração).")
+            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+            df.columns = df.columns.str.strip()
+            cidades_com_contagem = [f"{c} ({len(df[df['CIDADE DO CENTRO ESPIRITA']==c])})" for c in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())]
+            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
+            if escolha != "-- Selecione --":
+                cidade_real = escolha.split(" (")[0]
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
+                for i, (_, row) in enumerate(res.iterrows(), 1):
+                    renderizar_card(row, i)
 
         elif pagina == "admin":
-            # SENHA DO ADMIN
             admin_senha = st.text_input("Senha Admin:", type="password")
             if admin_senha == "estudantesabio2026":
-                # Buscar participantes reais do Supabase
-                res = supabase.table("participantes").select("*").execute()
-                participantes = res.data
-                if participantes:
-                    # Transformar em DataFrame
-                    df_p = pd.DataFrame(participantes)
-                    # Formatar último acesso
-                    if "ultimo_acesso" in df_p.columns:
-                        df_p["ultimo_acesso"] = pd.to_datetime(df_p["ultimo_acesso"]).dt.strftime("%d/%m/%Y %H:%M")
+                # Puxar participantes do Supabase
+                try:
+                    res = supabase.table("participantes").select("*").execute()
+                    participantes = res.data
+                    if participantes:
+                        df_p = pd.DataFrame(participantes)
+                        if "ultimo_acesso" in df_p.columns:
+                            df_p["ultimo_acesso"] = pd.to_datetime(df_p["ultimo_acesso"]).dt.strftime("%d/%m/%Y %H:%M")
+                        else:
+                            df_p["ultimo_acesso"] = "-"
+                        st.subheader("📋 Participantes Cadastrados")
+                        st.dataframe(df_p[["nome", "email", "status", "ultimo_acesso"]], use_container_width=True, height=300)
+                        if st.button("Atualizar último acesso para todos"):
+                            agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+                            for p in participantes:
+                                supabase.table("participantes").update({"ultimo_acesso": agora_br}).eq("id", p["id"]).execute()
+                            st.success("Último acesso atualizado!")
+                            st.experimental_rerun()
                     else:
-                        df_p["ultimo_acesso"] = "-"
-                    
-                    # Mostrar tabela compacta
-                    st.subheader("📋 Participantes Cadastrados")
-                    st.dataframe(df_p[["nome", "email", "status", "ultimo_acesso"]], use_container_width=True, height=300)
-                    
-                    # Botão atualizar último acesso
-                    if st.button("Atualizar último acesso para todos"):
-                        agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
-                        for p in participantes:
-                            supabase.table("participantes").update({"ultimo_acesso": agora_br}).eq("id", p["id"]).execute()
-                        st.success("Último acesso atualizado para todos participantes!")
-                        st.experimental_rerun()
-                else:
-                    st.info("Nenhum participante cadastrado.")
+                        st.info("Nenhum participante cadastrado.")
+                except Exception as e:
+                    st.error(f"Erro ao acessar Supabase: {e}")
             else:
                 st.warning("❌ Senha Admin necessária")
 
