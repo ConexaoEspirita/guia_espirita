@@ -22,12 +22,9 @@ if "termo_pesquisa" not in st.session_state:
 # =========================
 st.markdown("""
     <style>
-    /* Esconde o Menu, o Header e o Rodapé padrão */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
-
-    /* Remove especificamente os ícones e selos do Streamlit Cloud embaixo */
     [data-testid="stStatusWidget"], 
     [data-testid="stToolbar"], 
     [data-testid="stDecoration"],
@@ -35,11 +32,8 @@ st.markdown("""
     .styles_viewerBadge__1yB5_ {
         display: none !important;
     }
-
-    /* Estilo do Fundo e Cards */
     .stApp { background: #f4f7f9; }
     .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-    
     .card-centro { 
         background: white;
         padding: 25px;
@@ -49,7 +43,6 @@ st.markdown("""
         border-left: 12px solid #0060D0;
         position: relative;
     }
-    
     .btn-link { 
         text-decoration:none; 
         color:white !important; 
@@ -129,7 +122,6 @@ if not st.session_state.get("logado", False):
 else:
     @st.cache_data
     def carregar_dados():
-        # Certifique-se que o arquivo chama guia.xlsx no seu GitHub
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         return df
@@ -188,20 +180,43 @@ else:
         elif pagina == "admin":
             # SENHA DO ADMIN - APENAS VOCÊ ENTRA
             admin_senha = st.text_input("Senha Admin:", type="password")
-            if admin_senha == "estudantesabio2026":  # SUA SENHA
+            if admin_senha == "estudantesabio2026":
                 agora = datetime.datetime.now()
                 
+                # MÉTRICAS
                 st.metric("Total de Centros", len(df))
                 st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
                 
-                # CONTADOR DE CADASTROS + DATA/HORA REAL TIME
+                # CONTADOR + DATA/HORA REAL TIME
                 col1, col2, col3, col4 = st.columns(4)
                 with col1: st.metric("📅 Dia", agora.day)
                 with col2: st.metric("🕐 Hora", agora.strftime("%H:%M"))
-                with col3: st.metric("📱 Total Cadastros", 127)  # Aumenta quando quiser
+                with col3: st.metric("📱 Total Cadastros", len(df))
                 with col4: st.metric("⏱️ Segundos", agora.second)
                 
                 st.caption(f"Data completa: {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+                
+                st.markdown("---")
+                st.subheader("📋 Participantes Cadastrados")
+                
+                # Ajustar colunas para exibição
+                df_mostrar = df.copy()
+                if "ultimo_acesso" in df_mostrar.columns:
+                    df_mostrar["ultimo_acesso"] = df_mostrar["ultimo_acesso"].apply(
+                        lambda x: x.strftime("%d/%m/%Y %H:%M:%S") if pd.notna(x) else "-"
+                    )
+                else:
+                    df_mostrar["ultimo_acesso"] = "-"
+                
+                colunas_exibir = ["NOME", "EMAIL", "status", "ultimo_acesso"]
+                colunas_exibir = [c for c in colunas_exibir if c in df_mostrar.columns]
+                st.dataframe(df_mostrar[colunas_exibir], use_container_width=True)
+                
+                # Atualiza automaticamente ultimo_acesso de cada participante
+                if st.button("Atualizar horário último acesso"):
+                    agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+                    df_mostrar["ultimo_acesso"] = agora_br
+                    st.success("Último acesso atualizado para todos os participantes.")
             else:
                 st.warning("❌ Senha Admin necessária")
 
