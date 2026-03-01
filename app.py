@@ -26,6 +26,8 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
+if "admin_logado" not in st.session_state:
+    st.session_state["admin_logado"] = False
 
 # =========================
 # CSS
@@ -55,6 +57,17 @@ footer {visibility: hidden;}
     text-align:center; 
     display:inline-block; 
     width: 100%;
+}
+.data-pequena {
+    font-size: 11px !important;
+    color: #6B7280 !important;
+    font-style: italic !important;
+}
+.participante-linha {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 5px 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -140,7 +153,10 @@ else:
             if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
             if st.button("📍 Por Cidade", use_container_width=True): st.session_state["pagina"] = "cidade"; st.rerun()
         with c2:
-            if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
+            if st.button("📊 Admin", use_container_width=True): 
+                st.session_state["pagina"] = "admin"
+                st.session_state["admin_logado"] = False
+                st.rerun()
             if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.clear(); st.rerun()
@@ -180,32 +196,56 @@ else:
                     renderizar_card(row, i)
 
         elif pagina == "admin":
-            admin_senha = st.text_input("Senha Admin:", type="password")
-            if admin_senha == "estudantesabio2026":
-                # Puxar participantes do Supabase
+            # ADMIN LOGIN - CORRIGIDO
+            if not st.session_state.get("admin_logado", False):
+                st.subheader("🔐 Login Admin")
+                col1, col2 = st.columns(2)
+                with col1:
+                    usuario = st.text_input("Usuário", placeholder="estudantesabio")
+                with col2:
+                    senha = st.text_input("Senha", type="password", placeholder="2026")
+                if st.button("🔑 Entrar Admin", use_container_width=True):
+                    if usuario == "estudantesabio" and senha == "2026":
+                        st.session_state["admin_logado"] = True
+                        st.success("✅ Admin logado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Usuário ou senha incorretos!")
+                        st.session_state["admin_logado"] = False
+            else:
+                # DASHBOARD ADMIN - NOVA LISTA HORIZONTAL
+                st.subheader("📊 Participantes Cadastrados")
                 try:
-                    res = supabase.table("participantes").select("*").execute()
+                    res = supabase.table("participantes").select("*").order("created_at", desc=True).execute()
                     participantes = res.data
                     if participantes:
-                        df_p = pd.DataFrame(participantes)
-                        if "ultimo_acesso" in df_p.columns:
-                            df_p["ultimo_acesso"] = pd.to_datetime(df_p["ultimo_acesso"]).dt.strftime("%d/%m/%Y %H:%M")
-                        else:
-                            df_p["ultimo_acesso"] = "-"
-                        st.subheader("📋 Participantes Cadastrados")
-                        st.dataframe(df_p[["nome", "email", "status", "ultimo_acesso"]], use_container_width=True, height=300)
-                        if st.button("Atualizar último acesso para todos"):
-                            agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
-                            for p in participantes:
-                                supabase.table("participantes").update({"ultimo_acesso": agora_br}).eq("id", p["id"]).execute()
-                            st.success("Último acesso atualizado!")
-                            st.experimental_rerun()
+                        st.info(f"**Total: {len(participantes)} participantes**")
+                        
+                        # LISTA NA MESMA LINHA - JOÃO, email (01-03-2026 06:42:30)
+                        for i, p in enumerate(participantes, 1):
+                            agora = p.get("created_at", "")
+                            if agora:
+                                data_fmt = datetime.datetime.fromisoformat(agora.replace('Z', '+00:00')).astimezone(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%d/%m/%Y - %H:%M:%S")
+                            else:
+                                data_fmt = "-"
+                            
+                            st.markdown(f"""
+                            <div class="participante-linha">
+                                <span style="font-weight: bold; font-size: 14px;">{i}.</span>
+                                <span style="font-weight: 500;">{p.get('nome', 'N/D')}</span>
+                                <span>{p.get('email', 'N/D')}</span>
+                                <span class="data-pequena">({data_fmt})</span>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        if st.button("🔐 Sair Admin"):
+                            st.session_state["admin_logado"] = False
+                            st.rerun()
                     else:
                         st.info("Nenhum participante cadastrado.")
                 except Exception as e:
-                    st.error(f"Erro ao acessar Supabase: {e}")
-            else:
-                st.warning("❌ Senha Admin necessária")
+                    st.error(f"Erro Supabase: {e}")
 
         elif pagina == "frases":
             st.info("Fora da caridade não há salvação. — Allan Kardec")
+
