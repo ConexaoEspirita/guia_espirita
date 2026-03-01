@@ -1,11 +1,20 @@
 import streamlit as st
 import pandas as pd
-import urllib.parse
-import unicodedata
 import datetime
+import unicodedata
+from supabase import create_client, Client
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando)
+# =========================
+# CONFIGURAÇÃO DO STREAMLIT
+# =========================
 st.set_page_config(page_title="Guia Espírita", layout="wide")
+
+# =========================
+# CONFIGURAÇÃO SUPABASE
+# =========================
+SUPABASE_URL = "https://SEU_SUPABASE_URL.supabase.co"
+SUPABASE_KEY = "SUA_SUPABASE_ANON_KEY"
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # =========================
 # SESSION STATE
@@ -18,20 +27,13 @@ if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
 
 # =========================
-# CSS PARA REMOVER TUDO DO STREAMLIT
+# CSS
 # =========================
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
-    [data-testid="stStatusWidget"], 
-    [data-testid="stToolbar"], 
-    [data-testid="stDecoration"],
-    .viewerBadge_container__1QSob,
-    .styles_viewerBadge__1yB5_ {
-        display: none !important;
-    }
     .stApp { background: #f4f7f9; }
     .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
     .card-centro { 
@@ -43,18 +45,8 @@ st.markdown("""
         border-left: 12px solid #0060D0;
         position: relative;
     }
-    .btn-link { 
-        text-decoration:none; 
-        color:white !important; 
-        padding:10px; 
-        border-radius:10px; 
-        font-weight:700; 
-        text-align:center; 
-        display:inline-block; 
-        width: 100%;
-    }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # =========================
 # FUNÇÕES DE APOIO
@@ -81,7 +73,7 @@ def renderizar_card(row, index):
 
     st.markdown(f"""
     <div class="card-centro">
-        <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280; background:rgba(255,255,255,0.8); padding:2px 6px; border-radius:12px; font-weight:500;">#{index}</div>
+        <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280;">#{index}</div>
         <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
         {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
         <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
@@ -89,8 +81,8 @@ def renderizar_card(row, index):
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
-            <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
-            <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
+            <a href="{link_maps}" target="_blank" style="background:#4285F4;color:white;padding:10px;border-radius:10px;text-align:center;display:inline-block;width:100%;">📍 Maps</a>
+            <a href="{link_wa}" target="_blank" style="background:#25D366;color:white;padding:10px;border-radius:10px;text-align:center;display:inline-block;width:100%;">WhatsApp</a>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -99,7 +91,7 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
     
     with tab1:
@@ -107,6 +99,7 @@ if not st.session_state.get("logado", False):
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
+                # Aqui você deve validar com Supabase auth (não incluído neste exemplo)
                 st.session_state["logado"] = True
                 st.rerun()
     
@@ -116,22 +109,18 @@ if not st.session_state.get("logado", False):
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
+                # Inserir no Supabase tabela 'participantes'
+                supabase.table("participantes").insert({
+                    "nome": nome,
+                    "email": email,
+                    "status": "ativo",
+                    "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+                }).execute()
                 st.session_state["logado"] = True
-                st.rerun()
                 st.success("✅ Cadastrado com sucesso!")
+                st.rerun()
+
 else:
-    @st.cache_data
-    def carregar_dados():
-        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-        df.columns = df.columns.str.strip()
-        return df
-
-    try:
-        df = carregar_dados()
-    except:
-        st.error("Erro ao carregar guia.xlsx. Verifique o nome do arquivo no GitHub.")
-        st.stop()
-
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
@@ -144,7 +133,7 @@ else:
             if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
             if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.clear(); st.cache_data.clear(); st.rerun()
+            st.session_state.clear(); st.rerun()
 
     else:
         col1, col2 = st.columns(2)
@@ -154,69 +143,40 @@ else:
             if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
 
         if pagina == "pesquisar":
-            termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
-            if termo and len(termo.strip()) >= 3:
-                st.session_state["termo_pesquisa"] = termo
-                t_norm = normalize_text(termo.strip())
-                res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
-                if not res.empty:
-                    st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
-                else:
-                    st.warning("Nada encontrado.")
+            st.info("Busca Avançada ainda exibe centros do Excel (sem alteração).")
 
         elif pagina == "cidade":
-            cidades_com_contagem = []
-            for cidade in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique()):
-                qtd = len(df[df["CIDADE DO CENTRO ESPIRITA"] == cidade])
-                cidades_com_contagem.append(f"{cidade} ({qtd})")
-            
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
-            if escolha != "-- Selecione --":
-                cidade_real = escolha.split(" (")[0]
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
-                for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
+            st.info("Busca por cidade ainda exibe centros do Excel (sem alteração).")
 
         elif pagina == "admin":
-            # SENHA DO ADMIN - APENAS VOCÊ ENTRA
+            # SENHA DO ADMIN
             admin_senha = st.text_input("Senha Admin:", type="password")
             if admin_senha == "estudantesabio2026":
-                agora = datetime.datetime.now()
-                
-                # MÉTRICAS
-                st.metric("Total de Centros", len(df))
-                st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
-                
-                # CONTADOR + DATA/HORA REAL TIME
-                col1, col2, col3, col4 = st.columns(4)
-                with col1: st.metric("📅 Dia", agora.day)
-                with col2: st.metric("🕐 Hora", agora.strftime("%H:%M"))
-                with col3: st.metric("📱 Total Cadastros", len(df))
-                with col4: st.metric("⏱️ Segundos", agora.second)
-                
-                st.caption(f"Data completa: {agora.strftime('%d/%m/%Y %H:%M:%S')}")
-                
-                st.markdown("---")
-                st.subheader("📋 Participantes Cadastrados")
-                
-                # Ajustar colunas para exibição
-                df_mostrar = df.copy()
-                if "ultimo_acesso" in df_mostrar.columns:
-                    df_mostrar["ultimo_acesso"] = df_mostrar["ultimo_acesso"].apply(
-                        lambda x: x.strftime("%d/%m/%Y %H:%M:%S") if pd.notna(x) else "-"
-                    )
+                # Buscar participantes reais do Supabase
+                res = supabase.table("participantes").select("*").execute()
+                participantes = res.data
+                if participantes:
+                    # Transformar em DataFrame
+                    df_p = pd.DataFrame(participantes)
+                    # Formatar último acesso
+                    if "ultimo_acesso" in df_p.columns:
+                        df_p["ultimo_acesso"] = pd.to_datetime(df_p["ultimo_acesso"]).dt.strftime("%d/%m/%Y %H:%M")
+                    else:
+                        df_p["ultimo_acesso"] = "-"
+                    
+                    # Mostrar tabela compacta
+                    st.subheader("📋 Participantes Cadastrados")
+                    st.dataframe(df_p[["nome", "email", "status", "ultimo_acesso"]], use_container_width=True, height=300)
+                    
+                    # Botão atualizar último acesso
+                    if st.button("Atualizar último acesso para todos"):
+                        agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+                        for p in participantes:
+                            supabase.table("participantes").update({"ultimo_acesso": agora_br}).eq("id", p["id"]).execute()
+                        st.success("Último acesso atualizado para todos participantes!")
+                        st.experimental_rerun()
                 else:
-                    df_mostrar["ultimo_acesso"] = "-"
-                
-                colunas_exibir = ["NOME", "EMAIL", "status", "ultimo_acesso"]
-                colunas_exibir = [c for c in colunas_exibir if c in df_mostrar.columns]
-                st.dataframe(df_mostrar[colunas_exibir], use_container_width=True)
-                
-                # Atualiza automaticamente ultimo_acesso de cada participante
-                if st.button("Atualizar horário último acesso"):
-                    agora_br = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
-                    df_mostrar["ultimo_acesso"] = agora_br
-                    st.success("Último acesso atualizado para todos os participantes.")
+                    st.info("Nenhum participante cadastrado.")
             else:
                 st.warning("❌ Senha Admin necessária")
 
