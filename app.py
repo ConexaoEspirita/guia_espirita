@@ -59,6 +59,22 @@ footer {visibility: hidden;}
     display:inline-block; 
     width: 100%;
 }
+
+/* Estilo para a linha horizontal com data e hora no topo */
+.header-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: #4B5563;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+.header-info hr {
+    flex-grow: 1;
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -83,8 +99,8 @@ def renderizar_card(row, index):
     numero = "".join(filter(str.isdigit, str(row.get("CELULAR"))))
 
     query = urllib.parse.quote(f"{endereco}, {cidade}")
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-    link_wa = f"https://wa.me/55{numero}" if len(numero)>=10 else "#"
+    link_maps = f"https://www.google.com{query}"
+    link_wa = f"https://wa.me{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -108,9 +124,7 @@ def renderizar_card(row, index):
 # LOGIN
 # =========================
 if not st.session_state["logado"]:
-
     st.markdown("<div style='text-align:center; color:#60A5FA; font-size:32px; font-weight:800;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-
     tab1, tab2 = st.tabs(["🚪 Entrar","✨ Cadastrar"])
 
     with tab1:
@@ -127,8 +141,6 @@ if not st.session_state["logado"]:
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
-
-                # Salva no Supabase
                 try:
                     supabase.table("participantes").insert({
                         "nome": nome,
@@ -144,6 +156,15 @@ if not st.session_state["logado"]:
 # APP PRINCIPAL
 # =========================
 else:
+    # 1. HORÁRIO, DATA E LINHA NA MESMA LINHA (HEADER)
+    agora = datetime.datetime.now()
+    st.markdown(f"""
+    <div class="header-info">
+        <span>{agora.strftime('%H:%M')}</span>
+        <span>{agora.strftime('%d/%m/%Y')}</span>
+        <hr>
+    </div>
+    """, unsafe_allow_html=True)
 
     @st.cache_data
     def carregar_dados():
@@ -154,14 +175,13 @@ else:
     try:
         df = carregar_dados()
     except:
-        st.error("Erro ao carregar guia.xlsx. Verifique o arquivo e aba.")
+        st.error("Erro ao carregar guia.xlsx.")
         st.stop()
 
     pagina = st.session_state["pagina"]
 
     if pagina is None:
         st.markdown("<div class='titulo-grande' style='text-align:center; color:#60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-
         c1,c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
@@ -178,7 +198,6 @@ else:
             st.session_state.clear(); st.cache_data.clear(); st.rerun()
 
     else:
-
         col1,col2 = st.columns(2)
         with col1:
             if st.button("⬅️ VOLTAR", use_container_width=True):
@@ -187,70 +206,56 @@ else:
             if st.button("🔄 LIMPAR", use_container_width=True):
                 st.session_state["termo_pesquisa"] = "" ; st.rerun()
 
-        # =========================
-        # BUSCA AVANÇADA
-        # =========================
         if pagina == "pesquisar":
-
             termo = st.text_input("Digite nome ou cidade ou responsável:", value=st.session_state["termo_pesquisa"])
-
             if termo and len(termo.strip()) >= 3:
-
                 st.session_state["termo_pesquisa"] = termo
                 t_norm = normalize_text(termo)
-
                 res = df[
                     df["NOME"].apply(normalize_text).str.contains(t_norm,na=False) |
                     df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text).str.contains(t_norm,na=False) |
                     df["RESPONSAVEL"].apply(normalize_text).str.contains(t_norm,na=False)
                 ]
-
                 if not res.empty:
                     st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i,(_,row) in enumerate(res.iterrows(),1):
-                        renderizar_card(row,i)
+                    for i,(_,row) in enumerate(res.iterrows(),1): renderizar_card(row,i)
                 else:
                     st.warning("Nada encontrado.")
 
-        # =========================
-        # POR CIDADE
-        # =========================
         elif pagina == "cidade":
+            cidades_originais = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+            # Alteração Cedral(2)
+            cidades_formatadas = [f"cedral(2)" if c.lower() == "cedral" else c for c in cidades_originais]
+            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_formatadas)
 
-            cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"]+cidades)
+            if escolha != "-- Selecione --":
+                cidade_real = "Cedral" if "cedral(2)" in escolha else escolha
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
+                for i,(_,row) in enumerate(res.iterrows(),1): renderizar_card(row,i)
 
-            if escolha!="-- Selecione --":
-                res = df[df["CIDADE DO CENTRO ESPIRITA"]==escolha]
-                for i,(_,row) in enumerate(res.iterrows(),1):
-                    renderizar_card(row,i)
+        elif pagina == "frases":
+            st.markdown("### 🕊️ Pensamento de Chico Xavier")
+            st.info("""
+            "Embora ninguém possa voltar atrás e fazer um novo começo, 
+            qualquer um pode começar agora e fazer um novo fim."
+            \n— **Chico Xavier**
+            """)
 
-        # =========================
-        # ADMIN
-        # =========================
         elif pagina == "admin":
-
-            admin_senha = st.text_input("Senha Admin:", type="password")
-
-            if admin_senha=="estudantesabio2026":
-
-                agora = datetime.datetime.now()
-
-                # total de cadastros Supabase
-                try:
-                    r = supabase.table("participantes").select("*", count="exact").execute()
-                    total_pessoas = r.count
-                except:
-                    total_pessoas = 0
-
-                st.metric("👥 Pessoas Cadastradas", total_pessoas)
-                st.metric("🕊️ Total de Centros", len(df))
-                st.metric("🏙️ Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
-
-                col1,col2,col3 = st.columns(3)
-                col1.metric("📅 Data", agora.strftime("%d/%m/%Y"))
-                col2.metric("🕐 Hora", agora.strftime("%H:%M"))
-                col3.metric("⏱️ Segundos", agora.strftime("%S"))
-
-            else:
-                st.warning("❌ Senha Admin necessária") 
+            st.subheader("👥 Usuários Cadastrados")
+            try:
+                usuarios = supabase.table("participantes").select("*").execute()
+                for user in usuarios.data:
+                    nome = user.get('nome', 'N/A')
+                    email = user.get('email', 'N/A')
+                    # Data e Hora no formato pedido: 01-03-2026 - 23h34,30s
+                    dt_formatada = datetime.datetime.now().strftime('%d-%m-%Y - %Hh%M,%Ss')
+                    
+                    st.markdown(f"""
+                    <div style="border-bottom:1px solid #ddd; padding:10px 0;">
+                        <span style="font-size:16px;">{nome}, {email}</span>
+                        <br><span style="font-size:11px; color:gray;">{dt_formatada}</span>
+                    </div>
+                    """, unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f"Erro ao carregar banco: {e}")
