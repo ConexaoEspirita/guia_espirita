@@ -48,7 +48,15 @@ def enviar_email_confirmacao(email, acao="login"):
         """
     else:
         assunto = "✅ Cadastro confirmado!"
-        mensagem = "Seu cadastro foi confirmado! Vá na aba 'Entrar' e faça login com seu email e senha. 🕊️ Paz e Luz!"
+        mensagem = """
+        Seu cadastro foi confirmado com sucesso!
+        
+        Vá na aba 'Entrar' e faça login com:
+        📧 Email: {email}
+        🔑 Senha: (a que você criou)
+        
+        🕊️ Paz e Luz!
+        """.format(email=email)
     
     email_msg = Mail(
         from_email='bMEFBOVESPA2017@gmail.com',
@@ -106,51 +114,63 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN + CADASTRO CORRIGIDOS (SEM experimental_rerun)
+# LOGIN + CADASTRO COM SENHA VERDADEIRA 🔒
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
     
     with t1:
         with st.form("login"):
-            em = st.text_input("E-mail")
-            se = st.text_input("Senha", type="password")
-            if st.form_submit_button("Entrar", use_container_width=True): 
+            em = st.text_input("📧 E-mail")
+            se = st.text_input("🔑 Senha", type="password")
+            if st.form_submit_button("🚀 Entrar", use_container_width=True): 
                 try:
-                    user = supabase.table("participantes").select("*").eq("email", em).execute()
+                    # ✅ VERIFICA EMAIL + SENHA
+                    user = supabase.table("participantes").select("*").eq("email", em).single().execute()
+                    
                     if user.data:
-                        supabase.table("participantes").update({
-                            "status": "online",
-                            "ultimo_acesso": datetime.datetime.now().isoformat()
-                        }).eq("email", em).execute()
-                        st.session_state["logado"] = True
-                        st.session_state["email_logado"] = em
-                        if enviar_email_confirmacao(em, "login"):
-                            st.success("✅ Login OK! 📧 Email enviado!")
-                        st.rerun()
+                        # ✅ SENHA CORRETA?
+                        if user.data.get('senha') == se:
+                            supabase.table("participantes").update({
+                                "status": "online",
+                                "ultimo_acesso": datetime.datetime.now().isoformat()
+                            }).eq("email", em).execute()
+                            
+                            st.session_state["logado"] = True
+                            st.session_state["email_logado"] = em
+                            st.success(f"✅ Bem-vindo, {user.data.get('nome', 'Usuário')}!")
+                            if enviar_email_confirmacao(em, "login"):
+                                st.info("📧 Email de boas-vindas enviado!")
+                            st.rerun()
+                        else:
+                            st.error("❌ SENHA INCORRETA!")
                     else:
-                        st.error("❌ E-mail não cadastrado! Cadastre-se primeiro.")
+                        st.error("❌ E-mail não cadastrado!")
+                        
                 except Exception as e:
                     st.error("❌ ERRO LOGIN:")
                     st.code(str(e))
     
     with t2:
         with st.form("cadastro"):
-            n_c = st.text_input("Nome completo")
-            e_c = st.text_input("E-mail")
-            s_c = st.text_input("Senha", type="password", help="Mínimo 6 caracteres")
-            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
+            n_c = st.text_input("👤 Nome completo")
+            e_c = st.text_input("📧 E-mail")
+            s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 6 caracteres")
+            submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
 
-            if submitted and n_c and e_c and s_c:
+            if submitted and n_c and e_c and s_c and len(s_c) >= 3:
                 try:
+                    # ✅ VERIFICA SE JÁ EXISTE
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.error("❌ E-mail JÁ CADASTRADO!")
                         st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
+                        # ✅ SALVA COM SENHA!
                         result = supabase.table("participantes").insert({
                             "nome": n_c.strip(),
                             "email": e_c.strip(),
+                            "senha": s_c,  # 🔒 SENHA SALVA!
                             "status": "ausente",
                             "ultimo_acesso": None
                         }).execute()
@@ -158,11 +178,9 @@ if not st.session_state.get("logado", False):
                         if result.data:
                             st.success("✅ CADASTRO CONCLUÍDO!")
                             st.info("📧 Email de confirmação enviado!")
-                            st.info("👆 Agora vá na aba 'ENTRAR' e faça login!")
+                            st.info("👆 Vá na aba 'ENTRAR' e faça login com sua senha!")
                             
                             enviar_email_confirmacao(e_c, "cadastro")
-                            
-                            # ✅ CORRIGIDO: st.rerun() ao invés de experimental_rerun()
                             st.rerun()
                         else:
                             st.error("❌ Erro ao salvar cadastro")
@@ -171,7 +189,7 @@ if not st.session_state.get("logado", False):
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
             elif submitted:
-                st.warning("❌ Preencha todos os campos!")
+                st.warning("❌ Preencha todos os campos! Senha mínima: 3 caracteres")
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
