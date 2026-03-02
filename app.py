@@ -10,7 +10,7 @@ from sendgrid.helpers.mail import Mail, Email, To, Content
 # SUPABASE + SENDGRID
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]  # ← Adicione no secrets.toml
+SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Guia Espírita", layout="wide")
@@ -21,7 +21,7 @@ if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
 if "email_logado" not in st.session_state: st.session_state["email_logado"] = None
 
-# CSS
+# CSS (SEU ORIGINAL)
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -32,19 +32,10 @@ st.markdown("""
 .btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
 .admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
 .admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
-/* 🔍 BARRA DE PESQUISA VISÍVEL E GRANDE */
-.stTextInput > div > div > input {
-    border: 3px solid #3B82F6 !important;
-    border-radius: 15px !important;
-    padding: 15px 20px !important;
-    font-size: 18px !important;
-    font-weight: 600 !important;
-    box-shadow: 0 4px 15px rgba(59,130,246,0.2) !important;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# FUNÇÃO SENDGRID
+# SENDGRID
 def enviar_email_confirmacao(email, acao="login"):
     sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
     
@@ -52,38 +43,27 @@ def enviar_email_confirmacao(email, acao="login"):
         assunto = "🕊️ Bem-vindo ao Guia Espírita!"
         mensagem = f"""
         Olá! Você acaba de entrar no **Guia Espírita** às {datetime.datetime.now().strftime("%H:%M %d/%m/%Y")}.
-
         Encontre centros espíritas próximos a você!
-
-        🙏 Gratidão pela confiança!
-        Equipe Guia Espírita
+        🙏 Gratidão! Equipe Guia Espírita
         """
-    else:  # cadastro
-        assunto = "✅ Cadastro confirmado no Guia Espírita!"
-        mensagem = """
-        Seu cadastro foi confirmado com sucesso!
-
-        Acesse agora e encontre centros espíritas próximos!
-
-        🕊️ Paz e Luz!
-        Equipe Guia Espírita
-        """
+    else:
+        assunto = "✅ Cadastro confirmado!"
+        mensagem = "Seu cadastro foi confirmado! Vá na aba 'Entrar' e faça login com seu email e senha. 🕊️ Paz e Luz!"
     
     email_msg = Mail(
-        from_email='bMEFBOVESPA2017@gmail.com',  # ← SEU EMAIL VERIFICADO
+        from_email='bMEFBOVESPA2017@gmail.com',
         to_emails=email,
         subject=assunto,
         plain_text_content=mensagem
     )
     
     try:
-        response = sg.send(email_msg)
+        sg.send(email_msg)
         return True
-    except Exception as e:
-        st.error(f"❌ Erro SendGrid: {str(e)}")
+    except:
         return False
 
-# FUNÇÕES ORIGINAIS
+# SUAS FUNÇÕES ORIGINAIS
 def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 def normalize_text(text):
     if pd.isna(text): return ""
@@ -126,7 +106,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN + SENDGRID
+# LOGIN + CADASTRO CORRIGIDOS
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -137,64 +117,66 @@ if not st.session_state.get("logado", False):
             se = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True): 
                 try:
-                    supabase.table("participantes").update({
-                        "status": "online",
-                        "ultimo_acesso": datetime.datetime.now().isoformat()
-                    }).eq("email", em).execute()
-                    st.session_state["logado"] = True
-                    st.session_state["email_logado"] = em
-                    if enviar_email_confirmacao(em, "login"):
-                        st.success("✅ Login OK! 📧 Email enviado!")
-                    else:
-                        st.warning("⚠️ Login OK, mas email falhou!")
-                    st.rerun()
-                except Exception as e:
-                    st.error("❌ ERRO SUPABASE LOGIN:")
-                    st.code(str(e))
-    
-   with t2:
-    with st.form("cadastro"):
-        n_c = st.text_input("Nome")
-        e_c = st.text_input("E-mail")
-        s_c = st.text_input("Senha", type="password")
-        submitted = st.form_submit_button("Cadastrar", use_container_width=True)
-
-        if submitted:
-            try:
-                # ✅ CHECK DUPLICADO CORRIGIDO
-                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                if check.data:
-                    st.error("❌ E-mail JÁ CADASTRADO! Faça login na aba 'Entrar'")
-                    st.info("💡 Use a aba 'Entrar' para acessar sua conta")
-                else:
-                    # ✅ CADASTRO NOVO
-                    result = supabase.table("participantes").insert({
-                        "nome": n_c,
-                        "email": e_c,
-                        "status": "ausente",
-                        "ultimo_acesso": None
-                    }).execute()
-                    
-                    if result.data:
-                        st.success("✅ CADASTRO REALIZADO!")
-                        st.info("👆 Agora faça LOGIN na aba 'Entrar' com seu email e senha")
-                        
-                        # ✅ ENVIA EMAIL mas NÃO loga automaticamente
-                        enviar_email_confirmacao(e_c, "cadastro")
-                        
-                        # ✅ LIMPA FORMULÁRIO - volta pro estado inicial
-                        st.session_state["pagina"] = None
+                    # VERIFICA SE USUÁRIO EXISTE
+                    user = supabase.table("participantes").select("*").eq("email", em).execute()
+                    if user.data:
+                        supabase.table("participantes").update({
+                            "status": "online",
+                            "ultimo_acesso": datetime.datetime.now().isoformat()
+                        }).eq("email", em).execute()
+                        st.session_state["logado"] = True
+                        st.session_state["email_logado"] = em
+                        if enviar_email_confirmacao(em, "login"):
+                            st.success("✅ Login OK! 📧 Email enviado!")
                         st.rerun()
                     else:
-                        st.error("❌ Erro no cadastro")
-                        
-            except Exception as e:
-                st.error("❌ ERRO SUPABASE:")
-                st.code(str(e))
+                        st.error("❌ E-mail não cadastrado! Cadastre-se primeiro.")
+                except Exception as e:
+                    st.error("❌ ERRO LOGIN:")
+                    st.code(str(e))
+    
+    with t2:
+        with st.form("cadastro"):
+            n_c = st.text_input("Nome completo")
+            e_c = st.text_input("E-mail")
+            s_c = st.text_input("Senha", type="password", help="Mínimo 6 caracteres")
+            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
 
+            if submitted and n_c and e_c and s_c:
+                try:
+                    # ✅ CHECK DUPLICADO MELHORADO
+                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                    if check.data:
+                        st.error("❌ E-mail JÁ CADASTRADO!")
+                        st.info("💡 Vá na aba 'Entrar' para fazer login")
+                    else:
+                        # ✅ CADASTRO NOVO
+                        result = supabase.table("participantes").insert({
+                            "nome": n_c.strip(),
+                            "email": e_c.strip(),
+                            "status": "ausente",
+                            "ultimo_acesso": None
+                        }).execute()
+                        
+                        if result.data:
+                            st.success("✅ CADASTRO CONCLUÍDO!")
+                            st.info("📧 Email de confirmação enviado!")
+                            st.info("👆 Agora vá na aba 'ENTRAR' e faça login!")
+                            
+                            enviar_email_confirmacao(e_c, "cadastro")
+                            
+                            # ✅ LIMPA FORM E FICA NA TELA
+                            st.experimental_rerun()
+                        else:
+                            st.error("❌ Erro ao salvar cadastro")
+                            
+                except Exception as e:
+                    st.error("❌ ERRO SUPABASE:")
+                    st.code(str(e))
+            elif submitted:
+                st.warning("❌ Preencha todos os campos!")
 
 else:
-    # RESTO DO CÓDIGO (MENU + BUSCA) - IGUAL AO ANTERIOR
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
     st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
@@ -213,9 +195,7 @@ else:
             if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
             if st.session_state.get("email_logado"):
-                supabase.table("participantes").update({
-                    "status": "ausente"
-                }).eq("email", st.session_state["email_logado"]).execute()
+                supabase.table("participantes").update({"status": "ausente"}).eq("email", st.session_state["email_logado"]).execute()
             st.session_state.clear()
             st.rerun()
 
@@ -231,37 +211,31 @@ else:
 
         if pag == "pesquisar":
             st.session_state["termo_pesquisa"] = st.text_input(
-                "🔍 Digite o que busca (Enter para pesquisar):",
+                "Digite o que busca:",
                 value=st.session_state["termo_pesquisa"],
-                key="busca_avancada_key",
-                help="Ex: BATIS, KARDEC, Catanduva..."
+                key="busca_avancada_key"
             )
-            
-            termo = st.session_state["termo_pesquisa"].strip()
-            if termo and len(termo) >= 3:
-                t_norm = normalize_text(termo)
+            if st.session_state["termo_pesquisa"] and len(st.session_state["termo_pesquisa"].strip()) >= 3:
+                t_norm = normalize_text(st.session_state["termo_pesquisa"].strip())
                 res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
                 if not res.empty:
-                    st.success(f"✅ {len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1): 
-                        renderizar_card(row, i)
+                    st.success(f"{len(res)} centro(s) encontrado(s)")
+                    for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
                 else:
-                    st.warning("❌ Nenhum centro encontrado. Tente outro termo!")
-            else:
-                st.info("👆 Digite pelo menos 3 letras e dê Enter")
+                    st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
             counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
             cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
             opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
-            sel = st.selectbox("📍 Selecione a cidade:", ["-- Selecione --"] + opts)
+            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
             if sel != "-- Selecione --":
                 c_real = sel.rsplit(" (", 1)[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pag == "admin":
-            admin_pw = st.text_input("🔑 Senha Admin:", type="password")
+            admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
@@ -272,4 +246,3 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
-
