@@ -152,44 +152,46 @@ if not st.session_state.get("logado", False):
                     st.error("❌ ERRO SUPABASE LOGIN:")
                     st.code(str(e))
     
-    with t2:
-        with st.form("cadastro"):
-            n_c = st.text_input("Nome")
-            e_c = st.text_input("E-mail")
-            s_c = st.text_input("Senha", type="password")
-            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
+   with t2:
+    with st.form("cadastro"):
+        n_c = st.text_input("Nome")
+        e_c = st.text_input("E-mail")
+        s_c = st.text_input("Senha", type="password")
+        submitted = st.form_submit_button("Cadastrar", use_container_width=True)
 
-            if submitted:
-                try:
-                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                    if check.data:
-                        st.warning("⚠️ E-mail já cadastrado!")
+        if submitted:
+            try:
+                # ✅ CHECK DUPLICADO CORRIGIDO
+                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                if check.data:
+                    st.error("❌ E-mail JÁ CADASTRADO! Faça login na aba 'Entrar'")
+                    st.info("💡 Use a aba 'Entrar' para acessar sua conta")
+                else:
+                    # ✅ CADASTRO NOVO
+                    result = supabase.table("participantes").insert({
+                        "nome": n_c,
+                        "email": e_c,
+                        "status": "ausente",
+                        "ultimo_acesso": None
+                    }).execute()
+                    
+                    if result.data:
+                        st.success("✅ CADASTRO REALIZADO!")
+                        st.info("👆 Agora faça LOGIN na aba 'Entrar' com seu email e senha")
+                        
+                        # ✅ ENVIA EMAIL mas NÃO loga automaticamente
+                        enviar_email_confirmacao(e_c, "cadastro")
+                        
+                        # ✅ LIMPA FORMULÁRIO - volta pro estado inicial
+                        st.session_state["pagina"] = None
+                        st.rerun()
                     else:
-                        result = supabase.table("participantes").insert({
-                            "nome": n_c,
-                            "email": e_c,
-                            "status": "ausente",
-                            "ultimo_acesso": None
-                        }).execute()
-                        if result.data:
-                            st.success("✅ Cadastro salvo!")
-                            if enviar_email_confirmacao(e_c, "cadastro"):
-                                st.balloons()
-                                st.success("🎉 Email de confirmação enviado!")
-                            else:
-                                st.warning("⚠️ Cadastro OK, mas email falhou!")
-                            st.session_state["logado"] = True
-                            st.session_state["email_logado"] = e_c
-                            supabase.table("participantes").update({
-                                "status": "online",
-                                "ultimo_acesso": datetime.datetime.now().isoformat()
-                            }).eq("email", e_c).execute()
-                            st.rerun()
-                        else:
-                            st.warning("⚠️ Insert aceito mas sem dados")
-                except Exception as e:
-                    st.error("❌ ERRO SUPABASE:")
-                    st.code(str(e))
+                        st.error("❌ Erro no cadastro")
+                        
+            except Exception as e:
+                st.error("❌ ERRO SUPABASE:")
+                st.code(str(e))
+
 
 else:
     # RESTO DO CÓDIGO (MENU + BUSCA) - IGUAL AO ANTERIOR
@@ -270,3 +272,4 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
