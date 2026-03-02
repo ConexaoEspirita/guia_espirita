@@ -114,7 +114,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN + CADASTRO COM SENHA VERDADEIRA 🔒
+# LOGIN + CADASTRO CORRIGIDOS (SEM .single() - SEM PGRST116!)
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -125,12 +125,13 @@ if not st.session_state.get("logado", False):
             se = st.text_input("🔑 Senha", type="password")
             if st.form_submit_button("🚀 Entrar", use_container_width=True): 
                 try:
-                    # ✅ VERIFICA EMAIL + SENHA
-                    user = supabase.table("participantes").select("*").eq("email", em).single().execute()
+                    # ✅ SEM .single() - BUSCA TODOS e verifica
+                    users = supabase.table("participantes").select("*").eq("email", em).execute()
                     
-                    if user.data:
-                        # ✅ SENHA CORRETA?
-                        if user.data.get('senha') == se:
+                    if users.data and len(users.data) > 0:
+                        user = users.data[0]
+                        # ✅ VERIFICA SENHA
+                        if user.get('senha') == se:
                             supabase.table("participantes").update({
                                 "status": "online",
                                 "ultimo_acesso": datetime.datetime.now().isoformat()
@@ -138,9 +139,9 @@ if not st.session_state.get("logado", False):
                             
                             st.session_state["logado"] = True
                             st.session_state["email_logado"] = em
-                            st.success(f"✅ Bem-vindo, {user.data.get('nome', 'Usuário')}!")
+                            st.success(f"✅ Bem-vindo, {user.get('nome', 'Usuário')}!")
                             if enviar_email_confirmacao(em, "login"):
-                                st.info("📧 Email de boas-vindas enviado!")
+                                st.info("📧 Email enviado!")
                             st.rerun()
                         else:
                             st.error("❌ SENHA INCORRETA!")
@@ -155,22 +156,22 @@ if not st.session_state.get("logado", False):
         with st.form("cadastro"):
             n_c = st.text_input("👤 Nome completo")
             e_c = st.text_input("📧 E-mail")
-            s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 6 caracteres")
+            s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 3 caracteres")
             submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
 
             if submitted and n_c and e_c and s_c and len(s_c) >= 3:
                 try:
-                    # ✅ VERIFICA SE JÁ EXISTE
+                    # ✅ VERIFICA DUPLICADO
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.error("❌ E-mail JÁ CADASTRADO!")
                         st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
-                        # ✅ SALVA COM SENHA!
+                        # ✅ CADASTRO COM SENHA
                         result = supabase.table("participantes").insert({
                             "nome": n_c.strip(),
                             "email": e_c.strip(),
-                            "senha": s_c,  # 🔒 SENHA SALVA!
+                            "senha": s_c,
                             "status": "ausente",
                             "ultimo_acesso": None
                         }).execute()
@@ -178,22 +179,21 @@ if not st.session_state.get("logado", False):
                         if result.data:
                             st.success("✅ CADASTRO CONCLUÍDO!")
                             st.info("📧 Email de confirmação enviado!")
-                            st.info("👆 Vá na aba 'ENTRAR' e faça login com sua senha!")
-                            
+                            st.info("👆 Vá na aba 'ENTRAR' e faça login!")
                             enviar_email_confirmacao(e_c, "cadastro")
                             st.rerun()
                         else:
-                            st.error("❌ Erro ao salvar cadastro")
+                            st.error("❌ Erro ao salvar")
                             
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
             elif submitted:
-                st.warning("❌ Preencha todos os campos! Senha mínima: 3 caracteres")
+                st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>", unsafe_allow_html=True)
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
