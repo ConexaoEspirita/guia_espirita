@@ -3,13 +3,23 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+import os
 from supabase import create_client, Client
 
 # =========================
-# SUPABASE
+# SUPABASE (USA SECRETS DO STREAMLIT CLOUD)
 # =========================
-SUPABASE_URL = "COLE_SUA_URL_AQUI"
-SUPABASE_KEY = "COLE_SUA_ANON_KEY_AQUI"
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    st.error("❌ Supabase não configurado. Configure em Settings → Secrets.")
+    st.stop()
+
+if not SUPABASE_URL.startswith("https://"):
+    st.error("❌ URL do Supabase inválida.")
+    st.stop()
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # =========================
@@ -18,52 +28,14 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 st.set_page_config(page_title="🕊️ Guia Espírita", layout="wide")
 
 # =========================
-# SESSION STATE
+# SESSION
 # =========================
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
 if "logado" not in st.session_state:
     st.session_state["logado"] = False
-if "termo_pesquisa" not in st.session_state:
-    st.session_state["termo_pesquisa"] = ""
 if "admin_logado" not in st.session_state:
     st.session_state["admin_logado"] = False
-
-# =========================
-# FUNÇÕES
-# =========================
-def ajustar(txt):
-    return str(txt).strip() if pd.notna(txt) else ""
-
-def normalize_text(text):
-    if pd.isna(text): return ""
-    return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
-
-def renderizar_card(row, index):
-    nome = ajustar(row.get('NOME', 'Centro Espírita'))
-    fantasia = ajustar(row.get('NOME FANTASIA'))
-    endereco = ajustar(row.get('ENDERECO'))
-    cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
-    palestra = ajustar(row.get('PALESTRA PUBLICA'))
-    responsavel = ajustar(row.get('RESPONSAVEL'))
-    numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
-
-    query = urllib.parse.quote(f"{endereco}, {cidade}")
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-    link_wa = f"https://wa.me/55{numero}" if len(numero)>=10 else "#"
-
-    st.markdown(f"""
-    ---
-    ### {index}. {nome} 🕊️
-    {"*" + fantasia + "*" if fantasia else ""}
-    **🗣️ Palestra:** {palestra}  
-    **👤 Responsável:** {responsavel}  
-    **🏙️ Cidade:** {cidade}  
-    **📍 Endereço:** {endereco}  
-
-    [📍 Maps]({link_maps}) | [📱 WhatsApp]({link_wa})
-    ---
-    """)
 
 # =========================
 # LOGIN
@@ -96,7 +68,7 @@ if not st.session_state["logado"]:
                         "status": "ativo"
                     }).execute()
 
-                    st.success("Cadastrado com sucesso!")
+                    st.success("✅ Cadastrado com sucesso!")
                     st.session_state["logado"] = True
                     st.rerun()
 
@@ -104,82 +76,24 @@ if not st.session_state["logado"]:
                     st.error(f"Erro Supabase: {e}")
 
 # =========================
-# SISTEMA PRINCIPAL
+# SISTEMA
 # =========================
 else:
 
-    st.title("🕊️ Guia Espírita")
+    col1, col2 = st.columns(2)
 
-    c1, c2 = st.columns(2)
-
-    with c1:
-        if st.button("🔎 Busca Avançada"):
-            st.session_state["pagina"] = "pesquisar"
-            st.rerun()
-
-        if st.button("📍 Por Cidade"):
-            st.session_state["pagina"] = "cidade"
-            st.rerun()
-
-    with c2:
+    with col1:
         if st.button("📊 Admin"):
             st.session_state["pagina"] = "admin"
             st.session_state["admin_logado"] = False
             st.rerun()
 
+    with col2:
         if st.button("🚪 Sair"):
             st.session_state.clear()
             st.rerun()
 
-    pagina = st.session_state["pagina"]
-
-    # =========================
-    # BUSCA
-    # =========================
-    if pagina == "pesquisar":
-        st.header("🔎 Busca Avançada")
-
-        termo = st.text_input("Digite o que busca:")
-        if termo and len(termo.strip()) >= 3:
-
-            df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-            df.columns = df.columns.str.strip()
-
-            t_norm = normalize_text(termo.strip())
-
-            res = df[df.apply(
-                lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
-
-            if not res.empty:
-                st.success(f"{len(res)} centro(s) encontrado(s)")
-                for i, (_, row) in enumerate(res.iterrows(), 1):
-                    renderizar_card(row, i)
-            else:
-                st.warning("Nada encontrado.")
-
-    # =========================
-    # POR CIDADE
-    # =========================
-    elif pagina == "cidade":
-
-        st.header("📍 Por Cidade")
-
-        df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-        df.columns = df.columns.str.strip()
-
-        cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-
-        escolha = st.selectbox("Selecione:", ["-- Selecione --"] + cidades)
-
-        if escolha != "-- Selecione --":
-            res = df[df["CIDADE DO CENTRO ESPIRITA"] == escolha]
-            for i, (_, row) in enumerate(res.iterrows(), 1):
-                renderizar_card(row, i)
-
-    # =========================
-    # ADMIN
-    # =========================
-    elif pagina == "admin":
+    if st.session_state["pagina"] == "admin":
 
         if not st.session_state["admin_logado"]:
 
