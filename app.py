@@ -7,8 +7,8 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 # --- 1. CONFIGURAÇÕES INICIAIS (Substitua pelos seus dados) ---
-URL = "SUA_URL_SUPABASE"
-KEY = "SUA_CHAVE_SUPABASE"
+URL = st.secrets["SUPABASE_URL"]
+KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(URL, KEY)
 
 SENDGRID_API_KEY = "SUA_CHAVE_SENDGRID"
@@ -162,3 +162,4 @@ else:
             "Tudo passa, mas o bem que fazemos permanece para sempre."
         ]
         st.subheader(random.choice(frases))
+
