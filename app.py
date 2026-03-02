@@ -59,12 +59,26 @@ def renderizar_card(row, index):
     cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
     palestra = ajustar(row.get('PALESTRA PUBLICA'))
     responsavel = ajustar(row.get('RESPONSAVEL'))
-    
-    # WHATSAPP E MAPA ORIGINAIS
-    numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
+    celular = ajustar(row.get('CELULAR'))
+
+    # 1. WhatsApp: formatar número com +55 e só números
+    numero = "".join(filter(str.isdigit, celular))
+    if len(numero) >= 10:
+        # Ajusta para DDD + número (ex: 11 9...)
+        if len(numero) == 10:
+            numero_completo = f"+55{numero}"
+        else:
+            if numero.startswith("55"):
+                numero_completo = f"+{numero}"
+            else:
+                numero_completo = f"+55{numero}"
+        link_wa = f"https://wa.me/{numero_completo}"
+    else:
+        link_wa = "#"
+
+    # 2. Google Maps: busca por endereço + cidade
     query = urllib.parse.quote(f"{endereco}, {cidade}")
-    link_maps = f"https://www.google.com{query}"
-    link_wa = f"https://wa.me{numero}" if len(numero)>=10 else "#"
+    link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -75,6 +89,7 @@ def renderizar_card(row, index):
         <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
+        <div style="margin:5px 0;">📱 <b>Celular:</b> {celular}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
             <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
             <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
@@ -163,3 +178,4 @@ else:
         elif pag == "frases":
             # FRASE CHICO XAVIER
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." \n\n— **Chico Xavier**')
+
