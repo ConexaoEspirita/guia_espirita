@@ -42,21 +42,21 @@ def enviar_email_confirmacao(email, acao="login"):
     if acao == "login":
         assunto = "🕊️ Bem-vindo ao Guia Espírita!"
         mensagem = f"""
-        Olá! Você acaba de entrar no **Guia Espírita** às {datetime.datetime.now().strftime("%H:%M %d/%m/%Y")}.
-        Encontre centros espíritas próximos a você!
-        🙏 Gratidão! Equipe Guia Espírita
-        """
+Olá! Você acaba de entrar no **Guia Espírita** às {datetime.datetime.now().strftime("%H:%M %d/%m/%Y")}.
+Encontre centros espíritas próximos a você!
+🙏 Gratidão! Equipe Guia Espírita
+"""
     else:
         assunto = "✅ Cadastro confirmado!"
-        mensagem = """
-        Seu cadastro foi confirmado com sucesso!
-        
-        Vá na aba 'Entrar' e faça login com:
-        📧 Email: {email}
-        🔑 Senha: (a que você criou)
-        
-        🕊️ Paz e Luz!
-        """.format(email=email)
+        mensagem = f"""
+Seu cadastro foi confirmado com sucesso!
+
+Vá na aba 'Entrar' e faça login com:
+📧 Email: {email}
+🔑 Senha: (a que você criou)
+
+🕊️ Paz e Luz!
+"""
     
     email_msg = Mail(
         from_email='bMEFBOVESPA2017@gmail.com',
@@ -71,8 +71,10 @@ def enviar_email_confirmacao(email, acao="login"):
     except:
         return False
 
-# SUAS FUNÇÕES ORIGINAIS
-def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
+# FUNÇÕES AUXILIARES
+def ajustar(txt): 
+    return str(txt).strip() if pd.notna(txt) else ""
+
 def normalize_text(text):
     if pd.isna(text): return ""
     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
@@ -99,22 +101,22 @@ def renderizar_card(row, index):
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
     st.markdown(f"""
-    <div class="card-centro">
-        <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280; background:rgba(255,255,255,0.8); padding:2px 6px; border-radius:12px; font-weight:500;">#{index}</div>
-        <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
-        {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
-        <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
-        <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
-        <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
-        <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
-        <div style="margin-top:15px; display:flex; gap:10px;">
-            <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
-            <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
-        </div>
+<div class="card-centro">
+    <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280; background:rgba(255,255,255,0.8); padding:2px 6px; border-radius:12px; font-weight:500;">#{index}</div>
+    <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
+    {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
+    <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
+    <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
+    <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
+    <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
+    <div style="margin-top:15px; display:flex; gap:10px;">
+        <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
+        <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
-# LOGIN + CADASTRO CORRIGIDOS (SEM .single() - SEM PGRST116!)
+# LOGIN + CADASTRO
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -125,12 +127,10 @@ if not st.session_state.get("logado", False):
             se = st.text_input("🔑 Senha", type="password")
             if st.form_submit_button("🚀 Entrar", use_container_width=True): 
                 try:
-                    # ✅ SEM .single() - BUSCA TODOS e verifica
                     users = supabase.table("participantes").select("*").eq("email", em).execute()
                     
                     if users.data and len(users.data) > 0:
                         user = users.data[0]
-                        # ✅ VERIFICA SENHA
                         if user.get('senha') == se:
                             supabase.table("participantes").update({
                                 "status": "online",
@@ -161,13 +161,11 @@ if not st.session_state.get("logado", False):
 
             if submitted and n_c and e_c and s_c and len(s_c) >= 3:
                 try:
-                    # ✅ VERIFICA DUPLICADO
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.error("❌ E-mail JÁ CADASTRADO!")
                         st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
-                        # ✅ CADASTRO COM SENHA
                         result = supabase.table("participantes").insert({
                             "nome": n_c.strip(),
                             "email": e_c.strip(),
@@ -193,7 +191,12 @@ if not st.session_state.get("logado", False):
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>", unsafe_allow_html=True)
+
+    # LINHA CORRIGIDA PARA EVITAR ERRO DE F-STRING
+    st.markdown(f"""<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;">
+<span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span>
+<span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span>
+<hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>""", unsafe_allow_html=True)
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
