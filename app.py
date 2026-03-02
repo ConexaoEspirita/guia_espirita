@@ -18,7 +18,6 @@ st.set_page_config(page_title="Guia Espírita", layout="wide")
 if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
-if "confirmacao_enviada" not in st.session_state: st.session_state["confirmacao_enviada"] = False
 if "codigo_confirmacao" not in st.session_state: st.session_state["codigo_confirmacao"] = ""
 
 # ================= CSS =================
@@ -92,19 +91,21 @@ if not st.session_state.get("logado", False):
         with st.form("login"):
             em = st.text_input("E-mail")
             se = st.text_input("Senha", type="password")
-            if st.form_submit_button("Entrar", use_container_width=True): 
-                # Verifica usuário confirmado
+            if st.form_submit_button("Entrar", use_container_width=True):
                 check = supabase.table("participantes").select("*").eq("email", em).execute()
-                if check.data and check.data[0].get("confirmado"):
-                    st.session_state["logado"] = True
-                    # Atualiza ultimo acesso
-                    supabase.table("participantes").update({
-                        "ultimo_acesso": datetime.datetime.now()
-                    }).eq("email", em).execute()
-                    st.rerun()
+                if check.data:
+                    user = check.data[0]
+                    if user.get("confirmado", False) and user.get("senha") == se:
+                        st.session_state["logado"] = True
+                        supabase.table("participantes").update({
+                            "ultimo_acesso": datetime.datetime.now()
+                        }).eq("email", em).execute()
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Usuário não confirmado ou senha incorreta")
                 else:
-                    st.warning("⚠️ Usuário não confirmado ou inexistente.")
-        st.markdown('[🔑 Esqueci minha senha](#)', unsafe_allow_html=True)  # link profissional
+                    st.warning("⚠️ Usuário não encontrado")
+        st.markdown('[🔑 Esqueci minha senha](#)', unsafe_allow_html=True)
 
     # ---------------- CADASTRO ----------------
     with t2:
@@ -116,17 +117,14 @@ if not st.session_state.get("logado", False):
 
             if submitted:
                 try:
-                    # Verifica se e-mail já cadastrado
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.warning("⚠️ E-mail já cadastrado!")
                     else:
-                        # Gera código de confirmação
                         codigo = "".join(random.choices(string.digits, k=6))
                         st.session_state["codigo_confirmacao"] = codigo
 
-                        # Insere cadastro no Supabase com confirmado=False
-                        result = supabase.table("participantes").insert({
+                        supabase.table("participantes").insert({
                             "nome": n_c,
                             "email": e_c,
                             "senha": s_c,
@@ -134,13 +132,9 @@ if not st.session_state.get("logado", False):
                             "codigo_confirmacao": codigo
                         }).execute()
 
-                        if result.data:
-                            st.success("✅ Cadastro salvo! Verifique seu e-mail para confirmar.")
-                            # Aqui você chamaria a função para enviar o e-mail com código/link
-                            st.session_state["pagina"] = "login"
-                            st.rerun()
-                        else:
-                            st.warning("⚠️ Insert aceito, mas sem retorno")
+                        st.success("✅ Cadastro salvo! Por favor, confirme seu e-mail antes de logar.")
+                        st.session_state["pagina"] = "login"  # volta para login
+                        st.rerun()
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
@@ -169,9 +163,9 @@ else:
     # ================= PÁGINAS INTERMEDIÁRIAS =================
     else:
         col1, col2 = st.columns(2)
-        with col1: 
+        with col1:
             if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
-        with col2: 
+        with col2:
             if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
 
         if pag == "pesquisar":
