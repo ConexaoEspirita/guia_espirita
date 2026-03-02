@@ -60,7 +60,6 @@ footer {visibility: hidden;}
     width: 100%;
 }
 
-/* Estilo para a linha horizontal com data e hora no topo */
 .header-info {
     display: flex;
     align-items: center;
@@ -156,7 +155,7 @@ if not st.session_state["logado"]:
 # APP PRINCIPAL
 # =========================
 else:
-    # 1. HORÁRIO, DATA E LINHA NA MESMA LINHA (HEADER)
+    # 1. HEADER COM DATA, HORA E LINHA
     agora = datetime.datetime.now()
     st.markdown(f"""
     <div class="header-info">
@@ -223,13 +222,18 @@ else:
                     st.warning("Nada encontrado.")
 
         elif pagina == "cidade":
+            # CONTAGEM AUTOMÁTICA PARA TODAS AS CIDADES
+            contagem_cidades = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
             cidades_originais = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            # Alteração Cedral(2)
-            cidades_formatadas = [f"cedral(2)" if c.lower() == "cedral" else c for c in cidades_originais]
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_formatadas)
+            
+            # Criar lista: Nome (Qtd)
+            opcoes_select = [f"{c} ({contagem_cidades.get(c, 0)})" for c in cidades_originais]
+            
+            escolha_formatada = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + opcoes_select)
 
-            if escolha != "-- Selecione --":
-                cidade_real = "Cedral" if "cedral(2)" in escolha else escolha
+            if escolha_formatada != "-- Selecione --":
+                # Extrair apenas o nome da cidade (removendo os parênteses)
+                cidade_real = escolha_formatada.rsplit(" (", 1)[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
                 for i,(_,row) in enumerate(res.iterrows(),1): renderizar_card(row,i)
 
@@ -248,14 +252,13 @@ else:
                 for user in usuarios.data:
                     nome = user.get('nome', 'N/A')
                     email = user.get('email', 'N/A')
-                    # Data e Hora no formato pedido: 01-03-2026 - 23h34,30s
+                    # Data/Hora pequeno conforme solicitado
                     dt_formatada = datetime.datetime.now().strftime('%d-%m-%Y - %Hh%M,%Ss')
-                    
                     st.markdown(f"""
                     <div style="border-bottom:1px solid #ddd; padding:10px 0;">
-                        <span style="font-size:16px;">{nome}, {email}</span>
-                        <br><span style="font-size:11px; color:gray;">{dt_formatada}</span>
+                        <b>{nome}</b>, {email}
+                        <br><span style="font-size:10px; color:gray;">{dt_formatada}</span>
                     </div>
                     """, unsafe_allow_html=True)
             except Exception as e:
-                st.error(f"Erro ao carregar banco: {e}")
+                st.error(f"Erro: {e}")
