@@ -3,8 +3,16 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+from supabase import create_client, Client
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando)
+# =========================
+# SUPABASE - CREDENCIAIS
+# =========================
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 # =========================
@@ -18,25 +26,18 @@ if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
 
 # =========================
-# CSS PARA REMOVER TUDO DO STREAMLIT
+# CSS
 # =========================
 st.markdown("""
     <style>
-    /* Esconde o Menu, o Header e o Rodapé padrão */
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* Remove especificamente os ícones e selos do Streamlit Cloud embaixo */
-    [data-testid="stStatusWidget"], 
-    [data-testid="stToolbar"], 
-    [data-testid="stDecoration"],
-    .viewerBadge_container__1QSob,
-    .styles_viewerBadge__1yB5_ {
+    [data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] {
         display: none !important;
     }
 
-    /* Estilo do Fundo e Cards */
     .stApp { background: #f4f7f9; }
     .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
     
@@ -59,6 +60,20 @@ st.markdown("""
         text-align:center; 
         display:inline-block; 
         width: 100%;
+    }
+
+    /* Estilo para os registros no Admin */
+    .admin-registro {
+        font-size: 13px;
+        border-bottom: 1px solid #eee;
+        padding: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .admin-data {
+        font-size: 11px;
+        color: #6B7280;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -83,8 +98,8 @@ def renderizar_card(row, index):
     numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
 
     query = urllib.parse.quote(f"{endereco}, {cidade}")
-    link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
-    link_wa = f"https://wa.me/55{numero}" if len(numero)>=10 else "#"
+    link_maps = f"https://www.google.com{query}"
+    link_wa = f"https://wa.me{numero}" if len(numero)>=10 else "#"
 
     st.markdown(f"""
     <div class="card-centro">
@@ -92,7 +107,6 @@ def renderizar_card(row, index):
         <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
         {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
         <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
-        <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
@@ -111,35 +125,49 @@ if not st.session_state.get("logado", False):
     
     with tab1:
         with st.form("login"):
-            email = st.text_input("E-mail")
-            senha = st.text_input("Senha", type="password")
+            email_log = st.text_input("E-mail")
+            senha_log = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
                 st.session_state["logado"] = True
                 st.rerun()
     
     with tab2:
         with st.form("cadastro"):
-            nome = st.text_input("Nome Completo")
-            email = st.text_input("E-mail")
-            senha = st.text_input("Senha", type="password")
+            nome_cad = st.text_input("Nome Completo")
+            email_cad = st.text_input("E-mail")
+            senha_cad = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
-                st.session_state["logado"] = True
-                st.rerun()
-                st.success("✅ Cadastrado com sucesso!")
+                # ENVIA PARA O SUPABASE
+                agora_br = datetime.datetime.now() - datetime.timedelta(hours=3)
+                data_hora_cad = agora_br.strftime('%d-%m-%Y %H:%M:%S')
+                try:
+                    supabase.table("participantes").insert({
+                        "nome": nome_cad, 
+                        "email": email_cad, 
+                        "criado_em": data_hora_cad
+                    }).execute()
+                    st.session_state["logado"] = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao cadastrar no banco: {e}")
 else:
+    # HORÁRIO, DATA E LINHA SUPERIOR
+    agora_br = datetime.datetime.now() - datetime.timedelta(hours=3)
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <span style="font-weight: 800; color: #1E3A8A;">{agora_br.strftime('%H:%M')}</span>
+        <span style="font-weight: 800; color: #1E3A8A;">{agora_br.strftime('%d/%m/%Y')}</span>
+        <hr style="flex-grow: 1; border: none; border-top: 1px solid #ccc; margin: 0;">
+    </div>
+    """, unsafe_allow_html=True)
+
     @st.cache_data
     def carregar_dados():
-        # Certifique-se que o arquivo chama guia.xlsx no seu GitHub
         df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
         df.columns = df.columns.str.strip()
         return df
 
-    try:
-        df = carregar_dados()
-    except:
-        st.error("Erro ao carregar guia.xlsx. Verifique o nome do arquivo no GitHub.")
-        st.stop()
-
+    df = carregar_dados()
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
@@ -155,55 +183,45 @@ else:
             st.session_state.clear(); st.cache_data.clear(); st.rerun()
 
     else:
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
-        with col2:
-            if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
+        if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
 
         if pagina == "pesquisar":
             termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
-                st.session_state["termo_pesquisa"] = termo
                 t_norm = normalize_text(termo.strip())
                 res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
-                if not res.empty:
-                    st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
-                else:
-                    st.warning("Nada encontrado.")
+                for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pagina == "cidade":
-            cidades_com_contagem = []
-            for cidade in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique()):
-                qtd = len(df[df["CIDADE DO CENTRO ESPIRITA"] == cidade])
-                cidades_com_contagem.append(f"{cidade} ({qtd})")
-            
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
-            if escolha != "-- Selecione --":
-                cidade_real = escolha.split(" (")[0]
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
+            contagem = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
+            cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+            opts = [f"{c} ({contagem.get(c, 0)})" for c in cids]
+            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
+            if sel != "-- Selecione --":
+                c_real = sel.rsplit(" (", 1)[0]
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pagina == "admin":
-            # SENHA DO ADMIN - APENAS VOCÊ ENTRA
             admin_senha = st.text_input("Senha Admin:", type="password")
-            if admin_senha == "estudantesabio2026":  # SUA SENHA
-                agora = datetime.datetime.now()
+            if admin_senha == "estudantesabio2026":
+                st.write("### 👥 Usuários Cadastrados (Supabase)")
                 
-                st.metric("Total de Centros", len(df))
-                st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
-                
-                # CONTADOR DE CADASTROS + DATA/HORA REAL TIME
-                col1, col2, col3, col4 = st.columns(4)
-                with col1: st.metric("📅 Dia", agora.day)
-                with col2: st.metric("🕐 Hora", agora.strftime("%H:%M"))
-                with col3: st.metric("📱 Total Cadastros", 127)  # Aumenta quando quiser
-                with col4: st.metric("⏱️ Segundos", agora.second)
-                
-                st.caption(f"Data completa: {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+                try:
+                    usuarios = supabase.table("participantes").select("*").execute()
+                    for u in usuarios.data:
+                        # DATA E HORA EM HORIZONTAL E MENOR
+                        st.markdown(f"""
+                        <div class="admin-registro">
+                            <span><b>{u['nome']}</b> ({u['email']})</span>
+                            <span class="admin-data">{u.get('criado_em', '---')}</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                except:
+                    st.error("Erro ao carregar dados do Supabase.")
             else:
                 st.warning("❌ Senha Admin necessária")
 
         elif pagina == "frases":
-            st.info("Fora da caridade não há salvação. — Allan Kardec")
+            st.markdown("### 🕊️ Mensagem de Chico Xavier")
+            st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." \n\n— **Chico Xavier**')
