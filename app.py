@@ -4,22 +4,25 @@ import urllib.parse
 import unicodedata
 import datetime
 import random
-import string
+import smtplib
+from email.mime.text import MIMEText
 from supabase import create_client, Client
 
-# SUPABASE
+# ================= SUPABASE =================
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ================= CONFIGURAÇÃO DO APP =================
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# SESSION STATE
+# ================= SESSION STATE =================
 if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
+if "codigo_temp" not in st.session_state: st.session_state["codigo_temp"] = ""
 
-# CSS - ESCONDE STREAMLIT COMPLETO
+# ================= CSS =================
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -33,7 +36,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# FUNÇÕES
+# ================= FUNÇÕES =================
 def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 def normalize_text(text):
     if pd.isna(text): return ""
@@ -82,78 +85,106 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-def gerar_codigo(tamanho=6):
-    return ''.join(random.choices(string.digits, k=tamanho))
+def enviar_email(destinatario, codigo):
+    smtp_user = st.secrets["EMAIL_USER"]
+    smtp_pass = st.secrets["EMAIL_PASS"]
+    assunto = "Código de Confirmação - Guia Espírita"
+    corpo = f"Seu código de confirmação é: {codigo}"
 
-# LOGIN / CADASTRO
+    msg = MIMEText(corpo)
+    msg["Subject"] = assunto
+    msg["From"] = smtp_user
+    msg["To"] = destinatario
+
+    try:
+        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, destinatario, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"❌ Erro ao enviar e-mail: {e}")
+        return False
+
+# ================= LOGIN / CADASTRO =================
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-    t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
+    t1, t2, t3 = st.tabs(["🚪 Entrar", "✨ Cadastrar", "✉️ Confirmar e-mail"])
     
-    # LOGIN
+    # ---------- LOGIN ----------
     with t1:
         with st.form("login"):
-            em = st.text_input("E-mail")
-            se = st.text_input("Senha", type="password")
-            esqueci = st.checkbox("Esqueci a senha")
+            email_login = st.text_input("E-mail")
+            senha_login = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
-                if esqueci:
-                    st.info("📩 Clique no link enviado ao seu e-mail para redefinir a senha.")
-                else:
-                    try:
-                        check = supabase.table("participantes").select("*").eq("email", em).execute()
-                        if check.data and check.data[0]["senha"] == se:
-                            if check.data[0].get("confirmado", False):
-                                st.session_state["logado"] = True
-                                st.rerun()
-                            else:
-                                st.warning("⚠️ Confirme seu e-mail antes de entrar!")
+                try:
+                    user = supabase.table("participantes").select("*").eq("email", email_login).execute().data
+                    if not user:
+                        st.error("❌ E-mail não cadastrado.")
+                    else:
+                        user = user[0]
+                        if not user["confirmado"]:
+                            st.warning("⚠️ Confirme seu e-mail antes de entrar.")
+                        elif user["senha"] != senha_login:
+                            st.error("❌ Senha incorreta.")
                         else:
-                            st.error("❌ E-mail ou senha incorretos!")
-                    except Exception as e:
-                        st.error("❌ ERRO SUPABASE:")
-                        st.code(str(e))
+                            st.success("✅ Logado com sucesso!")
+                            st.session_state["logado"] = True
+                            st.session_state["pagina"] = None
+                            st.rerun()
     
-    # CADASTRO
+    # ---------- CADASTRO ----------
     with t2:
         with st.form("cadastro"):
             n_c = st.text_input("Nome")
             e_c = st.text_input("E-mail")
             s_c = st.text_input("Senha", type="password")
-            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
-
-            if submitted:
-                try:
-                    # Verifica se o e-mail já está cadastrado
-                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                    if check.data:
-                        st.warning("⚠️ E-mail já cadastrado!")
-                    else:
-                        codigo = gerar_codigo()
-                        result = supabase.table("participantes").insert({
-                            "nome": n_c,
-                            "email": e_c,
-                            "senha": s_c,
-                            "confirmado": False,
-                            "codigo_confirmacao": codigo
-                        }).execute()
-
-                        if result.data:
-                            st.success("✅ Cadastro salvo! Confira seu e-mail para confirmar.")
-                            st.info(f"📩 Código de confirmação: {codigo} (simulado, enviar por e-mail real)")
-                            # Depois de cadastrar, redireciona para login (não loga automaticamente)
-                            st.session_state["pagina"] = None
-                            st.rerun()
+            if st.form_submit_button("Cadastrar", use_container_width=True):
+                if not n_c or not e_c or not s_c:
+                    st.warning("Preencha todos os campos.")
+                else:
+                    try:
+                        check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                        if check.data:
+                            st.warning("⚠️ E-mail já cadastrado!")
                         else:
-                            st.warning("⚠️ Cadastro aceito, mas sem resposta.")
-                except Exception as e:
-                    st.error("❌ ERRO SUPABASE:")
-                    st.code(str(e))
+                            codigo = str(random.randint(100000, 999999))
+                            st.session_state["codigo_temp"] = codigo
+                            enviado = enviar_email(e_c, codigo)
+                            if enviado:
+                                supabase.table("participantes").insert({
+                                    "nome": n_c,
+                                    "email": e_c,
+                                    "senha": s_c,
+                                    "confirmado": False,
+                                    "codigo_confirmacao": codigo
+                                }).execute()
+                                st.success("✅ Cadastro realizado! Verifique seu e-mail para confirmar.")
+    
+    # ---------- CONFIRMAÇÃO ----------
+    with t3:
+        with st.form("confirmacao"):
+            email_conf = st.text_input("E-mail cadastrado")
+            codigo_conf = st.text_input("Código recebido")
+            if st.form_submit_button("Confirmar e-mail", use_container_width=True):
+                try:
+                    user = supabase.table("participantes").select("*").eq("email", email_conf).execute().data
+                    if not user:
+                        st.error("❌ E-mail não encontrado.")
+                    else:
+                        user = user[0]
+                        if user["confirmado"]:
+                            st.info("✅ E-mail já confirmado.")
+                        elif user["codigo_confirmacao"] == codigo_conf:
+                            supabase.table("participantes").update({"confirmado": True}).eq("email", email_conf).execute()
+                            st.success("✅ E-mail confirmado! Agora faça login.")
+                        else:
+                            st.error("❌ Código incorreto.")
 
-# RESTO DO APP
+# ================= APP LOGADO =================
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M:%S")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
