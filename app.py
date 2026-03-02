@@ -5,33 +5,34 @@ import unicodedata
 import datetime
 from supabase import create_client, Client
 
+# SUPABASE
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
+# SESSION STATE
 if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
 
-# CSS - ESCONDE TUDO DO STREAMLIT
+# CSS - ESCONDE STREAMLIT COMPLETO
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
 [data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
 .stApp { background: #f4f7f9; }
-.titulo-grande { font-size: 32px
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+.card-centro { background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-left: 12px solid #0060D0; position: relative; }
+.btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
+.admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
+.admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
+</style>
+""", unsafe_allow_html=True)
 
-    </style>
-    """, unsafe_allow_html=True)
-
-# =========================
-# FUNÇÕES CORRIGIDAS ✅
-# =========================
-def ajustar(txt): 
-    return str(txt).strip() if pd.notna(txt) else ""
-
+# FUNÇÕES
+def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 def normalize_text(text):
     if pd.isna(text): return ""
     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
@@ -45,7 +46,7 @@ def renderizar_card(row, index):
     responsavel = ajustar(row.get('RESPONSAVEL'))
     celular = ajustar(row.get('CELULAR'))
 
-    # ✅ WHATSAPP CORRIGIDO
+    # WHATSAPP ✅
     numero = "".join(filter(str.isdigit, celular))
     if len(numero) >= 10:
         numero_completo = f"+55{numero}"
@@ -53,7 +54,7 @@ def renderizar_card(row, index):
     else:
         link_wa = "#"
 
-    # ✅ GOOGLE MAPS CORRIGIDO
+    # GOOGLE MAPS ✅
     if endereco and cidade:
         texto_busca = f"{endereco}, {cidade}"
     elif cidade:
@@ -79,9 +80,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# =========================
-# LOGIN / APP - CORRIGIDO ✅
-# =========================
+# LOGIN
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -102,14 +101,10 @@ if not st.session_state.get("logado", False):
             submitted = st.form_submit_button("Cadastrar", use_container_width=True)
             
             if submitted:
-                ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-                dt_txt = ag_br.strftime('%d-%m-%Y %H:%M:%S')
-
                 try:
                     result = supabase.table("participantes").insert({
                         "nome": n_c, 
-                        "email": e_c, 
-                        "criado_em": dt_txt
+                        "email": e_c
                     }).execute()
                     
                     if result.data:
@@ -117,14 +112,12 @@ if not st.session_state.get("logado", False):
                         st.session_state["logado"] = True
                         st.rerun()
                     else:
-                        st.warning("⚠️ Insert aceito, mas sem dados retornados")
-                        
+                        st.warning("⚠️ Insert aceito")
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
 
 else:
-    # 1. HORÁRIO BRASÍLIA, DATA E LINHA SUPERIOR
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
     st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
@@ -136,28 +129,20 @@ else:
         st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🔎 Busca Avançada", use_container_width=True): 
-                st.session_state["pagina"] = "pesquisar"; st.rerun()
-            if st.button("📍 Por Cidade", use_container_width=True): 
-                st.session_state["pagina"] = "cidade"; st.rerun()
+            if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
+            if st.button("📍 Por Cidade", use_container_width=True): st.session_state["pagina"] = "cidade"; st.rerun()
         with c2:
-            if st.button("📊 Admin", use_container_width=True): 
-                st.session_state["pagina"] = "admin"; st.rerun()
-            if st.button("🕊️ Frases", use_container_width=True): 
-                st.session_state["pagina"] = "frases"; st.rerun()
-        if st.button("🚪 Sair", use_container_width=True): 
-            st.session_state.clear(); st.rerun()
+            if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
+            if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
+        if st.button("🚪 Sair", use_container_width=True): st.session_state.clear(); st.rerun()
 
     else:
         col1, col2 = st.columns(2)
         with col1: 
-            if st.button("⬅️ VOLTAR", use_container_width=True): 
-                st.session_state["pagina"] = None; st.rerun()
+            if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
         with col2: 
-            if st.button("🔄 LIMPAR", use_container_width=True): 
-                st.session_state["termo_pesquisa"] = ""; st.rerun()
+            if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
 
-        # BARRA DE PESQUISA ORIGINAL
         if pag == "pesquisar":
             termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
@@ -166,8 +151,7 @@ else:
                 res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
                 if not res.empty:
                     st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1): 
-                        renderizar_card(row, i)
+                    for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pag == "cidade":
             counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
@@ -177,18 +161,16 @@ else:
             if sel != "-- Selecione --":
                 c_real = sel.rsplit(" (", 1)[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-                for i, (_, row) in enumerate(res.iterrows(), 1): 
-                    renderizar_card(row, i)
+                for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
                 st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: 127</span></div>', unsafe_allow_html=True)
-                st.write("### 👥 Registos no Supabase")
+                st.write("### 👥 Registros no Supabase")
                 users = supabase.table("participantes").select("*").execute()
                 for u in users.data:
-                    st.markdown(f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{u.get("criado_em")}</span></div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{u.get("created_at")}</span></div>', unsafe_allow_html=True)
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
-
