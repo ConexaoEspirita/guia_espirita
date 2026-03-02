@@ -99,7 +99,7 @@ if not st.session_state.get("logado", False):
         e_c = st.text_input("E-mail")
         s_c = st.text_input("Senha", type="password")
         submitted = st.form_submit_button("Cadastrar", use_container_width=True)
-        
+
         if submitted:
             try:
                 # Verifica se o e-mail já está cadastrado
@@ -109,10 +109,10 @@ if not st.session_state.get("logado", False):
                 else:
                     # Insere o novo registro
                     result = supabase.table("participantes").insert({
-                        "nome": n_c, 
+                        "nome": n_c,
                         "email": e_c
                     }).execute()
-                    
+
                     if result.data:
                         st.success("✅ Cadastro salvo no Supabase!")
                         st.session_state["logado"] = True
@@ -180,5 +180,6 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
 
 
