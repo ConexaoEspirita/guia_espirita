@@ -4,10 +4,13 @@ import urllib.parse
 import unicodedata
 import datetime
 from supabase import create_client, Client
+import sendgrid
+from sendgrid.helpers.mail import Mail, Email, To, Content
 
-# SUPABASE
+# SUPABASE + SENDGRID
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]  # ← Adicione no secrets.toml
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Guia Espírita", layout="wide")
@@ -41,7 +44,46 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# FUNÇÕES
+# FUNÇÃO SENDGRID
+def enviar_email_confirmacao(email, acao="login"):
+    sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
+    
+    if acao == "login":
+        assunto = "🕊️ Bem-vindo ao Guia Espírita!"
+        mensagem = f"""
+        Olá! Você acaba de entrar no **Guia Espírita** às {datetime.datetime.now().strftime("%H:%M %d/%m/%Y")}.
+
+        Encontre centros espíritas próximos a você!
+
+        🙏 Gratidão pela confiança!
+        Equipe Guia Espírita
+        """
+    else:  # cadastro
+        assunto = "✅ Cadastro confirmado no Guia Espírita!"
+        mensagem = """
+        Seu cadastro foi confirmado com sucesso!
+
+        Acesse agora e encontre centros espíritas próximos!
+
+        🕊️ Paz e Luz!
+        Equipe Guia Espírita
+        """
+    
+    email_msg = Mail(
+        from_email='bMEFBOVESPA2017@gmail.com',  # ← SEU EMAIL VERIFICADO
+        to_emails=email,
+        subject=assunto,
+        plain_text_content=mensagem
+    )
+    
+    try:
+        response = sg.send(email_msg)
+        return True
+    except Exception as e:
+        st.error(f"❌ Erro SendGrid: {str(e)}")
+        return False
+
+# FUNÇÕES ORIGINAIS
 def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 def normalize_text(text):
     if pd.isna(text): return ""
@@ -84,7 +126,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN (mantido igual)
+# LOGIN + SENDGRID
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -101,6 +143,10 @@ if not st.session_state.get("logado", False):
                     }).eq("email", em).execute()
                     st.session_state["logado"] = True
                     st.session_state["email_logado"] = em
+                    if enviar_email_confirmacao(em, "login"):
+                        st.success("✅ Login OK! 📧 Email enviado!")
+                    else:
+                        st.warning("⚠️ Login OK, mas email falhou!")
                     st.rerun()
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE LOGIN:")
@@ -126,7 +172,12 @@ if not st.session_state.get("logado", False):
                             "ultimo_acesso": None
                         }).execute()
                         if result.data:
-                            st.success("✅ Cadastro salvo no Supabase!")
+                            st.success("✅ Cadastro salvo!")
+                            if enviar_email_confirmacao(e_c, "cadastro"):
+                                st.balloons()
+                                st.success("🎉 Email de confirmação enviado!")
+                            else:
+                                st.warning("⚠️ Cadastro OK, mas email falhou!")
                             st.session_state["logado"] = True
                             st.session_state["email_logado"] = e_c
                             supabase.table("participantes").update({
@@ -135,12 +186,13 @@ if not st.session_state.get("logado", False):
                             }).eq("email", e_c).execute()
                             st.rerun()
                         else:
-                            st.warning("⚠️ Insert aceito")
+                            st.warning("⚠️ Insert aceito mas sem dados")
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
 
 else:
+    # RESTO DO CÓDIGO (MENU + BUSCA) - IGUAL AO ANTERIOR
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
     st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
@@ -176,11 +228,10 @@ else:
                 st.rerun()
 
         if pag == "pesquisar":
-            # ✅ CORRIGIDO: Key única + session_state sincronizado = NUNCA mais reseta!
             st.session_state["termo_pesquisa"] = st.text_input(
                 "🔍 Digite o que busca (Enter para pesquisar):",
                 value=st.session_state["termo_pesquisa"],
-                key="busca_avancada_key",  # Key ÚNICA resolve o reset!
+                key="busca_avancada_key",
                 help="Ex: BATIS, KARDEC, Catanduva..."
             )
             
