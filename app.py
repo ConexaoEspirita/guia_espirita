@@ -106,7 +106,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN + CADASTRO CORRIGIDOS
+# LOGIN + CADASTRO CORRIGIDOS (SEM experimental_rerun)
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -117,7 +117,6 @@ if not st.session_state.get("logado", False):
             se = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True): 
                 try:
-                    # VERIFICA SE USUÁRIO EXISTE
                     user = supabase.table("participantes").select("*").eq("email", em).execute()
                     if user.data:
                         supabase.table("participantes").update({
@@ -144,13 +143,11 @@ if not st.session_state.get("logado", False):
 
             if submitted and n_c and e_c and s_c:
                 try:
-                    # ✅ CHECK DUPLICADO MELHORADO
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.error("❌ E-mail JÁ CADASTRADO!")
                         st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
-                        # ✅ CADASTRO NOVO
                         result = supabase.table("participantes").insert({
                             "nome": n_c.strip(),
                             "email": e_c.strip(),
@@ -165,8 +162,8 @@ if not st.session_state.get("logado", False):
                             
                             enviar_email_confirmacao(e_c, "cadastro")
                             
-                            # ✅ LIMPA FORM E FICA NA TELA
-                            st.experimental_rerun()
+                            # ✅ CORRIGIDO: st.rerun() ao invés de experimental_rerun()
+                            st.rerun()
                         else:
                             st.error("❌ Erro ao salvar cadastro")
                             
