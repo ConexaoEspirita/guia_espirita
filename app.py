@@ -93,7 +93,7 @@ if not st.session_state.get("logado", False):
                 st.session_state["logado"] = True
                 st.rerun()
     
-    with t2:
+   with t2:
     with st.form("cadastro"):
         n_c = st.text_input("Nome")
         e_c = st.text_input("E-mail")
@@ -180,4 +180,5 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
 
