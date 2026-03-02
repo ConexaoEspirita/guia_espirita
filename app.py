@@ -3,15 +3,23 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+from supabase import create_client, Client
 
-# =========================================
+# =========================
+# SUPABASE - CREDENCIAIS
+# =========================
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# =========================
 # CONFIGURAÇÃO DA PÁGINA
-# =========================================
+# =========================
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# =========================================
+# =========================
 # SESSION STATE
-# =========================================
+# =========================
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
 if "logado" not in st.session_state:
@@ -19,9 +27,9 @@ if "logado" not in st.session_state:
 if "termo_pesquisa" not in st.session_state:
     st.session_state["termo_pesquisa"] = ""
 
-# =========================================
+# =========================
 # CSS
-# =========================================
+# =========================
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
@@ -29,12 +37,7 @@ header {visibility: hidden;}
 footer {visibility: hidden;}
 
 .stApp { background: #f4f7f9; }
-
-.titulo-grande { 
-    font-size: 32px; 
-    font-weight: 800; 
-    margin-bottom: 8px; 
-}
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
 
 .card-centro { 
     background: white;
@@ -59,31 +62,25 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# =========================================
+# =========================
 # FUNÇÕES
-# =========================================
-
+# =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
 def normalize_text(text):
-    if pd.isna(text): 
+    if pd.isna(text):
         return ""
-    return unicodedata.normalize('NFKD', str(text))\
-        .encode('ASCII', 'ignore')\
-        .decode('utf-8')\
-        .lower()\
-        .strip()
+    return unicodedata.normalize("NFKD", str(text)).encode("ASCII", "ignore").decode("utf-8").lower().strip()
 
 def renderizar_card(row, index):
-
-    nome = ajustar(row.get('NOME', 'Centro Espírita'))
-    fantasia = ajustar(row.get('NOME FANTASIA'))
-    endereco = ajustar(row.get('ENDERECO'))
-    cidade = ajustar(row.get('CIDADE DO CENTRO ESPIRITA'))
-    palestra = ajustar(row.get('PALESTRA PUBLICA'))
-    responsavel = ajustar(row.get('RESPONSAVEL'))
-    numero = "".join(filter(str.isdigit, str(row.get('CELULAR'))))
+    nome = ajustar(row.get("NOME","Centro Espírita"))
+    fantasia = ajustar(row.get("NOME FANTASIA"))
+    endereco = ajustar(row.get("ENDERECO"))
+    cidade = ajustar(row.get("CIDADE DO CENTRO ESPIRITA"))
+    palestra = ajustar(row.get("PALESTRA PUBLICA"))
+    responsavel = ajustar(row.get("RESPONSAVEL"))
+    numero = "".join(filter(str.isdigit, str(row.get("CELULAR"))))
 
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
@@ -107,15 +104,14 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# =========================================
+# =========================
 # LOGIN
-# =========================================
-
+# =========================
 if not st.session_state["logado"]:
 
     st.markdown("<div style='text-align:center; color:#60A5FA; font-size:32px; font-weight:800;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
 
-    tab1, tab2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
+    tab1, tab2 = st.tabs(["🚪 Entrar","✨ Cadastrar"])
 
     with tab1:
         with st.form("login"):
@@ -131,14 +127,22 @@ if not st.session_state["logado"]:
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
-                st.session_state["logado"] = True
-                st.success("✅ Cadastrado com sucesso!")
-                st.rerun()
 
-# =========================================
+                # Salva no Supabase
+                try:
+                    supabase.table("participantes").insert({
+                        "nome": nome,
+                        "email": email
+                    }).execute()
+                    st.success("✅ Cadastrado com sucesso!")
+                    st.session_state["logado"] = True
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro ao cadastrar: {e}")
+
+# =========================
 # APP PRINCIPAL
-# =========================================
-
+# =========================
 else:
 
     @st.cache_data
@@ -147,128 +151,106 @@ else:
         df.columns = df.columns.str.strip()
         return df
 
-    df = carregar_dados()
+    try:
+        df = carregar_dados()
+    except:
+        st.error("Erro ao carregar guia.xlsx. Verifique o arquivo e aba.")
+        st.stop()
+
     pagina = st.session_state["pagina"]
 
     if pagina is None:
-
         st.markdown("<div class='titulo-grande' style='text-align:center; color:#60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
 
-        c1, c2 = st.columns(2)
-
+        c1,c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
-                st.session_state["pagina"] = "pesquisar"
-                st.rerun()
-
+                st.session_state["pagina"] = "pesquisar"; st.rerun()
             if st.button("📍 Por Cidade", use_container_width=True):
-                st.session_state["pagina"] = "cidade"
-                st.rerun()
-
+                st.session_state["pagina"] = "cidade"; st.rerun()
         with c2:
             if st.button("📊 Admin", use_container_width=True):
-                st.session_state["pagina"] = "admin"
-                st.rerun()
-
+                st.session_state["pagina"] = "admin"; st.rerun()
             if st.button("🕊️ Frases", use_container_width=True):
-                st.session_state["pagina"] = "frases"
-                st.rerun()
+                st.session_state["pagina"] = "frases"; st.rerun()
 
         if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.clear()
-            st.cache_data.clear()
-            st.rerun()
+            st.session_state.clear(); st.cache_data.clear(); st.rerun()
 
     else:
 
-        col1, col2 = st.columns(2)
-
+        col1,col2 = st.columns(2)
         with col1:
             if st.button("⬅️ VOLTAR", use_container_width=True):
-                st.session_state["pagina"] = None
-                st.rerun()
-
+                st.session_state["pagina"] = None; st.rerun()
         with col2:
             if st.button("🔄 LIMPAR", use_container_width=True):
-                st.session_state["termo_pesquisa"] = ""
-                st.rerun()
+                st.session_state["termo_pesquisa"] = "" ; st.rerun()
 
-        # =========================================
-        # BUSCA AVANÇADA (CORRIGIDA)
-        # =========================================
-
+        # =========================
+        # BUSCA AVANÇADA
+        # =========================
         if pagina == "pesquisar":
 
-            termo = st.text_input("Digite nome, cidade ou responsável:", 
-                                  value=st.session_state["termo_pesquisa"])
+            termo = st.text_input("Digite nome ou cidade ou responsável:", value=st.session_state["termo_pesquisa"])
 
             if termo and len(termo.strip()) >= 3:
 
                 st.session_state["termo_pesquisa"] = termo
-                termo_norm = normalize_text(termo)
+                t_norm = normalize_text(termo)
 
                 res = df[
-                    df["NOME"].apply(normalize_text).str.contains(termo_norm, na=False) |
-                    df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text).str.contains(termo_norm, na=False) |
-                    df["RESPONSAVEL"].apply(normalize_text).str.contains(termo_norm, na=False)
+                    df["NOME"].apply(normalize_text).str.contains(t_norm,na=False) |
+                    df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text).str.contains(t_norm,na=False) |
+                    df["RESPONSAVEL"].apply(normalize_text).str.contains(t_norm,na=False)
                 ]
 
                 if not res.empty:
                     st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1):
-                        renderizar_card(row, i)
+                    for i,(_,row) in enumerate(res.iterrows(),1):
+                        renderizar_card(row,i)
                 else:
                     st.warning("Nada encontrado.")
 
-        # =========================================
-        # BUSCA POR CIDADE (CORRIGIDA)
-        # =========================================
-
+        # =========================
+        # POR CIDADE
+        # =========================
         elif pagina == "cidade":
 
             cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            escolha = st.selectbox("Selecione a cidade:", ["-- Selecione --"] + list(cidades))
+            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"]+cidades)
 
-            if escolha != "-- Selecione --":
+            if escolha!="-- Selecione --":
+                res = df[df["CIDADE DO CENTRO ESPIRITA"]==escolha]
+                for i,(_,row) in enumerate(res.iterrows(),1):
+                    renderizar_card(row,i)
 
-                res = df[
-                    df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text) 
-                    == normalize_text(escolha)
-                ]
-
-                for i, (_, row) in enumerate(res.iterrows(), 1):
-                    renderizar_card(row, i)
-
-        # =========================================
+        # =========================
         # ADMIN
-        # =========================================
-
+        # =========================
         elif pagina == "admin":
 
             admin_senha = st.text_input("Senha Admin:", type="password")
 
-            if admin_senha == "estudantesabio2026":
+            if admin_senha=="estudantesabio2026":
 
                 agora = datetime.datetime.now()
 
+                # total de cadastros Supabase
+                try:
+                    r = supabase.table("participantes").select("*", count="exact").execute()
+                    total_pessoas = r.count
+                except:
+                    total_pessoas = 0
+
+                st.metric("👥 Pessoas Cadastradas", total_pessoas)
                 st.metric("🕊️ Total de Centros", len(df))
                 st.metric("🏙️ Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
 
-                col1, col2, col3, col4 = st.columns(4)
-
-                col1.metric("📅 Dia", agora.day)
+                col1,col2,col3 = st.columns(3)
+                col1.metric("📅 Data", agora.strftime("%d/%m/%Y"))
                 col2.metric("🕐 Hora", agora.strftime("%H:%M"))
-                col3.metric("📊 Total Centros", len(df))
-                col4.metric("⏱️ Segundos", agora.second)
-
-                st.caption(f"{agora.strftime('%d/%m/%Y %H:%M:%S')}")
+                col3.metric("⏱️ Segundos", agora.strftime("%S"))
 
             else:
-                st.warning("❌ Senha Admin necessária")
-
-        # =========================================
-        # FRASES
-        # =========================================
-
-        elif pagina == "frases":
-            st.info("Fora da caridade não há salvação. — Allan Kardec")
+                st.warning("❌ Senha Admin necessária") 
