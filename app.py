@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import urllib.parse
@@ -80,8 +81,9 @@ def renderizar_card(row, index):
     cidade = ajustar(row.get("CIDADE DO CENTRO ESPIRITA"))
     palestra = ajustar(row.get("PALESTRA PUBLICA"))
     responsavel = ajustar(row.get("RESPONSAVEL"))
+    
+    # RESTAURADO: Lógica original do WhatsApp e Maps
     numero = "".join(filter(str.isdigit, str(row.get("CELULAR"))))
-
     query = urllib.parse.quote(f"{endereco}, {cidade}")
     link_maps = f"https://www.google.com{query}"
     link_wa = f"https://wa.me{numero}" if len(numero)>=10 else "#"
@@ -105,12 +107,10 @@ def renderizar_card(row, index):
     """, unsafe_allow_html=True)
 
 # =========================
-# LOGIN (TEU ORIGINAL)
+# LOGIN / APP
 # =========================
 if not st.session_state["logado"]:
-
     st.markdown("<div style='text-align:center; color:#60A5FA; font-size:32px; font-weight:800;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-
     tab1, tab2 = st.tabs(["🚪 Entrar","✨ Cadastrar"])
 
     with tab1:
@@ -118,8 +118,7 @@ if not st.session_state["logado"]:
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
-                st.session_state["logado"] = True
-                st.rerun()
+                st.session_state["logado"] = True; st.rerun()
 
     with tab2:
         with st.form("cadastro"):
@@ -128,26 +127,14 @@ if not st.session_state["logado"]:
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
                 try:
-                    # SALVA DATA/HORA PEQUENA NO SUPABASE
                     agora = (datetime.datetime.utcnow() - datetime.timedelta(hours=3))
                     dt_txt = agora.strftime('%d-%m-%Y - %Hh%M,%Ss')
-                    
-                    supabase.table("participantes").insert({
-                        "nome": nome,
-                        "email": email,
-                        "criado_em": dt_txt
-                    }).execute()
-                    st.success("✅ Cadastrado com sucesso!")
-                    st.session_state["logado"] = True
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro ao cadastrar: {e}")
+                    supabase.table("participantes").insert({"nome": nome, "email": email, "criado_em": dt_txt}).execute()
+                    st.success("✅ Cadastrado!"); st.session_state["logado"] = True; st.rerun()
+                except Exception as e: st.error(f"Erro: {e}")
 
-# =========================
-# APP PRINCIPAL
-# =========================
 else:
-    # MUDANÇA 1: HORÁRIO, DATA E LINHA NA MESMA LINHA
+    # 1. HORÁRIO, DATA E LINHA (BRASIL)
     agora = (datetime.datetime.utcnow() - datetime.timedelta(hours=3))
     st.markdown(f"""
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
@@ -163,74 +150,53 @@ else:
         df.columns = df.columns.str.strip()
         return df
 
-    try:
-        df = carregar_dados()
-    except:
-        st.error("Erro ao carregar guia.xlsx. Verifique o arquivo e aba.")
-        st.stop()
+    try: df = carregar_dados()
+    except: st.error("Erro no arquivo guia.xlsx"); st.stop()
 
     pagina = st.session_state["pagina"]
 
     if pagina is None:
         st.markdown("<div class='titulo-grande' style='text-align:center; color:#60A5FA;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
-
         c1,c2 = st.columns(2)
         with c1:
-            if st.button("🔎 Busca Avançada", use_container_width=True):
-                st.session_state["pagina"] = "pesquisar"; st.rerun()
-            if st.button("📍 Por Cidade", use_container_width=True):
-                st.session_state["pagina"] = "cidade"; st.rerun()
+            if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
+            if st.button("📍 Por Cidade", use_container_width=True): st.session_state["pagina"] = "cidade"; st.rerun()
         with c2:
-            if st.button("📊 Admin", use_container_width=True):
-                st.session_state["pagina"] = "admin"; st.rerun()
-            if st.button("🕊️ Frases", use_container_width=True):
-                st.session_state["pagina"] = "frases"; st.rerun()
-
-        if st.button("🚪 Sair", use_container_width=True):
-            st.session_state.clear(); st.cache_data.clear(); st.rerun()
+            if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
+            if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
+        if st.button("🚪 Sair", use_container_width=True): st.session_state.clear(); st.rerun()
 
     else:
-
-        col1,col2 = st.columns(2)
-        with col1:
-            if st.button("⬅️ VOLTAR", use_container_width=True):
-                st.session_state["pagina"] = None; st.rerun()
-        with col2:
-            if st.button("🔄 LIMPAR", use_container_width=True):
-                st.session_state["termo_pesquisa"] = "" ; st.rerun()
+        if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
 
         if pagina == "pesquisar":
-            termo = st.text_input("Digite nome ou cidade ou responsável:", value=st.session_state["termo_pesquisa"])
+            termo = st.text_input("Busca:", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
-                st.session_state["termo_pesquisa"] = termo
                 t_norm = normalize_text(termo)
                 res = df[df["NOME"].apply(normalize_text).str.contains(t_norm,na=False) |
-                         df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text).str.contains(t_norm,na=False)]
+                         df["CIDADE DO CENTRO ESPIRITA"].apply(normalize_text).str.contains(t_norm,na=False) |
+                         df["RESPONSAVEL"].apply(normalize_text).str.contains(t_norm,na=False)]
                 for i,(_,row) in enumerate(res.iterrows(),1): renderizar_card(row,i)
 
         elif pagina == "cidade":
-            # MUDANÇA 2: SELETOR COM CONTAGEM EM TODAS AS CIDADES
+            # 2. SELETOR COM CONTAGEM EM TODAS AS CIDADES
             contagem = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
-            cidades_lista = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            opcoes_formatadas = [f"{c} ({contagem.get(c, 0)})" for c in cidades_lista]
-            
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + opcoes_formatadas)
-
+            cidades_u = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+            opcoes_q = [f"{c} ({contagem.get(c, 0)})" for c in cidades_u]
+            escolha = st.selectbox("Selecione:", ["-- Selecione --"] + opcoes_q)
             if escolha != "-- Selecione --":
-                cidade_limpa = escolha.rsplit(" (", 1)[0]
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_limpa]
+                cid_limpa = escolha.rsplit(" (", 1)[0]
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cid_limpa]
                 for i,(_,row) in enumerate(res.iterrows(),1): renderizar_card(row,i)
 
         elif pagina == "admin":
-            st.subheader("👥 Usuários Cadastrados")
-            # Mostra o que está no Supabase com o horário pequeno
+            st.subheader("👥 Usuários")
             try:
                 users = supabase.table("participantes").select("*").execute()
                 for u in users.data:
-                    st.write(f"{u.get('nome')}, {u.get('email')} - {u.get('criado_em')}")
-            except: st.error("Erro ao ler Supabase")
+                    st.markdown(f'<p style="font-size:10px;">{u.get("nome")}, {u.get("email")} - {u.get("criado_em")}</p>', unsafe_allow_html=True)
+            except: st.error("Erro Supabase")
 
         elif pagina == "frases":
-            # MUDANÇA 3: FRASE CHICO XAVIER
-            st.markdown("### 🕊️ Mensagem de Chico Xavier")
+            # 3. FRASE CHICO XAVIER
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." \n\n— **Chico Xavier**')
