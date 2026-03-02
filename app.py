@@ -108,33 +108,33 @@ if not st.session_state.get("logado", False):
             em = st.text_input("E-mail")
             se = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True): st.session_state["logado"] = True; st.rerun()
-    with t2:
-    with st.form("cadastro"):
-        n_c = st.text_input("Nome")
-        e_c = st.text_input("E-mail")
-        s_c = st.text_input("Senha", type="password")
-        
-        if st.form_submit_button("Cadastrar", use_container_width=True):
-            ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-            dt_txt = ag_br.strftime('%d-%m-%Y %H:%M:%S')
+   with t2:
+    n_c = st.text_input("Nome")
+    e_c = st.text_input("E-mail")
+    s_c = st.text_input("Senha", type="password")
+    
+    if st.form_submit_button("Cadastrar", use_container_width=True):
+        ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
+        dt_txt = ag_br.strftime('%d-%m-%Y %H:%M:%S')
 
-            try:
-                result = supabase.table("participantes").insert({
-                    "nome": n_c, 
-                    "email": e_c, 
-                    "criado_em": dt_txt
-                }).execute()
+        try:
+            result = supabase.table("participantes").insert({
+                "nome": n_c, 
+                "email": e_c, 
+                "criado_em": dt_txt
+            }).execute()
 
-                if result.data:
-                    st.success("✅ Cadastro salvo com sucesso!")
-                    st.session_state["logado"] = True
-                    st.rerun()
-                else:
-                    st.error("❌ Insert aceito, mas sem dados. Verifique campos.")
-                    
-            except Exception as e:
-                st.error("❌ ERRO DETALHADO DO SUPABASE:")
-                st.code(str(e))
+            if result.data:
+                st.success("✅ Cadastro salvo!")
+                st.session_state["logado"] = True
+                st.rerun()
+            else:
+                st.error("❌ Insert sem dados")
+
+        except Exception as e:
+            st.error("❌ ERRO SUPABASE:")
+            st.code(str(e))
+
                 st.info("Copie esse erro e me mande aqui.")
 
 else:
@@ -199,5 +199,6 @@ else:
         elif pag == "frases":
             # FRASE CHICO XAVIER
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." \n\n— **Chico Xavier**')
+
 
 
