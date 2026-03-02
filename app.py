@@ -5,39 +5,24 @@ import unicodedata
 import datetime
 from supabase import create_client, Client
 
-# =========================
-# SUPABASE - CREDENCIAIS
-# =========================
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# =========================
-# SESSION STATE
-# =========================
-if "pagina" not in st.session_state:
-    st.session_state["pagina"] = None
-if "logado" not in st.session_state:
-    st.session_state["logado"] = False
-if "termo_pesquisa" not in st.session_state:
-    st.session_state["termo_pesquisa"] = ""
+if "pagina" not in st.session_state: st.session_state["pagina"] = None
+if "logado" not in st.session_state: st.session_state["logado"] = False
+if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
 
-# =========================
-# CSS - ESCONDER STREAMLIT E ESTILOS
-# =========================
+# CSS - ESCONDE TUDO DO STREAMLIT
 st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
-    [data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
-    .stApp { background: #f4f7f9; }
-    .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-    .card-centro { background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-left: 12px solid #0060D0; position: relative; }
-    .btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
-    .admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
-    .admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
+<style>
+#MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
+[data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
+.stApp { background: #f4f7f9; }
+.titulo-grande { font-size: 32px
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -206,3 +191,4 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
