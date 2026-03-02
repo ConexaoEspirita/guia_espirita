@@ -94,14 +94,20 @@ if not st.session_state.get("logado", False):
                 st.rerun()
     
     with t2:
-        with st.form("cadastro"):
-            n_c = st.text_input("Nome")
-            e_c = st.text_input("E-mail")
-            s_c = st.text_input("Senha", type="password")
-            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
-            
-            if submitted:
-                try:
+    with st.form("cadastro"):
+        n_c = st.text_input("Nome")
+        e_c = st.text_input("E-mail")
+        s_c = st.text_input("Senha", type="password")
+        submitted = st.form_submit_button("Cadastrar", use_container_width=True)
+        
+        if submitted:
+            try:
+                # Verifica se o e-mail já está cadastrado
+                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                if check.data:
+                    st.warning("⚠️ E-mail já cadastrado!")
+                else:
+                    # Insere o novo registro
                     result = supabase.table("participantes").insert({
                         "nome": n_c, 
                         "email": e_c
@@ -113,9 +119,9 @@ if not st.session_state.get("logado", False):
                         st.rerun()
                     else:
                         st.warning("⚠️ Insert aceito")
-                except Exception as e:
-                    st.error("❌ ERRO SUPABASE:")
-                    st.code(str(e))
+            except Exception as e:
+                st.error("❌ ERRO SUPABASE:")
+                st.code(str(e))
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
@@ -174,3 +180,4 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
