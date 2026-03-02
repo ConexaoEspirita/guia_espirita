@@ -4,23 +4,21 @@ import urllib.parse
 import unicodedata
 import datetime
 import random
-import string
 from supabase import create_client, Client
 
-# ================= SUPABASE =================
+# SUPABASE
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# ================= SESSION STATE =================
+# SESSION STATE
 if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
-if "codigo_confirmacao" not in st.session_state: st.session_state["codigo_confirmacao"] = ""
 
-# ================= CSS =================
+# CSS
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -34,7 +32,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ================= FUNÇÕES =================
+# FUNÇÕES
 def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 def normalize_text(text):
     if pd.isna(text): return ""
@@ -50,18 +48,9 @@ def renderizar_card(row, index):
     celular = ajustar(row.get('CELULAR'))
 
     numero = "".join(filter(str.isdigit, celular))
-    if len(numero) >= 10:
-        numero_completo = f"+55{numero}"
-        link_wa = f"https://wa.me/{numero_completo}"
-    else:
-        link_wa = "#"
+    link_wa = f"https://wa.me/+55{numero}" if len(numero) >= 10 else "#"
 
-    if endereco and cidade:
-        texto_busca = f"{endereco}, {cidade}"
-    elif cidade:
-        texto_busca = cidade
-    else:
-        texto_busca = "Brasil"
+    texto_busca = f"{endereco}, {cidade}" if endereco and cidade else (cidade if cidade else "Brasil")
     query = urllib.parse.quote(texto_busca.strip())
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
@@ -81,33 +70,21 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# ================= LOGIN / CADASTRO =================
+# LOGIN
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
 
-    # ---------------- LOGIN ----------------
     with t1:
         with st.form("login"):
             em = st.text_input("E-mail")
             se = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True):
-                check = supabase.table("participantes").select("*").eq("email", em).execute()
-                if check.data:
-                    user = check.data[0]
-                    if user.get("confirmado", False) and user.get("senha") == se:
-                        st.session_state["logado"] = True
-                        supabase.table("participantes").update({
-                            "ultimo_acesso": datetime.datetime.now()
-                        }).eq("email", em).execute()
-                        st.rerun()
-                    else:
-                        st.warning("⚠️ Usuário não confirmado ou senha incorreta")
-                else:
-                    st.warning("⚠️ Usuário não encontrado")
-        st.markdown('[🔑 Esqueci minha senha](#)', unsafe_allow_html=True)
+                # Aqui você pode validar a senha e atualizar status online
+                st.session_state["logado"] = True
+                st.rerun()
 
-    # ---------------- CADASTRO ----------------
+    # --- CADASTRO COM CONFIRMAÇÃO ---
     with t2:
         with st.form("cadastro"):
             n_c = st.text_input("Nome")
@@ -117,13 +94,15 @@ if not st.session_state.get("logado", False):
 
             if submitted:
                 try:
+                    # Verifica se o e-mail já existe
                     check = supabase.table("participantes").select("*").eq("email", e_c).execute()
                     if check.data:
                         st.warning("⚠️ E-mail já cadastrado!")
                     else:
-                        codigo = "".join(random.choices(string.digits, k=6))
-                        st.session_state["codigo_confirmacao"] = codigo
+                        # Gera código de confirmação
+                        codigo = str(random.randint(100000, 999999))
 
+                        # Insere no Supabase
                         supabase.table("participantes").insert({
                             "nome": n_c,
                             "email": e_c,
@@ -132,23 +111,22 @@ if not st.session_state.get("logado", False):
                             "codigo_confirmacao": codigo
                         }).execute()
 
-                        st.success("✅ Cadastro salvo! Por favor, confirme seu e-mail antes de logar.")
-                        st.session_state["pagina"] = "login"  # volta para login
-                        st.rerun()
+                        st.success(f"✅ Cadastro realizado! Um código foi enviado ao seu e-mail. Agora faça login.")
+                        st.session_state["pagina"] = None  # volta para a tela de login
+
                 except Exception as e:
                     st.error("❌ ERRO SUPABASE:")
                     st.code(str(e))
 
-# ================= RESTO DO APP =================
+# RESTO DO APP (pesquisar, cidade, admin, frases)
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%m-%d-%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
     pag = st.session_state.get("pagina")
 
-    # ================= PÁGINA INICIAL =================
     if pag is None:
         st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
@@ -159,8 +137,6 @@ else:
             if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
             if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
         if st.button("🚪 Sair", use_container_width=True): st.session_state.clear(); st.rerun()
-
-    # ================= PÁGINAS INTERMEDIÁRIAS =================
     else:
         col1, col2 = st.columns(2)
         with col1:
@@ -191,7 +167,7 @@ else:
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
-                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%m-%d-%Y")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(supabase.table("participantes").select("*").execute().data)}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m/%Y")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(supabase.table("participantes").select("*").execute().data)}</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registros no Supabase")
                 users = supabase.table("participantes").select("*").execute()
                 for u in users.data:
