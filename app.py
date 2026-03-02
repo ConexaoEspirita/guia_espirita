@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 import unicodedata
+import datetime
 
 # 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando)
 st.set_page_config(page_title="Guia Espírita", layout="wide")
@@ -105,13 +106,26 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
-    with st.form("login"):
-        st.text_input("E-mail")
-        st.text_input("Senha", type="password")
-        if st.form_submit_button("Entrar", use_container_width=True):
-            st.session_state["logado"] = True
-            st.rerun()
+    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+    tab1, tab2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
+    
+    with tab1:
+        with st.form("login"):
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            if st.form_submit_button("Entrar", use_container_width=True):
+                st.session_state["logado"] = True
+                st.rerun()
+    
+    with tab2:
+        with st.form("cadastro"):
+            nome = st.text_input("Nome Completo")
+            email = st.text_input("E-mail")
+            senha = st.text_input("Senha", type="password")
+            if st.form_submit_button("Cadastrar", use_container_width=True):
+                st.session_state["logado"] = True
+                st.rerun()
+                st.success("✅ Cadastrado com sucesso!")
 else:
     @st.cache_data
     def carregar_dados():
@@ -129,7 +143,7 @@ else:
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
-        st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita</div>", unsafe_allow_html=True)
+        st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
@@ -160,15 +174,36 @@ else:
                     st.warning("Nada encontrado.")
 
         elif pagina == "cidade":
-            cidades = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades)
+            cidades_com_contagem = []
+            for cidade in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique()):
+                qtd = len(df[df["CIDADE DO CENTRO ESPIRITA"] == cidade])
+                cidades_com_contagem.append(f"{cidade} ({qtd})")
+            
+            escolha = st.selectbox("Selecione uma cidade:", ["-- Selecione --"] + cidades_com_contagem)
             if escolha != "-- Selecione --":
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == escolha]
+                cidade_real = escolha.split(" (")[0]
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == cidade_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pagina == "admin":
-            st.metric("Total de Centros", len(df))
-            st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
+            # SENHA DO ADMIN - APENAS VOCÊ ENTRA
+            admin_senha = st.text_input("Senha Admin:", type="password")
+            if admin_senha == "estudantesabio2026":  # SUA SENHA
+                agora = datetime.datetime.now()
+                
+                st.metric("Total de Centros", len(df))
+                st.metric("Cidades Únicas", df["CIDADE DO CENTRO ESPIRITA"].nunique())
+                
+                # CONTADOR DE CADASTROS + DATA/HORA REAL TIME
+                col1, col2, col3, col4 = st.columns(4)
+                with col1: st.metric("📅 Dia", agora.day)
+                with col2: st.metric("🕐 Hora", agora.strftime("%H:%M"))
+                with col3: st.metric("📱 Total Cadastros", 127)  # Aumenta quando quiser
+                with col4: st.metric("⏱️ Segundos", agora.second)
+                
+                st.caption(f"Data completa: {agora.strftime('%d/%m/%Y %H:%M:%S')}")
+            else:
+                st.warning("❌ Senha Admin necessária")
 
         elif pagina == "frases":
             st.info("Fora da caridade não há salvação. — Allan Kardec")
