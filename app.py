@@ -16,6 +16,7 @@ st.set_page_config(page_title="Guia Espírita", layout="wide")
 if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
+if "email_logado" not in st.session_state: st.session_state["email_logado"] = None
 
 # CSS - ESCONDE STREAMLIT COMPLETO
 st.markdown("""
@@ -90,10 +91,19 @@ if not st.session_state.get("logado", False):
             em = st.text_input("E-mail")
             se = st.text_input("Senha", type="password")
             if st.form_submit_button("Entrar", use_container_width=True): 
-                st.session_state["logado"] = True
-                st.rerun()
+                # Atualiza status online e ultimo_acesso
+                try:
+                    supabase.table("participantes").update({
+                        "status": "online",
+                        "ultimo_acesso": datetime.datetime.now()
+                    }).eq("email", em).execute()
+                    st.session_state["logado"] = True
+                    st.session_state["email_logado"] = em
+                    st.rerun()
+                except Exception as e:
+                    st.error("❌ ERRO SUPABASE LOGIN:")
+                    st.code(str(e))
     
-    # <<< CADASTRO CORRIGIDO AQUI >>>
     with t2:
         with st.form("cadastro"):
             n_c = st.text_input("Nome")
@@ -108,15 +118,23 @@ if not st.session_state.get("logado", False):
                     if check.data:
                         st.warning("⚠️ E-mail já cadastrado!")
                     else:
-                        # Insere o novo registro
+                        # Insere o novo registro com status ausente
                         result = supabase.table("participantes").insert({
                             "nome": n_c, 
-                            "email": e_c
+                            "email": e_c,
+                            "status": "ausente",
+                            "ultimo_acesso": None
                         }).execute()
 
                         if result.data:
                             st.success("✅ Cadastro salvo no Supabase!")
                             st.session_state["logado"] = True
+                            st.session_state["email_logado"] = e_c
+                            # Atualiza status para online após cadastro
+                            supabase.table("participantes").update({
+                                "status": "online",
+                                "ultimo_acesso": datetime.datetime.now()
+                            }).eq("email", e_c).execute()
                             st.rerun()
                         else:
                             st.warning("⚠️ Insert aceito")
@@ -125,6 +143,7 @@ if not st.session_state.get("logado", False):
                     st.code(str(e))
 
 else:
+    # Atualiza horário local
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
     st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
@@ -141,7 +160,14 @@ else:
         with c2:
             if st.button("📊 Admin", use_container_width=True): st.session_state["pagina"] = "admin"; st.rerun()
             if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
-        if st.button("🚪 Sair", use_container_width=True): st.session_state.clear(); st.rerun()
+        if st.button("🚪 Sair", use_container_width=True):
+            # Atualiza status para ausente no logout
+            if st.session_state.get("email_logado"):
+                supabase.table("participantes").update({
+                    "status": "ausente"
+                }).eq("email", st.session_state["email_logado"]).execute()
+            st.session_state.clear()
+            st.rerun()
 
     else:
         col1, col2 = st.columns(2)
@@ -173,7 +199,9 @@ else:
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
-                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(supabase.table("participantes").select("*").execute().data)}</span></div>', unsafe_allow_html=True)
+                # Contagem de usuários online
+                online_count = len([u for u in supabase.table("participantes").select("*").execute().data if u.get("status") == "online"])
+                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(supabase.table("participantes").select("*").execute().data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registros no Supabase")
                 users = supabase.table("participantes").select("*").execute()
                 for u in users.data:
