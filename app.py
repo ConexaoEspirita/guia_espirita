@@ -6,16 +6,16 @@ import datetime
 from supabase import create_client, Client
 
 # =========================
-# CONFIGURAÇÃO DO STREAMLIT
+# SUPABASE - COLE SUAS CREDENCIAIS AQUI
 # =========================
-st.set_page_config(page_title="Guia Espírita", layout="wide")
+SUPABASE_URL = "https://SEU_PROJETO.supabase.co"  # ← SUBSTITUA PELA SUA URL
+SUPABASE_KEY = "SUA_ANON_KEY"                     # ← SUBSTITUA PELA SUA KEY
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # =========================
-# CONFIGURAÇÃO SUPABASE
+# CONFIGURAÇÃO DO STREAMLIT
 # =========================
-SUPABASE_URL = "https://SEU_PROJETO.supabase.co"  # Substitua pelo seu URL
-SUPABASE_KEY = "SUA_ANON_KEY"                     # Substitua pela sua anon key
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+st.set_page_config(page_title="🕊️ Guia Espírita", layout="wide")
 
 # =========================
 # SESSION STATE
@@ -30,7 +30,7 @@ if "admin_logado" not in st.session_state:
     st.session_state["admin_logado"] = False
 
 # =========================
-# CSS
+# CSS PROFISSIONAL
 # =========================
 st.markdown("""
 <style>
@@ -38,7 +38,13 @@ st.markdown("""
 header {visibility: hidden;}
 footer {visibility: hidden;}
 .stApp { background: #f4f7f9; }
-.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+.titulo-grande { 
+    font-size: 32px; 
+    font-weight: 800; 
+    text-align: center; 
+    color: #60A5FA; 
+    margin-bottom: 30px;
+}
 .card-centro { 
     background: white;
     padding: 25px;
@@ -47,6 +53,21 @@ footer {visibility: hidden;}
     box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
     border-left: 12px solid #0060D0;
     position: relative;
+}
+.numero-canto {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #60A5FA;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 .btn-link { 
     text-decoration:none; 
@@ -67,7 +88,11 @@ footer {visibility: hidden;}
     display: flex;
     align-items: center;
     gap: 15px;
-    margin: 5px 0;
+    margin: 8px 0;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border-left: 4px solid #3B82F6;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -97,7 +122,7 @@ def renderizar_card(row, index):
 
     st.markdown(f"""
     <div class="card-centro">
-        <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280;">#{index}</div>
+        <div class="numero-canto">#{index}</div>
         <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
         {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
         <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
@@ -115,7 +140,7 @@ def renderizar_card(row, index):
 # LOGIN E NAVEGAÇÃO
 # =========================
 if not st.session_state.get("logado", False):
-    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+    st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
     
     with tab1:
@@ -128,63 +153,72 @@ if not st.session_state.get("logado", False):
     
     with tab2:
         with st.form("cadastro"):
-            nome = st.text_input("Nome Completo")
+            nome = st.text_input("Nome")
             email = st.text_input("E-mail")
             senha = st.text_input("Senha", type="password")
             if st.form_submit_button("Cadastrar", use_container_width=True):
-                # Inserir no Supabase tabela 'participantes'
-                supabase.table("participantes").insert({
-                    "nome": nome,
-                    "email": email,
-                    "status": "ativo",
-                    "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
-                }).execute()
-                st.session_state["logado"] = True
-                st.success("✅ Cadastrado com sucesso!")
-                st.rerun()
+                try:
+                    # SALVA NA TABELA "participantes" DO SUPABASE
+                    supabase.table("participantes").insert({
+                        "nome": nome,
+                        "email": email,
+                        "status": "ativo",
+                        "created_at": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-3)))
+                    }).execute()
+                    st.session_state["logado"] = True
+                    st.success("✅ Cadastrado com sucesso!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro Supabase: {e}")
 
 else:
     pagina = st.session_state.get("pagina")
 
     if pagina is None:
-        st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+        st.markdown("<div class='titulo-grande'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🔎 Busca Avançada", use_container_width=True): st.session_state["pagina"] = "pesquisar"; st.rerun()
-            if st.button("📍 Por Cidade", use_container_width=True): st.session_state["pagina"] = "cidade"; st.rerun()
+            if st.button("🔎 Busca Avançada", use_container_width=True): 
+                st.session_state["pagina"] = "pesquisar"; st.rerun()
+            if st.button("📍 Por Cidade", use_container_width=True): 
+                st.session_state["pagina"] = "cidade"; st.rerun()
         with c2:
             if st.button("📊 Admin", use_container_width=True): 
                 st.session_state["pagina"] = "admin"
                 st.session_state["admin_logado"] = False
                 st.rerun()
-            if st.button("🕊️ Frases", use_container_width=True): st.session_state["pagina"] = "frases"; st.rerun()
+            if st.button("🕊️ Frases", use_container_width=True): 
+                st.session_state["pagina"] = "frases"; st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
             st.session_state.clear(); st.rerun()
 
     else:
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
+            if st.button("⬅️ VOLTAR", use_container_width=True): 
+                st.session_state["pagina"] = None; st.rerun()
         with col2:
-            if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
+            if st.button("🔄 LIMPAR", use_container_width=True): 
+                st.session_state["termo_pesquisa"] = ""; st.rerun()
 
         if pagina == "pesquisar":
+            st.header("🔎 Busca Avançada")
             termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
                 st.session_state["termo_pesquisa"] = termo
-                # Carregar Excel com centros
                 df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
                 df.columns = df.columns.str.strip()
                 t_norm = normalize_text(termo.strip())
                 res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
                 if not res.empty:
-                    st.success(f"{len(res)} centro(s) encontrado(s)")
+                    st.success(f"✅ {len(res)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(res.iterrows(), 1):
                         renderizar_card(row, i)
                 else:
-                    st.warning("Nada encontrado.")
+                    st.warning("❌ Nada encontrado.")
 
         elif pagina == "cidade":
+            st.header("📍 Por Cidade")
             df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
             df.columns = df.columns.str.strip()
             cidades_com_contagem = [f"{c} ({len(df[df['CIDADE DO CENTRO ESPIRITA']==c])})" for c in sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())]
@@ -196,36 +230,38 @@ else:
                     renderizar_card(row, i)
 
         elif pagina == "admin":
-            # ADMIN LOGIN - CORRIGIDO
+            # ADMIN LOGIN
             if not st.session_state.get("admin_logado", False):
-                st.subheader("🔐 Login Admin")
-                col1, col2 = st.columns(2)
-                with col1:
-                    usuario = st.text_input("Usuário", placeholder="estudantesabio")
-                with col2:
-                    senha = st.text_input("Senha", type="password", placeholder="2026")
+                st.header("🔐 Admin - Login")
+                col_admin1, col_admin2 = st.columns(2)
+                with col_admin1:
+                    usuario_admin = st.text_input("Usuário", placeholder="estudantesabio")
+                with col_admin2:
+                    senha_admin = st.text_input("Senha", type="password", placeholder="2026")
                 if st.button("🔑 Entrar Admin", use_container_width=True):
-                    if usuario == "estudantesabio" and senha == "2026":
+                    if usuario_admin == "estudantesabio" and senha_admin == "2026":
                         st.session_state["admin_logado"] = True
                         st.success("✅ Admin logado com sucesso!")
                         st.rerun()
                     else:
                         st.error("❌ Usuário ou senha incorretos!")
-                        st.session_state["admin_logado"] = False
             else:
-                # DASHBOARD ADMIN - NOVA LISTA HORIZONTAL
-                st.subheader("📊 Participantes Cadastrados")
+                # DASHBOARD ADMIN - SUA TABELA "participantes"
+                st.header("📊 Participantes Cadastrados")
                 try:
                     res = supabase.table("participantes").select("*").order("created_at", desc=True).execute()
                     participantes = res.data
                     if participantes:
                         st.info(f"**Total: {len(participantes)} participantes**")
                         
-                        # LISTA NA MESMA LINHA - JOÃO, email (01-03-2026 06:42:30)
+                        # LISTA HORIZONTAL: 1. Nome, email (data/hora)
                         for i, p in enumerate(participantes, 1):
-                            agora = p.get("created_at", "")
-                            if agora:
-                                data_fmt = datetime.datetime.fromisoformat(agora.replace('Z', '+00:00')).astimezone(datetime.timezone(datetime.timedelta(hours=-3))).strftime("%d/%m/%Y - %H:%M:%S")
+                            created_at = p.get("created_at", "")
+                            if created_at:
+                                # Converte timestamp Supabase para BR
+                                data_br = datetime.datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                                data_br = data_br.astimezone(datetime.timezone(datetime.timedelta(hours=-3)))
+                                data_fmt = data_br.strftime("%d/%m/%Y - %H:%M:%S")
                             else:
                                 data_fmt = "-"
                             
@@ -238,14 +274,15 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
                         
-                        if st.button("🔐 Sair Admin"):
+                        if st.button("🔐 Sair Admin", use_container_width=True):
                             st.session_state["admin_logado"] = False
                             st.rerun()
                     else:
                         st.info("Nenhum participante cadastrado.")
                 except Exception as e:
-                    st.error(f"Erro Supabase: {e}")
+                    st.error(f"❌ Erro Supabase: {str(e)[:100]}")
+                    st.info("🔧 Verifique: 1) Credenciais 2) Tabela 'participantes' existe")
 
         elif pagina == "frases":
-            st.info("Fora da caridade não há salvação. — Allan Kardec")
-
+            st.header("🕊️ Frases Inspiradoras")
+            st.info("**Fora da caridade não há salvação. — Allan Kardec**")
