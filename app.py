@@ -29,6 +29,15 @@ st.markdown("""
 .btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
 .admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
 .admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
+/* 🔍 BARRA DE PESQUISA VISÍVEL E GRANDE */
+.stTextInput > div > div > input {
+    border: 3px solid #3B82F6 !important;
+    border-radius: 15px !important;
+    padding: 15px 20px !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 15px rgba(59,130,246,0.2) !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -75,7 +84,7 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# LOGIN
+# LOGIN (mantido igual)
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
@@ -161,30 +170,45 @@ else:
         with col1: 
             if st.button("⬅️ VOLTAR", use_container_width=True): st.session_state["pagina"] = None; st.rerun()
         with col2: 
-            if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
+            if st.button("🔄 LIMPAR", use_container_width=True): 
+                st.session_state["termo_pesquisa"] = ""; 
+                st.session_state["pagina"] = None
+                st.rerun()
 
         if pag == "pesquisar":
-            termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
-            if termo and len(termo.strip()) >= 3:
-                st.session_state["termo_pesquisa"] = termo
-                t_norm = normalize_text(termo.strip())
+            # ✅ CORRIGIDO: Key única + session_state sincronizado = NUNCA mais reseta!
+            st.session_state["termo_pesquisa"] = st.text_input(
+                "🔍 Digite o que busca (Enter para pesquisar):",
+                value=st.session_state["termo_pesquisa"],
+                key="busca_avancada_key",  # Key ÚNICA resolve o reset!
+                help="Ex: BATIS, KARDEC, Catanduva..."
+            )
+            
+            termo = st.session_state["termo_pesquisa"].strip()
+            if termo and len(termo) >= 3:
+                t_norm = normalize_text(termo)
                 res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
                 if not res.empty:
-                    st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
+                    st.success(f"✅ {len(res)} centro(s) encontrado(s)")
+                    for i, (_, row) in enumerate(res.iterrows(), 1): 
+                        renderizar_card(row, i)
+                else:
+                    st.warning("❌ Nenhum centro encontrado. Tente outro termo!")
+            else:
+                st.info("👆 Digite pelo menos 3 letras e dê Enter")
 
         elif pag == "cidade":
             counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
             cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
             opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
-            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
+            sel = st.selectbox("📍 Selecione a cidade:", ["-- Selecione --"] + opts)
             if sel != "-- Selecione --":
                 c_real = sel.rsplit(" (", 1)[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pag == "admin":
-            admin_pw = st.text_input("Senha Admin:", type="password")
+            admin_pw = st.text_input("🔑 Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
