@@ -93,35 +93,36 @@ if not st.session_state.get("logado", False):
                 st.session_state["logado"] = True
                 st.rerun()
     
-   with t2:
-    with st.form("cadastro"):
-        n_c = st.text_input("Nome")
-        e_c = st.text_input("E-mail")
-        s_c = st.text_input("Senha", type="password")
-        submitted = st.form_submit_button("Cadastrar", use_container_width=True)
+    # <<< CADASTRO CORRIGIDO AQUI >>>
+    with t2:
+        with st.form("cadastro"):
+            n_c = st.text_input("Nome")
+            e_c = st.text_input("E-mail")
+            s_c = st.text_input("Senha", type="password")
+            submitted = st.form_submit_button("Cadastrar", use_container_width=True)
 
-        if submitted:
-            try:
-                # Verifica se o e-mail já está cadastrado
-                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                if check.data:
-                    st.warning("⚠️ E-mail já cadastrado!")
-                else:
-                    # Insere o novo registro
-                    result = supabase.table("participantes").insert({
-                        "nome": n_c,
-                        "email": e_c
-                    }).execute()
-
-                    if result.data:
-                        st.success("✅ Cadastro salvo no Supabase!")
-                        st.session_state["logado"] = True
-                        st.rerun()
+            if submitted:
+                try:
+                    # Verifica se o e-mail já está cadastrado
+                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                    if check.data:
+                        st.warning("⚠️ E-mail já cadastrado!")
                     else:
-                        st.warning("⚠️ Insert aceito")
-            except Exception as e:
-                st.error("❌ ERRO SUPABASE:")
-                st.code(str(e))
+                        # Insere o novo registro
+                        result = supabase.table("participantes").insert({
+                            "nome": n_c, 
+                            "email": e_c
+                        }).execute()
+
+                        if result.data:
+                            st.success("✅ Cadastro salvo no Supabase!")
+                            st.session_state["logado"] = True
+                            st.rerun()
+                        else:
+                            st.warning("⚠️ Insert aceito")
+                except Exception as e:
+                    st.error("❌ ERRO SUPABASE:")
+                    st.code(str(e))
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
@@ -172,7 +173,7 @@ else:
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
-                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: 127</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(supabase.table("participantes").select("*").execute().data)}</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registros no Supabase")
                 users = supabase.table("participantes").select("*").execute()
                 for u in users.data:
@@ -180,6 +181,3 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
-
-
-
