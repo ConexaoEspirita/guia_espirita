@@ -5,47 +5,32 @@ import unicodedata
 import datetime
 from supabase import create_client, Client
 
-# =========================
-# SUPABASE - CREDENCIAIS
-# =========================
+# SUPABASE
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-# =========================
 # SESSION STATE
-# =========================
-if "pagina" not in st.session_state:
-    st.session_state["pagina"] = None
-if "logado" not in st.session_state:
-    st.session_state["logado"] = False
-if "termo_pesquisa" not in st.session_state:
-    st.session_state["termo_pesquisa"] = ""
+if "pagina" not in st.session_state: st.session_state["pagina"] = None
+if "logado" not in st.session_state: st.session_state["logado"] = False
+if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
 
-# =========================
-# CSS - ESCONDER STREAMLIT E ESTILOS
-# =========================
+# CSS
 st.markdown("""
-    <style>
-    #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
-    [data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
-    .stApp { background: #f4f7f9; }
-    .titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
-    .card-centro { background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-left: 12px solid #0060D0; position: relative; }
-    .btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
-    
-    /* ADMIN HORIZONTAL PEQUENO */
-    .admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
-    .admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+#MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
+[data-testid="stStatusWidget"], [data-testid="stToolbar"], [data-testid="stDecoration"] { display: none !important; }
+.stApp { background: #f4f7f9; }
+.titulo-grande { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+.card-centro { background: white; padding: 25px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); border-left: 12px solid #0060D0; position: relative; }
+.btn-link { text-decoration:none; color:white !important; padding:10px; border-radius:10px; font-weight:700; text-align:center; display:inline-block; width: 100%; }
+.admin-linha-info { display: flex; gap: 15px; font-size: 13px; font-weight: 700; color: #1E3A8A; margin-bottom: 15px; border-bottom: 2px solid #0060D0; padding-bottom: 10px; flex-wrap: wrap; }
+.admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
+</style>
+""", unsafe_allow_html=True)
 
-# =========================
-# FUNÇÕES ORIGINAIS
-# =========================
 def ajustar(txt): return str(txt).strip() if pd.notna(txt) else ""
 
 def normalize_text(text):
@@ -61,23 +46,25 @@ def renderizar_card(row, index):
     responsavel = ajustar(row.get('RESPONSAVEL'))
     celular = ajustar(row.get('CELULAR'))
 
-    # 1. WhatsApp: formatar número com +55 e só números
+    # WHATSAPP CORRIGIDO ✅
     numero = "".join(filter(str.isdigit, celular))
     if len(numero) >= 10:
-        # Ajusta para DDD + número (ex: 11 9...)
-        if len(numero) == 10:
+        if len(numero) == 11:
             numero_completo = f"+55{numero}"
         else:
-            if numero.startswith("55"):
-                numero_completo = f"+{numero}"
-            else:
-                numero_completo = f"+55{numero}"
+            numero_completo = f"+55{numero}"
         link_wa = f"https://wa.me/{numero_completo}"
     else:
         link_wa = "#"
 
-    # 2. Google Maps: busca por endereço + cidade
-    query = urllib.parse.quote(f"{endereco}, {cidade}")
+    # GOOGLE MAPS CORRIGIDO ✅
+    if endereco and cidade:
+        texto_busca = f"{endereco}, {cidade}"
+    elif cidade:
+        texto_busca = cidade
+    else:
+        texto_busca = "Brasil"
+    query = urllib.parse.quote(texto_busca.strip())
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
     st.markdown(f"""
@@ -89,7 +76,6 @@ def renderizar_card(row, index):
         <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
         <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
         <div style="margin:5px 0;">📍 <b>Endereço:</b> {endereco}</div>
-        <div style="margin:5px 0;">📱 <b>Celular:</b> {celular}</div>
         <div style="margin-top:15px; display:flex; gap:10px;">
             <a href="{link_maps}" target="_blank" class="btn-link" style="background:#4285F4;">📍 Maps</a>
             <a href="{link_wa}" target="_blank" class="btn-link" style="background:#25D366;">WhatsApp</a>
@@ -97,48 +83,39 @@ def renderizar_card(row, index):
     </div>
     """, unsafe_allow_html=True)
 
-# =========================
 # LOGIN / APP
-# =========================
 if not st.session_state.get("logado", False):
     st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
+    
     with t1:
         with st.form("login"):
             em = st.text_input("E-mail")
             se = st.text_input("Senha", type="password")
-            if st.form_submit_button("Entrar", use_container_width=True): st.session_state["logado"] = True; st.rerun()
-   with t2:
-    n_c = st.text_input("Nome")
-    e_c = st.text_input("E-mail")
-    s_c = st.text_input("Senha", type="password")
+            if st.form_submit_button("Entrar", use_container_width=True): 
+                st.session_state["logado"] = True; st.rerun()
     
-    if st.form_submit_button("Cadastrar", use_container_width=True):
-        ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
-        dt_txt = ag_br.strftime('%d-%m-%Y %H:%M:%S')
+    with t2:
+        n_c = st.text_input("Nome")
+        e_c = st.text_input("E-mail")
+        s_c = st.text_input("Senha", type="password")
+        
+        if st.form_submit_button("Cadastrar", use_container_width=True):
+            ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
+            dt_txt = ag_br.strftime('%d-%m-%Y %H:%M:%S')
 
-        try:
-            result = supabase.table("participantes").insert({
-                "nome": n_c, 
-                "email": e_c, 
-                "criado_em": dt_txt
-            }).execute()
-
-            if result.data:
+            try:
+                result = supabase.table("participantes").insert({
+                    "nome": n_c, "email": e_c, "criado_em": dt_txt
+                }).execute()
                 st.success("✅ Cadastro salvo!")
                 st.session_state["logado"] = True
                 st.rerun()
-            else:
-                st.error("❌ Insert sem dados")
-
-        except Exception as e:
-            st.error("❌ ERRO SUPABASE:")
-            st.code(str(e))
-
-                st.info("Copie esse erro e me mande aqui.")
+            except Exception as e:
+                st.error("❌ SUPABASE ERRO:")
+                st.code(str(e))
 
 else:
-    # 1. HORÁRIO BRASÍLIA, DATA E LINHA SUPERIOR
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
     st.markdown(f'<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;"><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span><span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span><hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>', unsafe_allow_html=True)
 
@@ -164,7 +141,6 @@ else:
         with col2: 
             if st.button("🔄 LIMPAR", use_container_width=True): st.session_state["termo_pesquisa"] = ""; st.rerun()
 
-        # BARRA DE PESQUISA ORIGINAL (BUSCA EM TUDO)
         if pag == "pesquisar":
             termo = st.text_input("Digite o que busca:", value=st.session_state["termo_pesquisa"])
             if termo and len(termo.strip()) >= 3:
@@ -176,7 +152,6 @@ else:
                     for i, (_, row) in enumerate(res.iterrows(), 1): renderizar_card(row, i)
 
         elif pag == "cidade":
-            # 2. SELETOR COM CONTAGEM EM TODAS AS CIDADES
             counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
             cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
             opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
@@ -189,7 +164,6 @@ else:
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "estudantesabio2026":
-                # 3. INFO HORIZONTAL E PEQUENO NO ADMIN
                 st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: 127</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registos no Supabase")
                 users = supabase.table("participantes").select("*").execute()
@@ -197,8 +171,4 @@ else:
                     st.markdown(f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{u.get("criado_em")}</span></div>', unsafe_allow_html=True)
 
         elif pag == "frases":
-            # FRASE CHICO XAVIER
-            st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." \n\n— **Chico Xavier**')
-
-
-
+            st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
