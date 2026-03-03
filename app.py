@@ -158,46 +158,49 @@ if not st.session_state.get("logado", False):
                     st.code(str(e))
 
     with t2:
-    # Verifica se veio de um cadastro imediato, mas sem recarregar
-    if st.session_state.get("cadastro_feito"):
-        st.success("✅ CADASTRO CONCLUÍDO!")
-        st.info("📧 Email de confirmação enviado!")
-        st.info("👆 Vá na aba 'ENTRAR' e faça login!")
-        st.session_state.pop("cadastro_feito", None)
+        # Se veio de um cadastro bem-sucedido, mostra mensagem
+        if st.session_state.get("cadastro_feito"):
+            st.success("✅ CADASTRO CONCLUÍDO!")
+            st.info("📧 Email de confirmação enviado!")
+            st.info("👆 Vá na aba 'ENTRAR' e faça login!")
 
-    with st.form("cadastro"):
-        n_c = st.text_input("👤 Nome completo")
-        e_c = st.text_input("📧 E-mail")
-        s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 3 caracteres")
-        submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
+            if st.button("👉 Continuar para Login", use_container_width=True):
+                st.session_state.pop("cadastro_feito", None)
+                st.rerun()
 
-        if submitted and n_c and e_c and s_c and len(s_c) >= 3:
-            try:
-                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                if check.data:
-                    st.error("❌ E-mail JÁ CADASTRADO!")
-                    st.info("💡 Vá na aba 'Entrar' para fazer login")
-                else:
-                    result = supabase.table("participantes").insert({
-                        "nome": n_c.strip(),
-                        "email": e_c.strip(),
-                        "senha": s_c,
-                        "status": "ausente",
-                        "ultimo_acesso": None
-                    }).execute()
-                    
-                    if result.data:
-                        st.session_state["cadastro_feito"] = True
-                        enviar_email_confirmacao(e_c, "cadastro")
-                        # ⚠️ NÃO usa st.rerun() aqui; a mensagem aparece no mesmo ciclo
+        with st.form("cadastro"):
+            n_c = st.text_input("👤 Nome completo")
+            e_c = st.text_input("📧 E-mail")
+            s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 3 caracteres")
+            submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
+
+            if submitted and n_c and e_c and s_c and len(s_c) >= 3:
+                try:
+                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                    if check.data:
+                        st.error("❌ E-mail JÁ CADASTRADO!")
+                        st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
-                        st.error("❌ Erro ao salvar")
-                        
-            except Exception as e:
-                st.error("❌ ERRO SUPABASE:")
-                st.code(str(e))
-        elif submitted:
-            st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
+                        result = supabase.table("participantes").insert({
+                            "nome": n_c.strip(),
+                            "email": e_c.strip(),
+                            "senha": s_c,
+                            "status": "ausente",
+                            "ultimo_acesso": None
+                        }).execute()
+
+                        if result.data:
+                            st.session_state["cadastro_feito"] = True
+                            enviar_email_confirmacao(e_c, "cadastro")
+                            # Não chama st.rerun() aqui; mensagem aparece no mesmo ciclo
+                        else:
+                            st.error("❌ Erro ao salvar")
+                            
+                except Exception as e:
+                    st.error("❌ ERRO SUPABASE:")
+                    st.code(str(e))
+            elif submitted:
+                st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
@@ -307,5 +310,3 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
-
-
