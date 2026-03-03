@@ -262,10 +262,11 @@ else:
             if admin_pw == "1asd":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
-                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d-%m-%Y - %Hh%M:%S")}</span> | <span>📱 Cadastros: {len(users_data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d-%m-%Y")}</span> | <span>📱 Cadastros: {len(users_data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registros no Supabase")
                 for u in users_data:
                     st.markdown(f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{u.get("created_at")}</span></div>', unsafe_allow_html=True)
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
