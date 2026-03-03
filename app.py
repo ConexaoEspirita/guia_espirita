@@ -254,7 +254,7 @@ else:
 
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
-            if admin_pw == "estudantesabio2026":
+            if admin_pw == "1asd":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
                 st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(users_data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
@@ -264,6 +264,7 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
 
 
 
