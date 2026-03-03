@@ -198,7 +198,6 @@ if not st.session_state.get("logado", False):
                 st.code(str(e))
         elif submitted:
             st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
-)
 
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
@@ -308,4 +307,5 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
 
