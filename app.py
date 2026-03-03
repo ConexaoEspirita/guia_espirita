@@ -20,6 +20,8 @@ if "pagina" not in st.session_state: st.session_state["pagina"] = None
 if "logado" not in st.session_state: st.session_state["logado"] = False
 if "termo_pesquisa" not in st.session_state: st.session_state["termo_pesquisa"] = ""
 if "email_logado" not in st.session_state: st.session_state["email_logado"] = None
+if "cadastro_ok" not in st.session_state: st.session_state["cadastro_ok"] = False
+if "cadastro_msg" not in st.session_state: st.session_state["cadastro_msg"] = ""
 
 # CSS (SEU ORIGINAL)
 st.markdown("""
@@ -34,6 +36,10 @@ st.markdown("""
 .admin-reg { font-size: 11px; border-bottom: 1px solid #eee; padding: 4px 0; display: flex; justify-content: space-between; }
 </style>
 """, unsafe_allow_html=True)
+
+# MOSTRAR MENSAGEM DE CADASTRO (SEM PISCAR)
+if st.session_state.get("cadastro_ok"):
+    st.success(st.session_state["cadastro_msg"])
 
 # SENDGRID
 def enviar_email_confirmacao(email, acao="login"):
@@ -175,9 +181,8 @@ if not st.session_state.get("logado", False):
                         }).execute()
                         
                         if result.data:
-                            st.success("✅ CADASTRO CONCLUÍDO!")
-                            st.info("📧 Email de confirmação enviado!")
-                            st.info("👆 Vá na aba 'ENTRAR' e faça login!")
+                            st.session_state["cadastro_ok"] = True
+                            st.session_state["cadastro_msg"] = "✅ CADASTRO CONCLUÍDO! Email de confirmação enviado! Vá na aba 'ENTRAR' e faça login!"
                             enviar_email_confirmacao(e_c, "cadastro")
                             st.rerun()
                         else:
@@ -257,14 +262,10 @@ else:
             if admin_pw == "1asd":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
-                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d/%m")}</span> | <span>🕐 {ag_br.strftime("%H:%M:%S")}</span> | <span>📱 Cadastros: {len(users_data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="admin-linha-info"><span>Centros: {len(df)}</span> | <span>Cidades: {df["CIDADE DO CENTRO ESPIRITA"].nunique()}</span> | <span>📅 {ag_br.strftime("%d-%m-%Y - %Hh%M:%S")}</span> | <span>📱 Cadastros: {len(users_data)}</span> | <span>🟢 Online: {online_count}</span></div>', unsafe_allow_html=True)
                 st.write("### 👥 Registros no Supabase")
                 for u in users_data:
                     st.markdown(f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{u.get("created_at")}</span></div>', unsafe_allow_html=True)
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
-
-
-
-
