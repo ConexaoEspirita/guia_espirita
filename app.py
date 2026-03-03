@@ -127,6 +127,10 @@ if not st.session_state.get("logado", False):
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
 
     with t1:
+        # Resetar a mensagem de cadastro quando entrar na aba Entrar
+        if st.session_state.get("cadastro_concluido"):
+            st.session_state.pop("cadastro_concluido", None)
+
         with st.form("login"):
             em = st.text_input("📧 E-mail")
             se = st.text_input("🔑 Senha", type="password")
@@ -158,45 +162,46 @@ if not st.session_state.get("logado", False):
                     st.code(str(e))
 
     with t2:
-    if st.session_state.get("cadastro_concluido"):
-        st.success("✅ CADASTRO CONCLUÍDO!")
-        st.info("📧 Email de confirmação enviado!")
-        st.info("👆 Vá na aba 'ENTRAR' e faça login!")
+        # Mostrar a mensagem de cadastro só na aba Cadastrar
+        if st.session_state.get("cadastro_concluido"):
+            st.success("✅ CADASTRO CONCLUÍDO!")
+            st.info("📧 Email de confirmação enviado!")
+            st.info("👆 Vá na aba 'ENTRAR' e faça login!")
 
-    with st.form("cadastro"):
-        n_c = st.text_input("👤 Nome completo")
-        e_c = st.text_input("📧 E-mail")
-        s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 3 caracteres")
-        submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
+        with st.form("cadastro"):
+            n_c = st.text_input("👤 Nome completo")
+            e_c = st.text_input("📧 E-mail")
+            s_c = st.text_input("🔑 Senha", type="password", help="Mínimo 3 caracteres")
+            submitted = st.form_submit_button("✅ Cadastrar", use_container_width=True)
 
-        if submitted and n_c and e_c and s_c and len(s_c) >= 3:
-            try:
-                check = supabase.table("participantes").select("*").eq("email", e_c).execute()
-                if check.data:
-                    st.error("❌ E-mail JÁ CADASTRADO!")
-                    st.info("💡 Vá na aba 'Entrar' para fazer login")
-                else:
-                    result = supabase.table("participantes").insert({
-                        "nome": n_c.strip(),
-                        "email": e_c.strip(),
-                        "senha": s_c,
-                        "status": "ausente",
-                        "ultimo_acesso": None
-                    }).execute()
-                    
-                    if result.data:
-                        st.session_state["cadastro_concluido"] = True
-                        st.session_state["pagina"] = "cadastro_msg"  # opcional, só para manter no mesmo fluxo
-                        enviar_email_confirmacao(e_c, "cadastro")
-                        st.rerun()
+            if submitted and n_c and e_c and s_c and len(s_c) >= 3:
+                try:
+                    check = supabase.table("participantes").select("*").eq("email", e_c).execute()
+                    if check.data:
+                        st.error("❌ E-mail JÁ CADASTRADO!")
+                        st.info("💡 Vá na aba 'Entrar' para fazer login")
                     else:
-                        st.error("❌ Erro ao salvar")
+                        result = supabase.table("participantes").insert({
+                            "nome": n_c.strip(),
+                            "email": e_c.strip(),
+                            "senha": s_c,
+                            "status": "ausente",
+                            "ultimo_acesso": None
+                        }).execute()
                         
-            except Exception as e:
-                st.error("❌ ERRO SUPABASE:")
-                st.code(str(e))
-        elif submitted:
-            st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
+                        if result.data:
+                            st.session_state["cadastro_concluido"] = True
+                            enviar_email_confirmacao(e_c, "cadastro")
+                            st.rerun()
+                        else:
+                            st.error("❌ Erro ao salvar")
+                            
+                except Exception as e:
+                    st.error("❌ ERRO SUPABASE:")
+                    st.code(str(e))
+            elif submitted:
+                st.warning("❌ Preencha todos os campos! Senha: 3+ caracteres")
+
 
 
 else:
@@ -308,4 +313,5 @@ else:
 
         elif pag == "frases":
             st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+
 
