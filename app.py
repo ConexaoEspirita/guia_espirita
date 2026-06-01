@@ -261,19 +261,20 @@ else:
             st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
-            counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
-            cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
-            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
-            if sel != "-- Selecione --":
-                c_real = sel.rsplit(" (", 1)[0]
-                res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-                for i, (_, row) in enumerate(res.iterrows(), 1):
-                    renderizar_card(row, i)
+    counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
+    cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+    opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
+    sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
+    if sel != "-- Selecione --":
+        c_real = sel.rsplit(" (", 1)[0]
+        res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
+        for i, (_, row) in enumerate(res.iterrows(), 1):
+            renderizar_card(row, i)
 
-        elif pag == "admin":
-            admin_pw = st.text_input("Senha Admin:", type="password")
-            if admin_pw == "1asd":
+elif pag == "admin":
+    admin_pw = st.text_input("Senha Admin:", type="password")
+    if admin_pw == "1asd":
+        ...
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
                 st.markdown(
