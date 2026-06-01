@@ -5,7 +5,7 @@ import unicodedata
 import datetime
 from supabase import create_client, Client
 import sendgrid
-from sendgrid.helpers.mail import Mail, Email, To, Content
+from sendgrid.helpers.mail import Mail
 
 # SUPABASE + SENDGRID
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -25,7 +25,7 @@ if "termo_pesquisa" not in st.session_state:
 if "email_logado" not in st.session_state:
     st.session_state["email_logado"] = None
 
-# CSS (SEU ORIGINAL)
+# CSS (SEU ORIGINAL — sem mudar cores, só tirando < > pra funcionar)
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -123,7 +123,10 @@ def renderizar_card(row, index):
 
 # LOGIN + CADASTRO
 if not st.session_state.get("logado", False):
-    st.markdown("<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>",
+        unsafe_allow_html=True
+    )
     t1, t2 = st.tabs(["🚪 Entrar", "✨ Cadastrar"])
 
     with t1:
@@ -198,18 +201,23 @@ if not st.session_state.get("logado", False):
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
 
-    # LINHA CORRIGIDA PARA EVITAR ERRO DE F-STRING
-    st.markdown(f"""<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;">
+    st.markdown(
+        f"""<div style="display:flex;align-items:center;gap:15px;margin-bottom:20px;">
 <span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%H:%M")}</span>
 <span style="font-weight:800;color:#1E3A8A;">{ag_br.strftime("%d/%m/%Y")}</span>
-<hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>""", unsafe_allow_html=True)
+<hr style="flex-grow:1;border:none;border-top:1px solid #ccc;margin:0;"></div>""",
+        unsafe_allow_html=True
+    )
 
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
     df.columns = df.columns.str.strip()
     pag = st.session_state.get("pagina")
 
     if pag is None:
-        st.markdown("<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='titulo-grande' style='color: #60A5FA; text-align: center;'>🕊️ Guia Espírita 🕊️</div>",
+            unsafe_allow_html=True
+        )
         c1, c2 = st.columns(2)
         with c1:
             if st.button("🔎 Busca Avançada", use_container_width=True):
@@ -227,7 +235,9 @@ else:
                 st.rerun()
         if st.button("🚪 Sair", use_container_width=True):
             if st.session_state.get("email_logado"):
-                supabase.table("participantes").update({"status": "ausente"}).eq("email", st.session_state["email_logado"]).execute()
+                supabase.table("participantes").update(
+                    {"status": "ausente"}
+                ).eq("email", st.session_state["email_logado"]).execute()
             st.session_state.clear()
             st.rerun()
 
@@ -244,37 +254,36 @@ else:
                 st.rerun()
 
         if pag == "pesquisar":
-           termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
+            termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
 
-    if termo and len(termo.strip()) >= 3:
-        t_norm = normalize_text(termo.strip())
-        res = df[df.apply(
-            lambda r: t_norm in normalize_text(" ".join(r.fillna("").astype(str).tolist())),
-            axis=1
-        )]
+            if termo and len(termo.strip()) >= 3:
+                t_norm = normalize_text(termo.strip())
+                res = df[df.apply(
+                    lambda r: t_norm in normalize_text(" ".join(r.fillna("").astype(str).tolist())),
+                    axis=1
+                )]
 
-        if not res.empty:
-            st.success(f"{len(res)} centro(s) encontrado(s)")
-            for i, (_, row) in enumerate(res.iterrows(), 1):
-                renderizar_card(row, i)
-        else:
-            st.warning("Nenhum centro encontrado!")
+                if not res.empty:
+                    st.success(f"{len(res)} centro(s) encontrado(s)")
+                    for i, (_, row) in enumerate(res.iterrows(), 1):
+                        renderizar_card(row, i)
+                else:
+                    st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
-    counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
-    cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-    opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
-    sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
-    if sel != "-- Selecione --":
-        c_real = sel.rsplit(" (", 1)[0]
-        res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-        for i, (_, row) in enumerate(res.iterrows(), 1):
-            renderizar_card(row, i)
+            counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
+            cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+            opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
+            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts)
+            if sel != "-- Selecione --":
+                c_real = sel.rsplit(" (", 1)[0]
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
+                for i, (_, row) in enumerate(res.iterrows(), 1):
+                    renderizar_card(row, i)
 
-      elif pag == "admin":
-         admin_pw = st.text_input("Senha Admin:", type="password")
-         if admin_pw == "1asd":
-        ...
+        elif pag == "admin":
+            admin_pw = st.text_input("Senha Admin:", type="password")
+            if admin_pw == "1asd":
                 users_data = supabase.table("participantes").select("*").execute().data
                 online_count = len([u for u in users_data if u.get("status") == "online"])
                 st.markdown(
@@ -304,4 +313,6 @@ else:
                     )
 
         elif pag == "frases":
-            st.info('"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**')
+            st.info(
+                '"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**'
+            )
