@@ -244,7 +244,7 @@ else:
                 st.rerun()
 
         if pag == "pesquisar":
-    termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
+           termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
 
     if termo and len(termo.strip()) >= 3:
         t_norm = normalize_text(termo.strip())
