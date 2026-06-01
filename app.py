@@ -251,7 +251,8 @@ else:
             )
             if st.session_state["termo_pesquisa"] and len(st.session_state["termo_pesquisa"].strip()) >= 3:
                 t_norm = normalize_text(st.session_state["termo_pesquisa"].strip())
-                res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
+                #res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
+                res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.fillna("").astype(str).tolist())), axis=1)]
                 if not res.empty:
                     st.success(f"{len(res)} centro(s) encontrado(s)")
                     for i, (_, row) in enumerate(res.iterrows(), 1):
