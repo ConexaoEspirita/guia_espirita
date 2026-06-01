@@ -244,21 +244,21 @@ else:
                 st.rerun()
 
         if pag == "pesquisar":
-            st.session_state["termo_pesquisa"] = st.text_input(
-                "Digite o que busca:",
-                value=st.session_state["termo_pesquisa"],
-                key="busca_avancada_key"
-            )
-            if st.session_state["termo_pesquisa"] and len(st.session_state["termo_pesquisa"].strip()) >= 3:
-                t_norm = normalize_text(st.session_state["termo_pesquisa"].strip())
-                #res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.astype(str))), axis=1)]
-                res = df[df.apply(lambda r: t_norm in normalize_text(" ".join(r.fillna("").astype(str).tolist())), axis=1)]
-                if not res.empty:
-                    st.success(f"{len(res)} centro(s) encontrado(s)")
-                    for i, (_, row) in enumerate(res.iterrows(), 1):
-                        renderizar_card(row, i)
-                else:
-                    st.warning("Nenhum centro encontrado!")
+    termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
+
+    if termo and len(termo.strip()) >= 3:
+        t_norm = normalize_text(termo.strip())
+        res = df[df.apply(
+            lambda r: t_norm in normalize_text(" ".join(r.fillna("").astype(str).tolist())),
+            axis=1
+        )]
+
+        if not res.empty:
+            st.success(f"{len(res)} centro(s) encontrado(s)")
+            for i, (_, row) in enumerate(res.iterrows(), 1):
+                renderizar_card(row, i)
+        else:
+            st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
             counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
