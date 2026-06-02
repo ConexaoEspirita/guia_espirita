@@ -273,17 +273,17 @@ else:
                     st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
-            counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
-            cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-            opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
+                counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
+                cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+                opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
 
-        sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts, key="cidade_sel")
+                sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts, key="cidade_sel")
 
-    if sel != "-- Selecione --":
-        c_real = sel.rsplit(" (", 1)[0]
-        res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-        for i, (_, row) in enumerate(res.iterrows(), 1):
-            renderizar_card(row, i)
+                if sel != "-- Selecione --":
+                    c_real = sel.rsplit(" (", 1)[0]
+                    res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
+                    for i, (_, row) in enumerate(res.iterrows(), 1):
+                    renderizar_card(row, i)
 
         if sel != "-- Selecione --":
            c_real = sel.rsplit(" (", 1)[0]
