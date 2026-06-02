@@ -3,6 +3,8 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+if "cidade_sel" not in st.session_state:
+    st.session_state["cidade_sel"] = "-- Selecione --"
 from supabase import create_client, Client
 import sendgrid
 from sendgrid.helpers.mail import Mail
@@ -275,10 +277,10 @@ else:
              cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
              opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
 
-           if "cidade_sel" not in st.session_state:
-           st.session_state["cidade_sel"] = "-- Selecione --"
+            if "cidade_sel" not in st.session_state:
+            st.session_state["cidade_sel"] = "-- Selecione --"
 
-          sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts, key="cidade_sel")
+            sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts, key="cidade_sel")
 
         if sel != "-- Selecione --":
            c_real = sel.rsplit(" (", 1)[0]
