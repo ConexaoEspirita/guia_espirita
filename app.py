@@ -248,10 +248,10 @@ else:
                 st.session_state["pagina"] = None
                 st.rerun()
         with col2:
-            if st.button("🔄 LIMPAR", use_container_width=True):
-                st.session_state["termo_pesquisa"] = ""
-                st.session_state["pagina"] = None
-                st.rerun()
+               if st.button("🔄 LIMPAR", use_container_width=True):
+                  st.session_state["termo_pesquisa"] = ""
+                  st.session_state["pagina"] = "pesquisar"
+                  st.rerun()
 
         if pag == "pesquisar":
             termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
