@@ -1,8 +1,5 @@
-import streamlit as st
-st.write("TOKEN_PEPPER existe?", "TOKEN_PEPPER" in st.secrets)
-st.write("keys:", list(st.secrets.keys()))
-st.stop()
 
+import streamlit as st
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 import pandas as pd
