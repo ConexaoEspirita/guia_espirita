@@ -20,6 +20,11 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ✅ ADICIONADO AQUI (3 LINHAS)
+COOKIE_NAME = "guiaespirita_session"
+SESSION_DAYS = 7
+cookie_manager = stx.CookieManager()
+
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 # SESSION STATE (sem mexer no cadastro)
@@ -339,7 +344,6 @@ else:
                         f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{formatted}</span></div>',
                         unsafe_allow_html=True
                     )
-
         elif pag == "frases":
             st.info(
                 '"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**'
