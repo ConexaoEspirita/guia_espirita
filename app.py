@@ -28,6 +28,9 @@ COOKIE_NAME = "guiaespirita_session"
 SESSION_DAYS = 7
 cookie_manager = stx.CookieManager()
 
+def _hash_token(token: str) -> str:
+    return hashlib.sha256((st.secrets["TOKEN_PEPPER"] + token).encode("utf-8")).hexdigest()
+
 # SESSION STATE (sem mexer no cadastro)
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
