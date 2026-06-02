@@ -3,8 +3,10 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+
 if "cidade_sel" not in st.session_state:
     st.session_state["cidade_sel"] = "-- Selecione --"
+
 from supabase import create_client, Client
 import sendgrid
 from sendgrid.helpers.mail import Mail
@@ -104,6 +106,7 @@ def renderizar_card(row, index):
         texto_busca = cidade
     else:
         texto_busca = "Brasil"
+
     query = urllib.parse.quote(texto_busca.strip())
     link_maps = f"https://www.google.com/maps/search/?api=1&query={query}"
 
@@ -235,6 +238,7 @@ else:
             if st.button("🕊️ Frases", use_container_width=True):
                 st.session_state["pagina"] = "frases"
                 st.rerun()
+
         if st.button("🚪 Sair", use_container_width=True):
             if st.session_state.get("email_logado"):
                 supabase.table("participantes").update(
@@ -250,10 +254,15 @@ else:
                 st.session_state["pagina"] = None
                 st.rerun()
         with col2:
-               if st.button("🔄 LIMPAR", use_container_width=True):
-                  st.session_state["termo_pesquisa"] = ""
-                  st.session_state["pagina"] = "pesquisar"
-                  st.rerun()
+            if st.button("🔄 LIMPAR", use_container_width=True):
+                # mantém seu layout/botão; só ajusta a lógica para cada tela
+                if pag == "pesquisar":
+                    st.session_state["termo_pesquisa"] = ""
+                    st.session_state["pagina"] = "pesquisar"
+                elif pag == "cidade":
+                    st.session_state["cidade_sel"] = "-- Selecione --"
+                    st.session_state["pagina"] = "cidade"
+                st.rerun()
 
         if pag == "pesquisar":
             termo = st.text_input("Digite o que busca:", key="termo_pesquisa")
@@ -273,26 +282,22 @@ else:
                     st.warning("Nenhum centro encontrado!")
 
         elif pag == "cidade":
-                counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
-                cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
-                opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
+            counts = df["CIDADE DO CENTRO ESPIRITA"].value_counts().to_dict()
+            cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
+            opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
 
-                sel_cidade = st.selectbox(
-                            "Selecione:",
-                        ["-- Selecione --"] + opts,
-                            key="cidade_sel"
-                )
+            sel_cidade = st.selectbox(
+                "Selecione:",
+                ["-- Selecione --"] + opts,
+                key="cidade_sel"
+            )
 
-                if sel_cidade != "-- Selecione --":
-                    c_real = sel_cidade.rsplit(" (", 1)[0]  # tira o " (123)" do final
-                    res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-                    for i, (_, row) in enumerate(res.iterrows(), 1):
-                        renderizar_card(row, i)
+            if sel_cidade != "-- Selecione --":
+                c_real = sel_cidade.rsplit(" (", 1)[0]  # tira o " (123)" do final
+                res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
+                for i, (_, row) in enumerate(res.iterrows(), 1):
+                    renderizar_card(row, i)
 
-    if st.button("🔄 LIMPAR", use_container_width=True):
-        st.session_state["cidade_sel"] = "-- Selecione --"
-        st.rerun()
-      
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "1asd":
