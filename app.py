@@ -4,6 +4,9 @@ import urllib.parse
 import unicodedata
 import datetime
 
+import secrets, hashlib
+import extra_streamlit_components as stx
+
 if "cidade_sel" not in st.session_state:
     st.session_state["cidade_sel"] = "-- Selecione --"
 
