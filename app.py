@@ -284,13 +284,7 @@ else:
                             res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
                             for i, (_, row) in enumerate(res.iterrows(), 1):
                                 renderizar_card(row, i)
-
-        if sel != "-- Selecione --":
-           c_real = sel.rsplit(" (", 1)[0]
-           res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
-           for i, (_, row) in enumerate(res.iterrows(), 1):
-            renderizar_card(row, i)
-
+      
         elif pag == "admin":
             admin_pw = st.text_input("Senha Admin:", type="password")
             if admin_pw == "1asd":
