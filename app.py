@@ -1,7 +1,6 @@
 import streamlit as st
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
-import streamlit as st
 import pandas as pd
 import urllib.parse
 import unicodedata
