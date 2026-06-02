@@ -5,32 +5,70 @@ import pandas as pd
 import urllib.parse
 import unicodedata
 import datetime
+import time
 
 import secrets, hashlib
 import extra_streamlit_components as stx
-
-if "cidade_sel" not in st.session_state:
-    st.session_state["cidade_sel"] = "-- Selecione --"
 
 from supabase import create_client, Client
 import sendgrid
 from sendgrid.helpers.mail import Mail
 
+# =========================
 # SUPABASE + SENDGRID
+# =========================
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# ✅ ADICIONADO AQUI (3 LINHAS)
+# =========================
+# COOKIE LOGIN (persistente)
+# =========================
 COOKIE_NAME = "guiaespirita_session"
 SESSION_DAYS = 7
 cookie_manager = stx.CookieManager()
 
-def _hash_token(token: str) -> str:
-    return hashlib.sha256((st.secrets["TOKEN_PEPPER"] + token).encode("utf-8")).hexdigest()
+def _hash_token(payload: str) -> str:
+    pepper = st.secrets["TOKEN_PEPPER"]  # precisa existir nos secrets
+    return hashlib.sha256((pepper + payload).encode("utf-8")).hexdigest()
 
+def salvar_cookie_login(email: str):
+    exp = int(time.time()) + (SESSION_DAYS * 24 * 60 * 60)
+    payload = f"{email}|{exp}"
+    sig = _hash_token(payload)
+    token = f"{payload}|{sig}"
+    cookie_manager.set(COOKIE_NAME, token, max_age=SESSION_DAYS * 24 * 60 * 60)
+
+def ler_cookie_login():
+    token = cookie_manager.get(COOKIE_NAME)
+    if not token:
+        return None
+
+    partes = token.split("|")
+    if len(partes) != 3:
+        return None
+
+    email, exp_str, sig = partes
+    payload = f"{email}|{exp_str}"
+
+    if sig != _hash_token(payload):
+        return None
+
+    try:
+        if int(exp_str) < int(time.time()):
+            return None
+    except:
+        return None
+
+    return email
+
+# =========================
 # SESSION STATE (sem mexer no cadastro)
+# =========================
+if "cidade_sel" not in st.session_state:
+    st.session_state["cidade_sel"] = "-- Selecione --"
+
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = None
 if "logado" not in st.session_state:
@@ -40,7 +78,20 @@ if "termo_pesquisa" not in st.session_state:
 if "email_logado" not in st.session_state:
     st.session_state["email_logado"] = None
 
+# =========================
+# AUTO-LOGIN POR COOKIE
+# (antes de mostrar tela de login)
+# =========================
+if not st.session_state.get("logado", False):
+    email_cookie = ler_cookie_login()
+    if email_cookie:
+        st.session_state["logado"] = True
+        st.session_state["email_logado"] = email_cookie
+        st.rerun()
+
+# =========================
 # CSS (SEU ORIGINAL — sem mudar cores)
+# =========================
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -54,7 +105,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# =========================
 # SENDGRID
+# =========================
 def enviar_email_confirmacao(email, acao="login"):
     sg = sendgrid.SendGridAPIClient(api_key=SENDGRID_API_KEY)
 
@@ -90,7 +143,9 @@ Vá na aba 'Entrar' e faça login com:
     except:
         return False
 
+# =========================
 # FUNÇÕES AUXILIARES
+# =========================
 def ajustar(txt):
     return str(txt).strip() if pd.notna(txt) else ""
 
@@ -99,7 +154,6 @@ def normalize_text(text):
         return ""
     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
 
-# ✅ CACHE DO EXCEL (ÚNICA ADIÇÃO)
 @st.cache_data(ttl=3600)
 def carregar_df():
     df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
@@ -132,7 +186,7 @@ def renderizar_card(row, index):
 <div class="card-centro">
     <div style="position:absolute; top:10px; right:15px; font-size:12px; color:#6B7280; background:rgba(255,255,255,0.8); padding:2px 6px; border-radius:12px; font-weight:500;">#{index}</div>
     <div style="color: #1E3A8A; font-size: 22px; font-weight: 800;">{nome} 🕊️</div>
-    {"<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>" if fantasia else ""}
+    {("<div style='color: #3B82F6; font-style: italic;'>" + fantasia + "</div>") if fantasia else ""}
     <div style="color:#065F46; font-weight:700; background:#D1FAE5; padding:8px; border-radius:8px; margin:10px 0;">🗣️ PALESTRA: {palestra}</div>
     <div style="margin:5px 0;">👤 <b>Responsável:</b> {responsavel}</div>
     <div style="margin:5px 0;">🏙️ <b>Cidade:</b> {cidade}</div>
@@ -144,7 +198,9 @@ def renderizar_card(row, index):
 </div>
 """, unsafe_allow_html=True)
 
+# =========================
 # LOGIN + CADASTRO
+# =========================
 if not st.session_state.get("logado", False):
     st.markdown(
         "<div style='text-align: center; color: #60A5FA; font-size: 32px; font-weight: 800; margin-bottom: 30px;'>🕊️ Guia Espírita 🕊️</div>",
@@ -167,6 +223,9 @@ if not st.session_state.get("logado", False):
                                 "status": "online",
                                 "ultimo_acesso": datetime.datetime.now().isoformat()
                             }).eq("email", em).execute()
+
+                            # ✅ GRAVA COOKIE (PERSISTENTE)
+                            salvar_cookie_login(em)
 
                             st.session_state["logado"] = True
                             st.session_state["email_logado"] = em
@@ -221,6 +280,9 @@ if not st.session_state.get("logado", False):
                         st.error("❌ ERRO SUPABASE:")
                         st.code(str(e))
 
+# =========================
+# APP LOGADO
+# =========================
 else:
     ag_br = datetime.datetime.now() - datetime.timedelta(hours=3)
 
@@ -232,9 +294,7 @@ else:
         unsafe_allow_html=True
     )
 
-    # ✅ AQUI FOI A TROCA (ANTES LIA EXCEL TODA HORA)
     df = carregar_df()
-
     pag = st.session_state.get("pagina")
 
     if pag is None:
@@ -263,6 +323,10 @@ else:
                 supabase.table("participantes").update(
                     {"status": "ausente"}
                 ).eq("email", st.session_state["email_logado"]).execute()
+
+            # ✅ APAGA COOKIE
+            cookie_manager.delete(COOKIE_NAME)
+
             st.session_state.clear()
             st.rerun()
 
@@ -274,7 +338,6 @@ else:
                 st.rerun()
         with col2:
             if st.button("🔄 LIMPAR", use_container_width=True):
-                # mantém seu layout/botão; só ajusta a lógica para cada tela
                 if pag == "pesquisar":
                     st.session_state["termo_pesquisa"] = ""
                     st.session_state["pagina"] = "pesquisar"
@@ -312,7 +375,7 @@ else:
             )
 
             if sel_cidade != "-- Selecione --":
-                c_real = sel_cidade.rsplit(" (", 1)[0]  # tira o " (123)" do final
+                c_real = sel_cidade.rsplit(" (", 1)[0]
                 res = df[df["CIDADE DO CENTRO ESPIRITA"] == c_real]
                 for i, (_, row) in enumerate(res.iterrows(), 1):
                     renderizar_card(row, i)
@@ -347,6 +410,7 @@ else:
                         f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{formatted}</span></div>',
                         unsafe_allow_html=True
                     )
+
         elif pag == "frases":
             st.info(
                 '"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**'
