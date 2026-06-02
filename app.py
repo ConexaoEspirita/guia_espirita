@@ -1,4 +1,7 @@
 import streamlit as st
+st.write("Keys em st.secrets:", list(st.secrets.keys()))
+st.stop()
+
 st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 import pandas as pd
