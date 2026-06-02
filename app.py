@@ -29,7 +29,7 @@ if "termo_pesquisa" not in st.session_state:
 if "email_logado" not in st.session_state:
     st.session_state["email_logado"] = None
 
-# CSS (SEU ORIGINAL — sem mudar cores, só tirando < > pra funcionar)
+# CSS (SEU ORIGINAL — sem mudar cores)
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;} header {visibility: hidden;} footer {visibility: hidden;}
@@ -87,6 +87,13 @@ def normalize_text(text):
     if pd.isna(text):
         return ""
     return unicodedata.normalize('NFKD', str(text)).encode('ASCII', 'ignore').decode('utf-8').lower()
+
+# ✅ CACHE DO EXCEL (ÚNICA ADIÇÃO)
+@st.cache_data(ttl=3600)
+def carregar_df():
+    df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
+    df.columns = df.columns.str.strip()
+    return df
 
 def renderizar_card(row, index):
     nome = ajustar(row.get('NOME', 'Centro Espírita'))
@@ -214,8 +221,9 @@ else:
         unsafe_allow_html=True
     )
 
-    df = pd.read_excel("guia.xlsx", sheet_name="casas espiritas python")
-    df.columns = df.columns.str.strip()
+    # ✅ AQUI FOI A TROCA (ANTES LIA EXCEL TODA HORA)
+    df = carregar_df()
+
     pag = st.session_state.get("pagina")
 
     if pag is None:
