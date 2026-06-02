@@ -1,4 +1,7 @@
 import streamlit as st
+st.set_page_config(page_title="Guia Espírita", layout="wide")
+
+import streamlit as st
 import pandas as pd
 import urllib.parse
 import unicodedata
@@ -24,8 +27,6 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 COOKIE_NAME = "guiaespirita_session"
 SESSION_DAYS = 7
 cookie_manager = stx.CookieManager()
-
-st.set_page_config(page_title="Guia Espírita", layout="wide")
 
 # SESSION STATE (sem mexer no cadastro)
 if "pagina" not in st.session_state:
