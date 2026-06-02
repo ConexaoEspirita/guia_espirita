@@ -277,9 +277,6 @@ else:
              cids = sorted(df["CIDADE DO CENTRO ESPIRITA"].dropna().unique())
              opts = [f"{c} ({counts.get(c, 0)})" for c in cids]
 
-            if "cidade_sel" not in st.session_state:
-            st.session_state["cidade_sel"] = "-- Selecione --"
-
             sel = st.selectbox("Selecione:", ["-- Selecione --"] + opts, key="cidade_sel")
 
         if sel != "-- Selecione --":
