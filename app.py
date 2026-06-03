@@ -32,17 +32,6 @@ SESSION_DAYS = 7
 cookie_manager = stx.CookieManager(key="cookie_manager")
 cookies = cookie_manager.get_all()
 if cookies is None:
-    st.stop()
-
-# ✅ TESTE (debug)
-st.write("TEM COOKIE?", COOKIE_NAME in cookies)
-
-if COOKIE_NAME in cookies:
-    st.write("TAMANHO:", len(cookies.get(COOKIE_NAME, "")))
-    st.write("COMEÇO DO COOKIE:", cookies.get(COOKIE_NAME, "")[:40])
-
-
-if cookies is None:
     # CookieManager (componente) ainda não carregou no browser nesta execução
     st.stop()
 
@@ -60,26 +49,26 @@ def salvar_cookie_login(email: str):
     cookie_manager.set(COOKIE_NAME, token, expires_at=expires_at)
 
 def ler_cookie_login():
-    # ✅ FIX 2: usar snapshot de cookies já carregado
+    # usar snapshot de cookies já carregado
     token = cookies.get(COOKIE_NAME)
     if not token:
         return None
 
     partes = token.split("|")
     if len(partes) != 3:
-        cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie malformado
+        cookie_manager.delete(COOKIE_NAME)  # limpa cookie malformado
         return None
 
     email, exp_str, sig = partes
     payload = f"{email}|{exp_str}"
 
     if sig != _hash_token(payload):
-        cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie inválido (pepper trocado etc.)
+        cookie_manager.delete(COOKIE_NAME)  # limpa cookie inválido (pepper trocado etc.)
         return None
 
     try:
         if int(exp_str) < int(time.time()):
-            cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie expirado
+            cookie_manager.delete(COOKIE_NAME)  # limpa cookie expirado
             return None
     except:
         cookie_manager.delete(COOKIE_NAME)
@@ -434,8 +423,3 @@ else:
                         f'<div class="admin-reg"><span><b>{u["nome"]}</b> ({u["email"]})</span><span>{formatted}</span></div>',
                         unsafe_allow_html=True
                     )
-
-        elif pag == "frases":
-            st.info(
-                '"Embora ninguém possa voltar atrás e fazer um novo começo, qualquer um pode começar agora e fazer um novo fim." — **Chico Xavier**'
-            )
