@@ -28,7 +28,13 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # =========================
 COOKIE_NAME = "guiaespirita_session"
 SESSION_DAYS = 7
-cookie_manager = stx.CookieManager()
+
+# ✅ FIX 1: key fixa + leitura confiável de cookies
+cookie_manager = stx.CookieManager(key="cookie_manager")
+cookies = cookie_manager.get_all()
+if cookies is None:
+    # CookieManager (componente) ainda não carregou no browser nesta execução
+    st.stop()
 
 def _hash_token(payload: str) -> str:
     pepper = st.secrets["TOKEN_PEPPER"]  # precisa existir nos secrets
@@ -42,24 +48,29 @@ def salvar_cookie_login(email: str):
     cookie_manager.set(COOKIE_NAME, token, max_age=SESSION_DAYS * 24 * 60 * 60)
 
 def ler_cookie_login():
-    token = cookie_manager.get(COOKIE_NAME)
+    # ✅ FIX 2: usar snapshot de cookies já carregado
+    token = cookies.get(COOKIE_NAME)
     if not token:
         return None
 
     partes = token.split("|")
     if len(partes) != 3:
+        cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie malformado
         return None
 
     email, exp_str, sig = partes
     payload = f"{email}|{exp_str}"
 
     if sig != _hash_token(payload):
+        cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie inválido (pepper trocado etc.)
         return None
 
     try:
         if int(exp_str) < int(time.time()):
+            cookie_manager.delete(COOKIE_NAME)  # ✅ limpa cookie expirado
             return None
     except:
+        cookie_manager.delete(COOKIE_NAME)
         return None
 
     return email
