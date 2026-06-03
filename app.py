@@ -29,9 +29,12 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 COOKIE_NAME = "guiaespirita_session"
 SESSION_DAYS = 7
 
-# ✅ FIX 1: key fixa + leitura confiável de cookies
 cookie_manager = stx.CookieManager(key="cookie_manager")
 cookies = cookie_manager.get_all()
+if cookies is None:
+    st.stop()
+
+
 if cookies is None:
     # CookieManager (componente) ainda não carregou no browser nesta execução
     st.stop()
