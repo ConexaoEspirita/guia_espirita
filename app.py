@@ -34,6 +34,13 @@ cookies = cookie_manager.get_all()
 if cookies is None:
     st.stop()
 
+# ✅ TESTE (debug)
+st.write("TEM COOKIE?", COOKIE_NAME in cookies)
+
+if COOKIE_NAME in cookies:
+    st.write("TAMANHO:", len(cookies.get(COOKIE_NAME, "")))
+    st.write("COMEÇO DO COOKIE:", cookies.get(COOKIE_NAME, "")[:40])
+
 
 if cookies is None:
     # CookieManager (componente) ainda não carregou no browser nesta execução
