@@ -48,7 +48,9 @@ def salvar_cookie_login(email: str):
     payload = f"{email}|{exp}"
     sig = _hash_token(payload)
     token = f"{payload}|{sig}"
-    cookie_manager.set(COOKIE_NAME, token, max_age=SESSION_DAYS * 24 * 60 * 60)
+
+    expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=SESSION_DAYS)
+    cookie_manager.set(COOKIE_NAME, token, expires_at=expires_at)
 
 def ler_cookie_login():
     # ✅ FIX 2: usar snapshot de cookies já carregado
